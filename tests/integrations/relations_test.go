@@ -35,6 +35,15 @@ const (
 	postColContent postCol = "content"
 )
 
+type tagCol string
+
+func (c tagCol) String() string { return string(c) }
+
+const (
+	tagColID   tagCol = "id"
+	tagColName tagCol = "name"
+)
+
 // ============================================================================
 // Сгенерированная схема таблиц
 // ============================================================================
@@ -150,6 +159,17 @@ func TestRelations(t *testing.T) {
 			title TEXT NOT NULL,
 			content TEXT
 		);
+
+		CREATE TABLE tags (
+			id SERIAL PRIMARY KEY,
+			name TEXT NOT NULL
+		);
+
+		CREATE TABLE post_tags (
+			post_id INTEGER NOT NULL REFERENCES posts(id),
+			tag_id INTEGER NOT NULL REFERENCES tags(id),
+			PRIMARY KEY (post_id, tag_id)
+		);
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -165,6 +185,16 @@ func TestRelations(t *testing.T) {
 			(1, 'First Post', 'Content of first post'),
 			(1, 'Second Post', 'Content of second post'),
 			(2, 'Bob Post', 'Content from Bob');
+
+		INSERT INTO tags (name) VALUES
+			('go'),
+			('db');
+
+		INSERT INTO post_tags (post_id, tag_id) VALUES
+			(1, 1),
+			(1, 2),
+			(2, 1),
+			(3, 2);
 	`)
 	if err != nil {
 		t.Fatal(err)
@@ -371,6 +401,69 @@ func TestRelations(t *testing.T) {
 		// Проверяем, что используется алиас
 		if sql != "SELECT users.name FROM users AS users LEFT JOIN posts AS user_posts ON user_posts.user_id = users.id;" {
 			t.Fatalf("unexpected SQL with alias: %s", sql)
+		}
+
+		_ = args
+	})
+
+	t.Run("ManyToMany Relation", func(t *testing.T) {
+		// Определяем связь: Post ManyToMany Tags
+		postTags := schema.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id")
+
+		selectQuery := &query.SelectQuery[postCol]{
+			BaseQuery: query.BaseQuery[postCol]{
+				Ta:          "posts",
+				UsingFields: []postCol{postColTitle},
+			},
+		}
+
+		postTags.InnerJoin(selectQuery)
+
+		sql, args := selectQuery.Build()
+		t.Logf("SQL: %s", sql)
+		t.Logf("Args: %v", args)
+
+		rows, err := pool.Query(ctx, sql, args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+
+		count := 0
+		for rows.Next() {
+			var title string
+			if err := rows.Scan(&title); err != nil {
+				t.Fatal(err)
+			}
+			count++
+		}
+
+		// 4 связки постов и тегов
+		if count != 4 {
+			t.Fatalf("expected 4 rows for many-to-many, got %d", count)
+		}
+	})
+
+	t.Run("ManyToMany Relation with Aliases", func(t *testing.T) {
+		// ManyToMany с алиасами для целевой и промежуточной таблицы
+		postTags := schema.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id").
+			WithAlias("t").
+			WithThroughAlias("pt")
+
+		selectQuery := &query.SelectQuery[postCol]{
+			BaseQuery: query.BaseQuery[postCol]{
+				Ta:          "posts",
+				UsingFields: []postCol{postColTitle},
+			},
+		}
+
+		postTags.LeftJoin(selectQuery)
+
+		sql, args := selectQuery.Build()
+		t.Logf("SQL: %s", sql)
+
+		if sql != "SELECT posts.title FROM posts AS posts LEFT JOIN post_tags AS pt ON posts.id = pt.post_id LEFT JOIN tags AS t ON pt.tag_id = t.id;" {
+			t.Fatalf("unexpected SQL with aliases: %s", sql)
 		}
 
 		_ = args
