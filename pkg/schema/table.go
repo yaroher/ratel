@@ -42,6 +42,16 @@ type table[F types.ColumnAlias, T scanning.Targeter[F]] struct {
 	scanFactory func() T
 }
 
+// NewTable creates a table with a scanner factory.
+// This is intended for generated schema/scanner code.
+func NewTable[F types.ColumnAlias, T scanning.Targeter[F]](
+	alias string,
+	scanFactory func() T,
+	fields ...F,
+) TableI[F, T] {
+	return newTable[F, T](alias, scanFactory, fields...)
+}
+
 func newTable[F types.ColumnAlias, T scanning.Targeter[F]](
 	alias string,
 	scanFactory func() T,
@@ -117,9 +127,17 @@ func (t *table[F, T]) QueryRow(ctx context.Context, db DB, query types.OrmQuery)
 	trg = t.scanFactory()
 	ScanAbleFields := query.ScanAbleFields()
 	sql, args := query.Build()
-	targets := make([]any, 0, len(ScanAbleFields))
-	for _, f := range ScanAbleFields {
-		targets = append(targets, trg.GetTarget(f)())
+	var targets []any
+	if resolver, ok := any(trg).(scanning.TargetResolver); ok {
+		targets, err = resolver.Targets(ScanAbleFields)
+		if err != nil {
+			return trg, err
+		}
+	} else {
+		targets = make([]any, 0, len(ScanAbleFields))
+		for _, f := range ScanAbleFields {
+			targets = append(targets, trg.GetTarget(f)())
+		}
 	}
 	err = db.QueryRow(ctx, sql, args...).Scan(targets...)
 	if err != nil {
@@ -138,9 +156,17 @@ func (t *table[F, T]) Query(ctx context.Context, db DB, query types.OrmQuery) (t
 	defer rows.Close()
 	for rows.Next() {
 		trg := t.scanFactory()
-		targets := make([]any, len(ScanAbleFields))
-		for i, f := range ScanAbleFields {
-			targets[i] = trg.GetTarget(f)()
+		var targets []any
+		if resolver, ok := any(trg).(scanning.TargetResolver); ok {
+			targets, err = resolver.Targets(ScanAbleFields)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			targets = make([]any, len(ScanAbleFields))
+			for i, f := range ScanAbleFields {
+				targets[i] = trg.GetTarget(f)()
+			}
 		}
 		err = rows.Scan(targets...)
 		if err != nil {
