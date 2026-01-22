@@ -1,6 +1,10 @@
 package ddl
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/yaroher/ratel/sqlbuild/ddl/constraint"
+)
 
 func TestCreateTableBuild(t *testing.T) {
 	sql, args := CreateTableStmt("users").
@@ -11,7 +15,7 @@ func TestCreateTableBuild(t *testing.T) {
 			Column("email", "TEXT").Unique(),
 			Column("age", "INTEGER").Default("0"),
 		).
-		Constraint(NamedUnique("uq_users_name_email", "name", "email")).
+		Constraint(constraint.NamedUnique("uq_users_name_email", "name", "email")).
 		Build()
 
 	if len(args) != 0 {

@@ -8,9 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-
-	"github.com/yaroher/ratel/pkg/scanning"
-	"github.com/yaroher/ratel/pkg/schema"
+	"github.com/yaroher/ratel/next"
+	"github.com/yaroher/ratel/sqlscan"
 )
 
 type scanUserCol string
@@ -28,19 +27,19 @@ type scanUser struct {
 }
 
 type scanUserScanner struct {
-	*scanning.BaseTargeter[scanUserCol]
+	*sqlscan.BaseTargeter[scanUserCol]
 	User *scanUser
 }
 
 func newScanUserScanner() *scanUserScanner {
 	user := &scanUser{}
-	bt := scanning.NewBaseTargeter[scanUserCol](
-		scanning.FieldAccess[scanUserCol]{
+	bt := sqlscan.NewBaseTargeter[scanUserCol](
+		sqlscan.FieldAccess[scanUserCol]{
 			Name:   "id",
 			Target: func() any { return &user.ID },
 			Value:  func() any { return user.ID },
 		},
-		scanning.FieldAccess[scanUserCol]{
+		sqlscan.FieldAccess[scanUserCol]{
 			Name:   "name",
 			Target: func() any { return &user.Name },
 			Value:  func() any { return user.Name },
@@ -101,14 +100,14 @@ func TestScanTargetResolver(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	users := schema.NewTable[scanUserCol, *scanUserScanner](
+	users := next.NewTable[scanUserCol, *scanUserScanner](
 		"users",
 		newScanUserScanner,
 		scanUserColID,
 		scanUserColName,
 	)
 
-	nameCol := schema.StringColumn[scanUserCol](scanUserColName)
+	nameCol := next.StringColumn[scanUserCol](scanUserColName)
 	queryRow := users.Select(scanUserColName, scanUserColID)
 	queryRow.Where(nameCol.Eq("Alice"))
 

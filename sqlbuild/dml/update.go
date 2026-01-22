@@ -1,9 +1,11 @@
-package query
+package dml
 
 import (
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/sqlbuild/dml/clause"
+	"github.com/yaroher/ratel/sqlbuild/set"
 )
 
 // ---------------------------------------------------------------------------
@@ -12,11 +14,14 @@ import (
 
 type UpdateQuery[C types.ColumnAlias] struct {
 	BaseQuery[C]
-	setAssigns   []types.ValueSetter[C]
-	whereClauses []types.Clause[C]
+	setAssigns   []set.ValueSetter[C]
+	whereClauses []clause.Clause[C]
 }
 
-func (q *UpdateQuery[F]) mustOrmQuery() {}
+func (q *UpdateQuery[C]) ScanAbleFields() []string {
+	//TODO implement me
+	panic("implement me")
+}
 
 func (q *UpdateQuery[F]) Build() (string, []any) {
 	i := 1
@@ -57,11 +62,11 @@ func (q *UpdateQuery[C]) AddToBuilder(buf *strings.Builder, ta string, paramInde
 	buf.WriteByte(';')
 }
 
-func (q *UpdateQuery[C]) Where(clause ...types.Clause[C]) *UpdateQuery[C] {
+func (q *UpdateQuery[C]) Where(clause ...clause.Clause[C]) *UpdateQuery[C] {
 	q.whereClauses = append(q.whereClauses, clause...)
 	return q
 }
-func (q *UpdateQuery[C]) Set(assign ...types.ValueSetter[C]) *UpdateQuery[C] {
+func (q *UpdateQuery[C]) Set(assign ...set.ValueSetter[C]) *UpdateQuery[C] {
 	q.setAssigns = append(q.setAssigns, assign...)
 	return q
 }

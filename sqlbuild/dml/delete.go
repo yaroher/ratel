@@ -1,9 +1,10 @@
-package query
+package dml
 
 import (
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/sqlbuild/dml/clause"
 )
 
 // ---------------------------------------------------------------------------
@@ -12,10 +13,13 @@ import (
 
 type DeleteQuery[C types.ColumnAlias] struct {
 	BaseQuery[C]
-	whereClauses []types.Clause[C]
+	whereClauses []clause.Clause[C]
 }
 
-func (q *DeleteQuery[C]) mustOrmQuery() {}
+func (q *DeleteQuery[C]) ScanAbleFields() []string {
+	//TODO implement me
+	panic("implement me")
+}
 
 func (q *DeleteQuery[C]) Build() (string, []any) {
 	idx := 1
@@ -29,7 +33,6 @@ func (q *DeleteQuery[C]) Build() (string, []any) {
 	sbPool.Put(sb)
 	return sql, args
 }
-
 func (q *DeleteQuery[C]) AddToBuilder(sb *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	sb.WriteString("DELETE FROM ")
 	sb.WriteString(ta)
@@ -47,7 +50,7 @@ func (q *DeleteQuery[C]) AddToBuilder(sb *strings.Builder, ta string, paramIndex
 	sb.WriteByte(';')
 }
 
-func (q *DeleteQuery[C]) Where(clause ...types.Clause[C]) *DeleteQuery[C] {
+func (q *DeleteQuery[C]) Where(clause ...clause.Clause[C]) *DeleteQuery[C] {
 	q.whereClauses = append(q.whereClauses, clause...)
 	return q
 }

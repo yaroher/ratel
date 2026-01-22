@@ -8,9 +8,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-
-	"github.com/yaroher/ratel/pkg/query"
-	"github.com/yaroher/ratel/pkg/schema"
+	"github.com/yaroher/ratel/next"
+	schema2 "github.com/yaroher/ratel/schema"
+	dml2 "github.com/yaroher/ratel/sqlbuild/dml"
 )
 
 // Определяем column aliases для users и posts
@@ -54,12 +54,12 @@ type UsersTable struct {
 	Alias     string
 
 	// Колонки
-	ID    *schema.Column[int32, userCol]
-	Name  *schema.Column[string, userCol]
-	Email *schema.Column[string, userCol]
+	ID    *schema2.Column[int32, userCol]
+	Name  *schema2.Column[string, userCol]
+	Email *schema2.Column[string, userCol]
 
 	// Связи
-	Posts *schema.Relation[userCol] // HasMany
+	Posts *next.Relation[userCol] // HasMany
 }
 
 // NewUsersTable создает новую схему таблицы users
@@ -70,10 +70,10 @@ func NewUsersTable(alias string) *UsersTable {
 	return &UsersTable{
 		TableName: "users",
 		Alias:     alias,
-		ID:        schema.NewColumn[int32, userCol](userColID),
-		Name:      schema.NewColumn[string, userCol](userColName),
-		Email:     schema.NewColumn[string, userCol](userColEmail),
-		Posts:     schema.HasMany[userCol]("users", "posts", "user_id", "id"),
+		ID:        schema2.NewColumn[int32, userCol](userColID),
+		Name:      schema2.NewColumn[string, userCol](userColName),
+		Email:     schema2.NewColumn[string, userCol](userColEmail),
+		Posts:     next.HasMany[userCol]("users", "posts", "user_id", "id"),
 	}
 }
 
@@ -83,13 +83,13 @@ type PostsTable struct {
 	Alias     string
 
 	// Колонки
-	ID      *schema.Column[int32, postCol]
-	UserID  *schema.Column[int32, postCol]
-	Title   *schema.Column[string, postCol]
-	Content *schema.Column[string, postCol]
+	ID      *schema2.Column[int32, postCol]
+	UserID  *schema2.Column[int32, postCol]
+	Title   *schema2.Column[string, postCol]
+	Content *schema2.Column[string, postCol]
 
 	// Связи
-	User *schema.Relation[postCol] // BelongsTo
+	User *next.Relation[postCol] // BelongsTo
 }
 
 // NewPostsTable создает новую схему таблицы posts
@@ -100,11 +100,11 @@ func NewPostsTable(alias string) *PostsTable {
 	return &PostsTable{
 		TableName: "posts",
 		Alias:     alias,
-		ID:        schema.NewColumn[int32, postCol](postColID),
-		UserID:    schema.NewColumn[int32, postCol](postColUserID),
-		Title:     schema.NewColumn[string, postCol](postColTitle),
-		Content:   schema.NewColumn[string, postCol](postColContent),
-		User:      schema.BelongsTo[postCol]("posts", "users", "user_id", "id"),
+		ID:        schema2.NewColumn[int32, postCol](postColID),
+		UserID:    schema2.NewColumn[int32, postCol](postColUserID),
+		Title:     schema2.NewColumn[string, postCol](postColTitle),
+		Content:   schema2.NewColumn[string, postCol](postColContent),
+		User:      next.BelongsTo[postCol]("posts", "users", "user_id", "id"),
 	}
 }
 
@@ -202,12 +202,12 @@ func TestRelations(t *testing.T) {
 
 	t.Run("Manual INNER JOIN", func(t *testing.T) {
 		// Создаем columns
-		userName := schema.StringColumn[userCol](userColName)
-		postTitle := schema.StringColumn[postCol](postColTitle)
+		userName := next.StringColumn[userCol](userColName)
+		postTitle := next.StringColumn[postCol](postColTitle)
 
 		// Строим запрос с ручным JOIN
-		selectQuery := &query.SelectQuery[userCol]{
-			BaseQuery: query.BaseQuery[userCol]{
+		selectQuery := &dml2.SelectQuery[userCol]{
+			BaseQuery: dml2.BaseQuery[userCol]{
 				Ta: "users",
 				UsingFields: []userCol{
 					userColName,
@@ -216,7 +216,7 @@ func TestRelations(t *testing.T) {
 		}
 
 		// Добавляем INNER JOIN вручную
-		selectQuery.InnerJoin("posts", "posts", schema.NewRawOnClause[userCol](
+		selectQuery.InnerJoin("posts", "posts", next.NewRawOnClause[userCol](
 			"users.id = posts.user_id",
 		))
 
@@ -256,7 +256,7 @@ func TestRelations(t *testing.T) {
 	})
 
 	t.Run("LEFT JOIN", func(t *testing.T) {
-		userName := schema.StringColumn[userCol](userColName)
+		userName := next.StringColumn[userCol](userColName)
 
 		// Создаем пользователя без постов
 		_, err := pool.Exec(ctx, `INSERT INTO users (name, email) VALUES ('Charlie', 'charlie@example.com')`)
@@ -264,15 +264,15 @@ func TestRelations(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		selectQuery := &query.SelectQuery[userCol]{
-			BaseQuery: query.BaseQuery[userCol]{
+		selectQuery := &dml2.SelectQuery[userCol]{
+			BaseQuery: dml2.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
 		}
 
 		// LEFT JOIN чтобы получить всех пользователей, даже без постов
-		selectQuery.LeftJoin("posts", "posts", schema.NewRawOnClause[userCol](
+		selectQuery.LeftJoin("posts", "posts", next.NewRawOnClause[userCol](
 			"users.id = posts.user_id",
 		))
 
@@ -304,10 +304,10 @@ func TestRelations(t *testing.T) {
 
 	t.Run("HasMany Relation", func(t *testing.T) {
 		// Определяем связь: User HasMany Posts
-		userPosts := schema.HasMany[userCol]("users", "posts", "user_id", "id")
+		userPosts := next.HasMany[userCol]("users", "posts", "user_id", "id")
 
-		selectQuery := &query.SelectQuery[userCol]{
-			BaseQuery: query.BaseQuery[userCol]{
+		selectQuery := &dml2.SelectQuery[userCol]{
+			BaseQuery: dml2.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
@@ -316,7 +316,7 @@ func TestRelations(t *testing.T) {
 		// Применяем связь с INNER JOIN
 		userPosts.InnerJoin(selectQuery)
 
-		userName := schema.StringColumn[userCol](userColName)
+		userName := next.StringColumn[userCol](userColName)
 		selectQuery.Where(userName.Eq("Alice"))
 
 		sql, args := selectQuery.Build()
@@ -345,10 +345,10 @@ func TestRelations(t *testing.T) {
 
 	t.Run("BelongsTo Relation", func(t *testing.T) {
 		// Определяем связь: Post BelongsTo User
-		postUser := schema.BelongsTo[postCol]("posts", "users", "user_id", "id")
+		postUser := next.BelongsTo[postCol]("posts", "users", "user_id", "id")
 
-		selectQuery := &query.SelectQuery[postCol]{
-			BaseQuery: query.BaseQuery[postCol]{
+		selectQuery := &dml2.SelectQuery[postCol]{
+			BaseQuery: dml2.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},
@@ -383,11 +383,11 @@ func TestRelations(t *testing.T) {
 
 	t.Run("Relation with Alias", func(t *testing.T) {
 		// Используем HasMany с кастомным алиасом
-		userPosts := schema.HasMany[userCol]("users", "posts", "user_id", "id").
+		userPosts := next.HasMany[userCol]("users", "posts", "user_id", "id").
 			WithAlias("user_posts")
 
-		selectQuery := &query.SelectQuery[userCol]{
-			BaseQuery: query.BaseQuery[userCol]{
+		selectQuery := &dml2.SelectQuery[userCol]{
+			BaseQuery: dml2.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
@@ -408,10 +408,10 @@ func TestRelations(t *testing.T) {
 
 	t.Run("ManyToMany Relation", func(t *testing.T) {
 		// Определяем связь: Post ManyToMany Tags
-		postTags := schema.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id")
+		postTags := next.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id")
 
-		selectQuery := &query.SelectQuery[postCol]{
-			BaseQuery: query.BaseQuery[postCol]{
+		selectQuery := &dml2.SelectQuery[postCol]{
+			BaseQuery: dml2.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},
@@ -446,12 +446,12 @@ func TestRelations(t *testing.T) {
 
 	t.Run("ManyToMany Relation with Aliases", func(t *testing.T) {
 		// ManyToMany с алиасами для целевой и промежуточной таблицы
-		postTags := schema.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id").
+		postTags := next.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id").
 			WithAlias("t").
 			WithThroughAlias("pt")
 
-		selectQuery := &query.SelectQuery[postCol]{
-			BaseQuery: query.BaseQuery[postCol]{
+		selectQuery := &dml2.SelectQuery[postCol]{
+			BaseQuery: dml2.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},

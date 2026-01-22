@@ -1,10 +1,11 @@
-package query
+package dml
 
 import (
 	"strconv"
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/sqlbuild/set"
 )
 
 // ---------------------------------------------------------------------------
@@ -23,7 +24,10 @@ type InsertQuery[C types.ColumnAlias] struct {
 	updateAssigns  []C // SET … = … when DO UPDATE used
 }
 
-func (q *InsertQuery[C]) mustOrmQuery() {}
+func (q *InsertQuery[C]) ScanAbleFields() []string {
+	//TODO implement me
+	panic("implement me")
+}
 
 func (q *InsertQuery[C]) Build() (string, []any) {
 	idx := 1
@@ -109,7 +113,7 @@ func (q *InsertQuery[C]) Values(values ...any) *InsertQuery[C] {
 	q.values = values
 	return q
 }
-func (q *InsertQuery[C]) From(setters ...types.ValueSetter[C]) *InsertQuery[C] {
+func (q *InsertQuery[C]) From(setters ...set.ValueSetter[C]) *InsertQuery[C] {
 	cols := make([]C, 0, len(setters))
 	vals := make([]any, 0, len(setters))
 	for _, setter := range setters {

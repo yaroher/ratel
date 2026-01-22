@@ -1,12 +1,24 @@
-package query
+package set
 
 import (
 	"strconv"
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/clause"
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/sqlbuild/dml/clause"
 )
+
+type SetterColumn[V any, C types.ColumnAlias] interface {
+	SetExpr(string) ValueSetter[C]
+	Set(V) ValueSetter[C]
+	SetRaw(sql string, value ...any) ValueSetter[C]
+}
+
+type ValueSetter[C types.ColumnAlias] interface {
+	types.Builder
+	Value() any
+	Column() C
+}
 
 type ValueSetterImpl[C types.ColumnAlias] struct {
 	field C

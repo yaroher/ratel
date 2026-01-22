@@ -1,10 +1,11 @@
-package query
+package dml
 
 import (
 	"strconv"
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/sqlbuild/dml/clause"
 )
 
 type JoinType string
@@ -20,22 +21,27 @@ type JoinClause[C types.ColumnAlias] struct {
 	JoinType  JoinType
 	Table     string
 	Alias     string
-	OnClauses []types.Clause[C]
+	OnClauses []clause.Clause[C]
 }
 
 type SelectQuery[C types.ColumnAlias] struct {
 	BaseQuery[C]
 	distinct      bool
 	joins         []JoinClause[C]
-	whereClauses  []types.Clause[C]
+	whereClauses  []clause.Clause[C]
 	groupBy       []C
-	havingClauses []types.Clause[C]
+	havingClauses []clause.Clause[C]
 	orderByASC    []C
 	orderByDESC   []C
 	orderByRaw    []string
 	limit         int
 	offset        int
 	forUpdate     bool
+}
+
+func (q *SelectQuery[C]) ScanAbleFields() []string {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (q *SelectQuery[F]) Build() (string, []any) {
@@ -213,7 +219,7 @@ func (q *SelectQuery[F]) Alias(
 	q.Ta = alias
 	return q
 }
-func (q *SelectQuery[C]) Where(clause ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) Where(clause ...clause.Clause[C]) *SelectQuery[C] {
 	q.whereClauses = append(q.whereClauses, clause...)
 	return q
 }
@@ -221,7 +227,7 @@ func (q *SelectQuery[C]) GroupBy(fields ...C) *SelectQuery[C] {
 	q.groupBy = append(q.groupBy, fields...)
 	return q
 }
-func (q *SelectQuery[C]) Having(clause ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) Having(clause ...clause.Clause[C]) *SelectQuery[C] {
 	q.havingClauses = append(q.havingClauses, clause...)
 	return q
 }
@@ -264,7 +270,7 @@ func (q *SelectQuery[C]) SetOrderBy(asc bool, fields ...C) {
 }
 
 // Join adds a generic JOIN clause
-func (q *SelectQuery[C]) Join(joinType JoinType, table string, alias string, onClauses ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) Join(joinType JoinType, table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
 	q.joins = append(q.joins, JoinClause[C]{
 		JoinType:  joinType,
 		Table:     table,
@@ -275,21 +281,21 @@ func (q *SelectQuery[C]) Join(joinType JoinType, table string, alias string, onC
 }
 
 // InnerJoin adds an INNER JOIN clause
-func (q *SelectQuery[C]) InnerJoin(table string, alias string, onClauses ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) InnerJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
 	return q.Join(InnerJoinType, table, alias, onClauses...)
 }
 
 // LeftJoin adds a LEFT JOIN clause
-func (q *SelectQuery[C]) LeftJoin(table string, alias string, onClauses ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) LeftJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
 	return q.Join(LeftJoinType, table, alias, onClauses...)
 }
 
 // RightJoin adds a RIGHT JOIN clause
-func (q *SelectQuery[C]) RightJoin(table string, alias string, onClauses ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) RightJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
 	return q.Join(RightJoinType, table, alias, onClauses...)
 }
 
 // FullJoin adds a FULL JOIN clause
-func (q *SelectQuery[C]) FullJoin(table string, alias string, onClauses ...types.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[C]) FullJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
 	return q.Join(FullJoinType, table, alias, onClauses...)
 }

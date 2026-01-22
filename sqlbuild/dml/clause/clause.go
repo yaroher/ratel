@@ -5,28 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
 )
 
-// renumberPlaceholders — renumber $placeholders when embedding sub‑queries
-func renumberPlaceholders(sql string, paramIndex *int) string {
-	var b strings.Builder
-	for i := 0; i < len(sql); {
-		if sql[i] == '$' {
-			j := i + 1
-			for j < len(sql) && sql[j] >= '0' && sql[j] <= '9' {
-				j++
-			}
-			b.WriteByte('$')
-			b.WriteString(strconv.Itoa(*paramIndex))
-			*paramIndex++
-			i = j
-		} else {
-			b.WriteByte(sql[i])
-			i++
-		}
-	}
-	return b.String()
+type Clause[C types.ColumnAlias] interface {
+	AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any)
 }
 
 type ParamExprClause[C types.ColumnAlias] struct {
@@ -34,7 +17,6 @@ type ParamExprClause[C types.ColumnAlias] struct {
 	LikeWrapp bool
 }
 
-func (e *ParamExprClause[C]) mustClauseAlias(_ C) {}
 func (e *ParamExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	if e.LikeWrapp {
 		buf.WriteString("'%' || ")
@@ -52,7 +34,6 @@ type SliceExprClause[C types.ColumnAlias] struct {
 	Values any // slice
 }
 
-func (e *SliceExprClause[C]) mustClauseAlias(_ C) {}
 func (e *SliceExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	rv := reflect.ValueOf(e.Values)
 	if rv.Kind() != reflect.Slice {
@@ -71,7 +52,6 @@ type RawExprClause[C types.ColumnAlias] struct {
 	Args []any
 }
 
-func (e *RawExprClause[C]) mustClauseAlias(_ C) {}
 func (e *RawExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	parts := strings.Split(e.SQL, "?")
 	for i, part := range parts {
@@ -86,10 +66,9 @@ func (e *RawExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIn
 }
 
 type SubQueryExprClause[C types.ColumnAlias] struct {
-	Query types.OrmQuery
+	Query types.Query
 }
 
-func (e *SubQueryExprClause[C]) mustClauseAlias(_ C) {}
 func (e *SubQueryExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	//sql, subArgs := e.Query.Build()
 	//sql = renumberPlaceholders(sql, paramIndex)
@@ -106,11 +85,10 @@ func (e *SubQueryExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, pa
 type FieldClause[C types.ColumnAlias] struct {
 	Field    C
 	Operator string
-	Right    types.BufferBuilder
+	Right    types.Builder
 	Negate   bool
 }
 
-func (c *FieldClause[C]) mustClauseAlias(_ C) {}
 func (c *FieldClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	if c.Negate {
 		buf.WriteString("NOT (")
@@ -128,10 +106,9 @@ func (c *FieldClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramInde
 }
 
 type AndClause[C types.ColumnAlias] struct {
-	Clauses []types.Clause[C]
+	Clauses []Clause[C]
 }
 
-func (c *AndClause[C]) mustClauseAlias(_ C) {}
 func (c *AndClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	buf.WriteByte('(')
 	for i, cl := range c.Clauses {
@@ -144,10 +121,9 @@ func (c *AndClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex 
 }
 
 type OrClause[C types.ColumnAlias] struct {
-	Clauses []types.Clause[C]
+	Clauses []Clause[C]
 }
 
-func (c *OrClause[C]) mustClauseAlias(_ C) {}
 func (c *OrClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	buf.WriteByte('(')
 	for i, cl := range c.Clauses {
@@ -160,10 +136,9 @@ func (c *OrClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *
 }
 
 type NotClause[C types.ColumnAlias] struct {
-	Inner types.Clause[C]
+	Inner Clause[C]
 }
 
-func (c *NotClause[C]) mustClauseAlias(_ C) {}
 func (c *NotClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	buf.WriteString("NOT (")
 	c.Inner.AddToBuilder(buf, ta, paramIndex, args)
@@ -171,11 +146,10 @@ func (c *NotClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex 
 }
 
 type ExistsClause[C types.ColumnAlias] struct {
-	SubQuery types.Clause[C]
+	SubQuery Clause[C]
 	Negate   bool
 }
 
-func (c *ExistsClause[C]) mustClauseAlias(_ C) {}
 func (c *ExistsClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	if c.Negate {
 		buf.WriteString("NOT ")

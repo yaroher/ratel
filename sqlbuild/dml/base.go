@@ -1,10 +1,10 @@
-package query
+package dml
 
 import (
 	"strings"
 	"sync"
 
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
 )
 
 var sbPool = sync.Pool{

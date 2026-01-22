@@ -1,8 +1,9 @@
-package scanning
+package sqlscan
 
 import (
 	"fmt"
 
+	types2 "github.com/yaroher/ratel/common/types"
 	"github.com/yaroher/ratel/pkg/types"
 )
 
@@ -15,7 +16,7 @@ type TargetResolver interface {
 	Targets(columns []string) ([]any, error)
 }
 
-type Targeter[F types.ColumnAlias] interface {
+type Targeter[F types2.ColumnAlias] interface {
 	Valuer
 	GetTarget(string) func() any
 	GetSetter(F) func() types.ValueSetter[F]
@@ -28,12 +29,12 @@ type UnknownColumnError struct {
 }
 
 func (e UnknownColumnError) Error() string {
-	return fmt.Sprintf("scanning: unknown column %q", e.Column)
+	return fmt.Sprintf("sqlscan: unknown column %q", e.Column)
 }
 
 // FieldAccess describes how to scan and serialize a field.
-// Name should be a database column name, compatible with query.ScanAbleFields().
-type FieldAccess[F types.ColumnAlias] struct {
+// Name should be a database column name, compatible with dml.ScanAbleFields().
+type FieldAccess[F types2.ColumnAlias] struct {
 	Name   string
 	Target func() any
 	Value  func() any
@@ -42,7 +43,7 @@ type FieldAccess[F types.ColumnAlias] struct {
 
 // BaseTargeter is a generator-friendly implementation of Targeter.
 // It provides lookup by column name and ordered Values() for CopyFrom.
-type BaseTargeter[F types.ColumnAlias] struct {
+type BaseTargeter[F types2.ColumnAlias] struct {
 	targets      map[string]func() any
 	valuesByName map[string]func() any
 	setters      map[string]func() types.ValueSetter[F]
@@ -50,7 +51,7 @@ type BaseTargeter[F types.ColumnAlias] struct {
 }
 
 // NewBaseTargeter builds a BaseTargeter using ordered field accessors.
-func NewBaseTargeter[F types.ColumnAlias](fields ...FieldAccess[F]) *BaseTargeter[F] {
+func NewBaseTargeter[F types2.ColumnAlias](fields ...FieldAccess[F]) *BaseTargeter[F] {
 	t := &BaseTargeter[F]{
 		targets:      make(map[string]func() any, len(fields)),
 		valuesByName: make(map[string]func() any, len(fields)),
