@@ -3,8 +3,8 @@ package sqlscan
 import (
 	"fmt"
 
-	types2 "github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/pkg/types"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/set"
 )
 
 type Valuer interface {
@@ -16,10 +16,10 @@ type TargetResolver interface {
 	Targets(columns []string) ([]any, error)
 }
 
-type Targeter[F types2.ColumnAlias] interface {
+type Targeter[F types.ColumnAlias] interface {
 	Valuer
 	GetTarget(string) func() any
-	GetSetter(F) func() types.ValueSetter[F]
+	GetSetter(F) func() set.ValueSetter[F]
 	GetValue(F) func() any
 }
 
@@ -34,28 +34,28 @@ func (e UnknownColumnError) Error() string {
 
 // FieldAccess describes how to scan and serialize a field.
 // Name should be a database column name, compatible with dml.ScanAbleFields().
-type FieldAccess[F types2.ColumnAlias] struct {
+type FieldAccess[F types.ColumnAlias] struct {
 	Name   string
 	Target func() any
 	Value  func() any
-	Setter func() types.ValueSetter[F]
+	Setter func() set.ValueSetter[F]
 }
 
 // BaseTargeter is a generator-friendly implementation of Targeter.
 // It provides lookup by column name and ordered Values() for CopyFrom.
-type BaseTargeter[F types2.ColumnAlias] struct {
+type BaseTargeter[F types.ColumnAlias] struct {
 	targets      map[string]func() any
 	valuesByName map[string]func() any
-	setters      map[string]func() types.ValueSetter[F]
+	setters      map[string]func() set.ValueSetter[F]
 	values       []func() any
 }
 
 // NewBaseTargeter builds a BaseTargeter using ordered field accessors.
-func NewBaseTargeter[F types2.ColumnAlias](fields ...FieldAccess[F]) *BaseTargeter[F] {
+func NewBaseTargeter[F types.ColumnAlias](fields ...FieldAccess[F]) *BaseTargeter[F] {
 	t := &BaseTargeter[F]{
 		targets:      make(map[string]func() any, len(fields)),
 		valuesByName: make(map[string]func() any, len(fields)),
-		setters:      make(map[string]func() types.ValueSetter[F], len(fields)),
+		setters:      make(map[string]func() set.ValueSetter[F], len(fields)),
 		values:       make([]func() any, 0, len(fields)),
 	}
 	for _, f := range fields {
@@ -110,7 +110,7 @@ func (t *BaseTargeter[F]) GetTarget(column string) func() any {
 }
 
 // GetSetter returns a setter factory for the given column alias.
-func (t *BaseTargeter[F]) GetSetter(column F) func() types.ValueSetter[F] {
+func (t *BaseTargeter[F]) GetSetter(column F) func() set.ValueSetter[F] {
 	return t.setters[column.String()]
 }
 

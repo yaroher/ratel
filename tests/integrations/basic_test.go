@@ -8,8 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/yaroher/ratel/dml"
 	"github.com/yaroher/ratel/next"
-	dml2 "github.com/yaroher/ratel/sqlbuild/dml"
 )
 
 // userField is a column alias type for the users table
@@ -81,8 +81,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("Insert", func(t *testing.T) {
 		// Вставляем пользователя
-		insertQuery := &dml2.InsertQuery[userField]{
-			BaseQuery: dml2.BaseQuery[userField]{
+		insertQuery := &dml.InsertQuery[userField]{
+			BaseQuery: dml.BaseQuery[userField]{
 				Ta: "users",
 			},
 		}
@@ -108,8 +108,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("Select", func(t *testing.T) {
 		// Выбираем пользователя
-		selectQuery := &dml2.SelectQuery[userField]{
-			BaseQuery: dml2.BaseQuery[userField]{
+		selectQuery := &dml.SelectQuery[userField]{
+			BaseQuery: dml.BaseQuery[userField]{
 				Ta:          "users",
 				UsingFields: []userField{userFieldID, userFieldName, userFieldEmail, userFieldAge},
 			},
@@ -143,8 +143,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("Update", func(t *testing.T) {
 		// Обновляем возраст
-		updateQuery := &dml2.UpdateQuery[userField]{
-			BaseQuery: dml2.BaseQuery[userField]{
+		updateQuery := &dml.UpdateQuery[userField]{
+			BaseQuery: dml.BaseQuery[userField]{
 				Ta: "users",
 			},
 		}
@@ -166,8 +166,8 @@ func TestUser(t *testing.T) {
 
 	t.Run("Delete", func(t *testing.T) {
 		// Удаляем пользователя
-		deleteQuery := &dml2.DeleteQuery[userField]{
-			BaseQuery: dml2.BaseQuery[userField]{
+		deleteQuery := &dml.DeleteQuery[userField]{
+			BaseQuery: dml.BaseQuery[userField]{
 				Ta: "users",
 			},
 		}

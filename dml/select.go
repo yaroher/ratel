@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/sqlbuild/dml/clause"
+	"github.com/yaroher/ratel/dml/clause"
 )
 
 type JoinType string

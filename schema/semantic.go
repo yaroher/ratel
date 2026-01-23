@@ -3,78 +3,177 @@ package schema
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/sqlbuild/dml/clause"
-	"github.com/yaroher/ratel/sqlbuild/set"
+	"github.com/yaroher/ratel/dml/clause"
+	"github.com/yaroher/ratel/set"
 )
 
 type collType interface {
 	ability()
 }
 
-type smallIntColumn[V int16 | *int16, C types.ColumnAlias] interface {
+// SMALLINT
+
+type SmallIntColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[int16, C]
+	clause.CommonScalarOperand[int16, C]
 }
 
-type intergerColumn[V int32 | *int32, C types.ColumnAlias] interface {
+type NullSmallIntColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[*int16, C]
+	clause.CommonScalarOperand[*int16, C]
+	clause.IsNullOperand[C]
 }
 
-type bigIntColumn[V int64 | *int64, C types.ColumnAlias] interface {
+// INTEGER
+
+type IntegerColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[int32, C]
+	clause.CommonScalarOperand[int32, C]
 }
 
-type realColumn[V float32 | *float32, C types.ColumnAlias] interface {
+type NullIntegerColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[*int32, C]
+	clause.CommonScalarOperand[*int32, C]
+	clause.IsNullOperand[C]
 }
 
-type doublePresitionColumn[V float64 | *float64, C types.ColumnAlias] interface {
+// BIGINT
+
+type BigIntColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[int64, C]
+	clause.CommonScalarOperand[int64, C]
 }
 
-type textColumn[V string | *string, C types.ColumnAlias] interface {
+type NullBigIntColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
+	set.SetterColumn[*int64, C]
+	clause.CommonScalarOperand[*int64, C]
+	clause.IsNullOperand[C]
+}
+
+// REAL
+
+type RealColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[float32, C]
+	clause.CommonScalarOperand[float32, C]
+}
+
+type NullRealColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[*float32, C]
+	clause.CommonScalarOperand[*float32, C]
+	clause.IsNullOperand[C]
+}
+
+// DOUBLE PRECISION
+
+type DoublePrecisionColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[float64, C]
+	clause.CommonScalarOperand[float64, C]
+}
+
+type NullDoublePrecisionColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[*float64, C]
+	clause.CommonScalarOperand[*float64, C]
+	clause.IsNullOperand[C]
+}
+
+// TEXT
+
+type TextColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[string, C]
 	clause.LikeOperand[C]
 }
 
-type booleanColumn[V bool | *bool, C types.ColumnAlias] interface {
+type NullTextColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[*string, C]
+	clause.CommonScalarOperand[*string, C]
+	clause.IsNullOperand[C]
 }
 
-type uuidColumn[V uuid.UUID | *uuid.UUID, C types.ColumnAlias] interface {
+// BOOLEAN
+
+type BooleanColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[bool, C]
+	clause.CommonScalarOperand[bool, C]
 }
 
-type timeColumn[V time.Time | *time.Time, C types.ColumnAlias] interface {
+type NullBooleanColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[*bool, C]
+	clause.CommonScalarOperand[*bool, C]
+	clause.IsNullOperand[C]
 }
 
-type timestamptzColumn[V time.Time | *time.Time, C types.ColumnAlias] interface {
+// UUID
+
+type UuidColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[pgtype.UUID, C]
+	clause.CommonScalarOperand[pgtype.UUID, C]
 }
 
-type intervalColumn[V time.Duration | *time.Duration, C types.ColumnAlias] interface {
+type NullUuidColumn[C types.ColumnAlias] interface {
 	collType
-	set.SetterColumn[V, C]
-	clause.CommonScalarOperand[V, C]
+	set.SetterColumn[*pgtype.UUID, C]
+	clause.CommonScalarOperand[*pgtype.UUID, C]
+	clause.IsNullOperand[C]
+}
+
+// TIME
+
+type TimeColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[time.Time, C]
+	clause.CommonScalarOperand[time.Time, C]
+}
+
+type NullTimeColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[*time.Time, C]
+	clause.CommonScalarOperand[*time.Time, C]
+	clause.IsNullOperand[C]
+}
+
+// TIMESTAMPTZ
+
+type TimestamptzColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[time.Time, C]
+	clause.CommonScalarOperand[time.Time, C]
+}
+
+type NullTimestamptzColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[*time.Time, C]
+	clause.CommonScalarOperand[*time.Time, C]
+	clause.IsNullOperand[C]
+}
+
+// INTERVAL
+
+type IntervalColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[time.Duration, C]
+	clause.CommonScalarOperand[time.Duration, C]
+}
+
+type NullIntervalColumn[C types.ColumnAlias] interface {
+	collType
+	set.SetterColumn[*time.Duration, C]
+	clause.CommonScalarOperand[*time.Duration, C]
+	clause.IsNullOperand[C]
 }

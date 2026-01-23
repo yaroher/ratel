@@ -6,10 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	types2 "github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/pkg/types"
-	dml2 "github.com/yaroher/ratel/sqlbuild/dml"
-	"github.com/yaroher/ratel/sqlbuild/dml/clause"
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/dml"
+	"github.com/yaroher/ratel/dml/clause"
 	"github.com/yaroher/ratel/sqlscan"
 )
 
@@ -21,23 +20,23 @@ type DB interface {
 	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
 }
 
-type TableI[F types2.ColumnAlias, T sqlscan.Targeter[F]] interface {
+type TableI[F types.ColumnAlias, T sqlscan.Targeter[F]] interface {
 	AllFields() []F
 	AllFieldsExcept(field ...F) []F
 	Name() string
 	NewScanner() T
-	Select(field ...F) *dml2.SelectQuery[F]
-	Select1() *dml2.SelectQuery[F]
-	SelectAll() *dml2.SelectQuery[F]
-	Insert() *dml2.InsertQuery[F]
-	Update() *dml2.UpdateQuery[F]
-	Delete() *dml2.DeleteQuery[F]
-	Query(ctx context.Context, db DB, q types2.OrmQuery) ([]T, error)
-	QueryRow(ctx context.Context, db DB, q types2.OrmQuery) (T, error)
-	Execute(ctx context.Context, db DB, q types2.OrmQuery) (int64, error)
+	Select(field ...F) *dml.SelectQuery[F]
+	Select1() *dml.SelectQuery[F]
+	SelectAll() *dml.SelectQuery[F]
+	Insert() *dml.InsertQuery[F]
+	Update() *dml.UpdateQuery[F]
+	Delete() *dml.DeleteQuery[F]
+	Query(ctx context.Context, db DB, q types.Scannable) ([]T, error)
+	QueryRow(ctx context.Context, db DB, q types.Scannable) (T, error)
+	Execute(ctx context.Context, db DB, q types.Buildable) (int64, error)
 }
 
-type table[F types2.ColumnAlias, T sqlscan.Targeter[F]] struct {
+type table[F types.ColumnAlias, T sqlscan.Targeter[F]] struct {
 	alias       string
 	allFields   []F
 	scanFactory func() T
@@ -45,7 +44,7 @@ type table[F types2.ColumnAlias, T sqlscan.Targeter[F]] struct {
 
 // NewTable creates a table with a scanner factory.
 // This is intended for generated schema/scanner code.
-func NewTable[F types2.ColumnAlias, T sqlscan.Targeter[F]](
+func NewTable[F types.ColumnAlias, T sqlscan.Targeter[F]](
 	alias string,
 	scanFactory func() T,
 	fields ...F,
@@ -53,7 +52,7 @@ func NewTable[F types2.ColumnAlias, T sqlscan.Targeter[F]](
 	return newTable[F, T](alias, scanFactory, fields...)
 }
 
-func newTable[F types2.ColumnAlias, T sqlscan.Targeter[F]](
+func newTable[F types.ColumnAlias, T sqlscan.Targeter[F]](
 	alias string,
 	scanFactory func() T,
 	fields ...F,
@@ -65,8 +64,8 @@ func newTable[F types2.ColumnAlias, T sqlscan.Targeter[F]](
 	}
 }
 
-func (t *table[F, T]) baseQuery(ta string, field ...F) dml2.BaseQuery[F] {
-	return dml2.BaseQuery[F]{
+func (t *table[F, T]) baseQuery(ta string, field ...F) dml.BaseQuery[F] {
+	return dml.BaseQuery[F]{
 		Ta:          ta,
 		UsingFields: field,
 		AllFields:   t.allFields,
@@ -97,34 +96,34 @@ func (t *table[F, T]) AllFieldsExcept(field ...F) []F {
 func (t *table[F, T]) NewScanner() T {
 	return t.scanFactory()
 }
-func (t *table[F, T]) Select(field ...F) *dml2.SelectQuery[F] {
-	return &dml2.SelectQuery[F]{
+func (t *table[F, T]) Select(field ...F) *dml.SelectQuery[F] {
+	return &dml.SelectQuery[F]{
 		BaseQuery: t.baseQuery(t.alias, field...),
 	}
 }
-func (t *table[F, T]) Select1() *dml2.SelectQuery[F] {
+func (t *table[F, T]) Select1() *dml.SelectQuery[F] {
 	return t.Select()
 }
-func (t *table[F, T]) SelectAll() *dml2.SelectQuery[F] {
+func (t *table[F, T]) SelectAll() *dml.SelectQuery[F] {
 	return t.Select(t.allFields...)
 }
-func (t *table[F, T]) Update() *dml2.UpdateQuery[F] {
-	return &dml2.UpdateQuery[F]{
+func (t *table[F, T]) Update() *dml.UpdateQuery[F] {
+	return &dml.UpdateQuery[F]{
 		BaseQuery: t.baseQuery(t.alias),
 	}
 }
-func (t *table[F, T]) Delete() *dml2.DeleteQuery[F] {
-	return &dml2.DeleteQuery[F]{
+func (t *table[F, T]) Delete() *dml.DeleteQuery[F] {
+	return &dml.DeleteQuery[F]{
 		BaseQuery: t.baseQuery(t.alias),
 	}
 }
-func (t *table[F, T]) Insert() *dml2.InsertQuery[F] {
-	return &dml2.InsertQuery[F]{
+func (t *table[F, T]) Insert() *dml.InsertQuery[F] {
+	return &dml.InsertQuery[F]{
 		BaseQuery: t.baseQuery(t.alias),
 	}
 }
 
-func (t *table[F, T]) QueryRow(ctx context.Context, db DB, query types2.OrmQuery) (trg T, err error) {
+func (t *table[F, T]) QueryRow(ctx context.Context, db DB, query types.Scannable) (trg T, err error) {
 	trg = t.scanFactory()
 	ScanAbleFields := query.ScanAbleFields()
 	sql, args := query.Build()
@@ -147,7 +146,7 @@ func (t *table[F, T]) QueryRow(ctx context.Context, db DB, query types2.OrmQuery
 	return trg, nil
 }
 
-func (t *table[F, T]) Query(ctx context.Context, db DB, query types2.OrmQuery) (trgs []T, err error) {
+func (t *table[F, T]) Query(ctx context.Context, db DB, query types.Scannable) (trgs []T, err error) {
 	ScanAbleFields := query.ScanAbleFields()
 	sql, args := query.Build()
 	rows, err := db.Query(ctx, sql, args...)
@@ -178,7 +177,7 @@ func (t *table[F, T]) Query(ctx context.Context, db DB, query types2.OrmQuery) (
 	return trgs, nil
 }
 
-func (t *table[F, T]) Execute(ctx context.Context, db DB, query types2.OrmQuery) (int64, error) {
+func (t *table[F, T]) Execute(ctx context.Context, db DB, query types.Buildable) (int64, error) {
 	sql, args := query.Build()
 	tag, err := db.Exec(ctx, sql, args...)
 	if err != nil {
@@ -186,25 +185,25 @@ func (t *table[F, T]) Execute(ctx context.Context, db DB, query types2.OrmQuery)
 	}
 	return tag.RowsAffected(), nil
 }
-func (t *table[F, T]) Raw(sql string, args ...any) types.Clause[F] {
+func (t *table[F, T]) Raw(sql string, args ...any) clause.Clause[F] {
 	return &clause.RawExprClause[F]{SQL: sql, Args: args}
 }
-func (t *table[F, T]) ExistsRaw(sql string, args ...any) types.Clause[F] {
+func (t *table[F, T]) ExistsRaw(sql string, args ...any) clause.Clause[F] {
 	return &clause.ExistsClause[F]{SubQuery: &clause.RawExprClause[F]{SQL: sql, Args: args}, Negate: false}
 }
-func (t *table[F, T]) NotExistsRaw(sql string, args ...any) types.Clause[F] {
+func (t *table[F, T]) NotExistsRaw(sql string, args ...any) clause.Clause[F] {
 	return &clause.ExistsClause[F]{SubQuery: &clause.RawExprClause[F]{SQL: sql, Args: args}, Negate: true}
 }
-func (t *table[F, T]) ExistsOf(query types2.OrmQuery) types.Clause[F] {
+func (t *table[F, T]) ExistsOf(query types.Query) clause.Clause[F] {
 	return &clause.ExistsClause[F]{SubQuery: &clause.SubQueryExprClause[F]{Query: query}, Negate: false}
 }
-func (t *table[F, T]) NotExistsOf(query types2.OrmQuery) types.Clause[F] {
+func (t *table[F, T]) NotExistsOf(query types.Query) clause.Clause[F] {
 	return &clause.ExistsClause[F]{SubQuery: &clause.SubQueryExprClause[F]{Query: query}, Negate: true}
 }
-func (t *table[F, T]) And(clauses ...types.Clause[F]) types.Clause[F] {
+func (t *table[F, T]) And(clauses ...clause.Clause[F]) clause.Clause[F] {
 	return &clause.AndClause[F]{Clauses: clauses}
 }
-func (t *table[F, T]) Or(clauses ...types.Clause[F]) types.Clause[F] {
+func (t *table[F, T]) Or(clauses ...clause.Clause[F]) clause.Clause[F] {
 	return &clause.OrClause[F]{Clauses: clauses}
 }
 

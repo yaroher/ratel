@@ -8,9 +8,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/yaroher/ratel/next"
+	"github.com/yaroher/ratel/dml"
 	schema2 "github.com/yaroher/ratel/schema"
-	dml2 "github.com/yaroher/ratel/sqlbuild/dml"
 )
 
 // Определяем column aliases для users и posts
@@ -57,9 +56,6 @@ type UsersTable struct {
 	ID    *schema2.Column[int32, userCol]
 	Name  *schema2.Column[string, userCol]
 	Email *schema2.Column[string, userCol]
-
-	// Связи
-	Posts *next.Relation[userCol] // HasMany
 }
 
 // NewUsersTable создает новую схему таблицы users
@@ -70,10 +66,9 @@ func NewUsersTable(alias string) *UsersTable {
 	return &UsersTable{
 		TableName: "users",
 		Alias:     alias,
-		ID:        schema2.NewColumn[int32, userCol](userColID),
-		Name:      schema2.NewColumn[string, userCol](userColName),
-		Email:     schema2.NewColumn[string, userCol](userColEmail),
-		Posts:     next.HasMany[userCol]("users", "posts", "user_id", "id"),
+		ID:        schema2.IntegerCol(userColID),
+		Name:      schema2.TextCol(userColName),
+		Email:     schema2.TextCol(userColEmail),
 	}
 }
 
@@ -87,9 +82,6 @@ type PostsTable struct {
 	UserID  *schema2.Column[int32, postCol]
 	Title   *schema2.Column[string, postCol]
 	Content *schema2.Column[string, postCol]
-
-	// Связи
-	User *next.Relation[postCol] // BelongsTo
 }
 
 // NewPostsTable создает новую схему таблицы posts
@@ -100,11 +92,10 @@ func NewPostsTable(alias string) *PostsTable {
 	return &PostsTable{
 		TableName: "posts",
 		Alias:     alias,
-		ID:        schema2.NewColumn[int32, postCol](postColID),
-		UserID:    schema2.NewColumn[int32, postCol](postColUserID),
-		Title:     schema2.NewColumn[string, postCol](postColTitle),
-		Content:   schema2.NewColumn[string, postCol](postColContent),
-		User:      next.BelongsTo[postCol]("posts", "users", "user_id", "id"),
+		ID:        schema2.IntegerCol(postColID),
+		UserID:    schema2.IntegerCol(postColUserID),
+		Title:     schema2.TextCol(postColTitle),
+		Content:   schema2.TextCol(postColContent),
 	}
 }
 
@@ -206,8 +197,8 @@ func TestRelations(t *testing.T) {
 		postTitle := next.StringColumn[postCol](postColTitle)
 
 		// Строим запрос с ручным JOIN
-		selectQuery := &dml2.SelectQuery[userCol]{
-			BaseQuery: dml2.BaseQuery[userCol]{
+		selectQuery := &dml.SelectQuery[userCol]{
+			BaseQuery: dml.BaseQuery[userCol]{
 				Ta: "users",
 				UsingFields: []userCol{
 					userColName,
@@ -264,8 +255,8 @@ func TestRelations(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		selectQuery := &dml2.SelectQuery[userCol]{
-			BaseQuery: dml2.BaseQuery[userCol]{
+		selectQuery := &dml.SelectQuery[userCol]{
+			BaseQuery: dml.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
@@ -306,8 +297,8 @@ func TestRelations(t *testing.T) {
 		// Определяем связь: User HasMany Posts
 		userPosts := next.HasMany[userCol]("users", "posts", "user_id", "id")
 
-		selectQuery := &dml2.SelectQuery[userCol]{
-			BaseQuery: dml2.BaseQuery[userCol]{
+		selectQuery := &dml.SelectQuery[userCol]{
+			BaseQuery: dml.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
@@ -347,8 +338,8 @@ func TestRelations(t *testing.T) {
 		// Определяем связь: Post BelongsTo User
 		postUser := next.BelongsTo[postCol]("posts", "users", "user_id", "id")
 
-		selectQuery := &dml2.SelectQuery[postCol]{
-			BaseQuery: dml2.BaseQuery[postCol]{
+		selectQuery := &dml.SelectQuery[postCol]{
+			BaseQuery: dml.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},
@@ -386,8 +377,8 @@ func TestRelations(t *testing.T) {
 		userPosts := next.HasMany[userCol]("users", "posts", "user_id", "id").
 			WithAlias("user_posts")
 
-		selectQuery := &dml2.SelectQuery[userCol]{
-			BaseQuery: dml2.BaseQuery[userCol]{
+		selectQuery := &dml.SelectQuery[userCol]{
+			BaseQuery: dml.BaseQuery[userCol]{
 				Ta:          "users",
 				UsingFields: []userCol{userColName},
 			},
@@ -410,8 +401,8 @@ func TestRelations(t *testing.T) {
 		// Определяем связь: Post ManyToMany Tags
 		postTags := next.ManyToMany[postCol]("posts", "tags", "post_tags", "post_id", "tag_id")
 
-		selectQuery := &dml2.SelectQuery[postCol]{
-			BaseQuery: dml2.BaseQuery[postCol]{
+		selectQuery := &dml.SelectQuery[postCol]{
+			BaseQuery: dml.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},
@@ -450,8 +441,8 @@ func TestRelations(t *testing.T) {
 			WithAlias("t").
 			WithThroughAlias("pt")
 
-		selectQuery := &dml2.SelectQuery[postCol]{
-			BaseQuery: dml2.BaseQuery[postCol]{
+		selectQuery := &dml.SelectQuery[postCol]{
+			BaseQuery: dml.BaseQuery[postCol]{
 				Ta:          "posts",
 				UsingFields: []postCol{postColTitle},
 			},

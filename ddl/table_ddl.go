@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/sqlbuild/ddl/constraint"
+	"github.com/yaroher/ratel/ddl/constraint"
 )
 
 // CreateTable builds CREATE TABLE statements.

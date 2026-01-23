@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/sqlbuild/set"
+	"github.com/yaroher/ratel/set"
 )
 
 // ---------------------------------------------------------------------------

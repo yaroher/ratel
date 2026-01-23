@@ -2,7 +2,7 @@ package set
 
 import (
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/sqlbuild/dml/clause"
+	"github.com/yaroher/ratel/dml/clause"
 )
 
 type Column[V any, C types.ColumnAlias] struct {

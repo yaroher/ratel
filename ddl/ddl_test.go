@@ -3,7 +3,7 @@ package ddl
 import (
 	"testing"
 
-	"github.com/yaroher/ratel/sqlbuild/ddl/constraint"
+	"github.com/yaroher/ratel/ddl/constraint"
 )
 
 func TestCreateTableBuild(t *testing.T) {
