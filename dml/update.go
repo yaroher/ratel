@@ -5,38 +5,44 @@ import (
 
 	"github.com/yaroher/ratel/common/types"
 	"github.com/yaroher/ratel/dml/clause"
-	"github.com/yaroher/ratel/set"
+	"github.com/yaroher/ratel/dml/set"
 )
 
 // ---------------------------------------------------------------------------
 // UPDATE builder -------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-type UpdateQuery[C types.ColumnAlias] struct {
-	BaseQuery[C]
+type UpdateQuery[T types.TableAlias, C types.ColumnAlias] struct {
+	BaseQuery[T, C]
 	setAssigns   []set.ValueSetter[C]
 	whereClauses []clause.Clause[C]
 }
 
-func (q *UpdateQuery[C]) ScanAbleFields() []string {
-	//TODO implement me
-	panic("implement me")
+func (q *UpdateQuery[T, C]) ScanAbleFields() []string {
+	if len(q.UsingFields) == 0 {
+		return nil
+	}
+	fields := make([]string, len(q.UsingFields))
+	for i, f := range q.UsingFields {
+		fields[i] = f.String()
+	}
+	return fields
 }
 
-func (q *UpdateQuery[F]) Build() (string, []any) {
+func (q *UpdateQuery[T, C]) Build() (string, []any) {
 	i := 1
 	sb := sbPool.Get().(*strings.Builder)
 	sb.Reset()
 	sb.Grow(128 + len(q.setAssigns)*24)
 
 	args := make([]any, 0, len(q.setAssigns)+len(q.whereClauses)*2)
-	q.AddToBuilder(sb, q.TableAlias(), &i, &args)
+	q.AddToBuilder(sb, q.Ta.String(), &i, &args)
 	sql := sb.String() // копия в новую строку
 	sbPool.Put(sb)
 	return sql, args
 }
 
-func (q *UpdateQuery[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
+func (q *UpdateQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	buf.WriteString("UPDATE ")
 	buf.WriteString(ta)
 	buf.WriteString(" SET ")
@@ -62,19 +68,19 @@ func (q *UpdateQuery[C]) AddToBuilder(buf *strings.Builder, ta string, paramInde
 	buf.WriteByte(';')
 }
 
-func (q *UpdateQuery[C]) Where(clause ...clause.Clause[C]) *UpdateQuery[C] {
+func (q *UpdateQuery[T, C]) Where(clause ...clause.Clause[C]) *UpdateQuery[T, C] {
 	q.whereClauses = append(q.whereClauses, clause...)
 	return q
 }
-func (q *UpdateQuery[C]) Set(assign ...set.ValueSetter[C]) *UpdateQuery[C] {
+func (q *UpdateQuery[T, C]) Set(assign ...set.ValueSetter[C]) *UpdateQuery[T, C] {
 	q.setAssigns = append(q.setAssigns, assign...)
 	return q
 }
-func (q *UpdateQuery[C]) ReturningAll() *UpdateQuery[C] {
+func (q *UpdateQuery[T, C]) ReturningAll() *UpdateQuery[T, C] {
 	q.UsingFields = q.AllFields
 	return q
 }
-func (q *UpdateQuery[C]) Returning(fields ...C) *UpdateQuery[C] {
+func (q *UpdateQuery[T, C]) Returning(fields ...C) *UpdateQuery[T, C] {
 	q.UsingFields = fields
 	return q
 }

@@ -7,6 +7,16 @@ import (
 
 type ColumnAlias fmt.Stringer
 
+func Alias[C columnAlias](s string) C {
+	return C(columnAlias(s))
+}
+
+type columnAlias string
+
+func (a columnAlias) String() string {
+	return string(a)
+}
+
 type TableAlias fmt.Stringer
 
 type Builder interface {

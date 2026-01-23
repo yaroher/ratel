@@ -6,8 +6,8 @@ import (
 	"github.com/yaroher/ratel/common/types"
 )
 
-// ColumnDef describes a column for CREATE/ALTER TABLE.
-type ColumnDef[C types.ColumnAlias] struct {
+// ColumnDDL describes a column for CREATE/ALTER TABLE.
+type ColumnDDL[C types.ColumnAlias] struct {
 	fa           C
 	dataType     Datatype
 	notNull      bool
@@ -19,6 +19,21 @@ type ColumnDef[C types.ColumnAlias] struct {
 	checkExpr    *string
 }
 
+func NewColumnDDL[C types.ColumnAlias](
+	fa C,
+	dataType Datatype,
+	opts ...ColumnOption[C],
+) *ColumnDDL[C] {
+	col := &ColumnDDL[C]{
+		fa:       fa,
+		dataType: dataType,
+	}
+	for _, opt := range opts {
+		opt(col)
+	}
+	return col
+}
+
 // Reference describes a REFERENCES clause with optional actions.
 type Reference struct {
 	table    string
@@ -27,55 +42,124 @@ type Reference struct {
 	onUpdate string
 }
 
-func (c *ColumnDef[C]) Alias() C {
+// ColumnOption is a functional option for configuring a ColumnDDL.
+type ColumnOption[C types.ColumnAlias] func(*ColumnDDL[C])
+
+// WithNotNull sets NOT NULL constraint.
+func WithNotNull[C types.ColumnAlias]() ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.notNull = true
+		c.explicitNull = false
+	}
+}
+
+// WithNullable sets explicit NULL constraint.
+func WithNullable[C types.ColumnAlias]() ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.notNull = false
+		c.explicitNull = true
+	}
+}
+
+// WithUnique sets UNIQUE constraint.
+func WithUnique[C types.ColumnAlias]() ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.unique = true
+	}
+}
+
+// WithPrimaryKey sets PRIMARY KEY constraint.
+func WithPrimaryKey[C types.ColumnAlias]() ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.primaryKey = true
+	}
+}
+
+// WithDefault sets DEFAULT value (raw SQL expression).
+func WithDefault[C types.ColumnAlias](value string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.defaultValue = &value
+	}
+}
+
+// WithReferences sets REFERENCES clause.
+func WithReferences[C types.ColumnAlias](table, column string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.reference = &Reference{table: table, column: column}
+	}
+}
+
+// WithOnDelete sets ON DELETE action for REFERENCES.
+func WithOnDelete[C types.ColumnAlias](action string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		if c.reference == nil {
+			c.reference = &Reference{}
+		}
+		c.reference.onDelete = action
+	}
+}
+
+// WithOnUpdate sets ON UPDATE action for REFERENCES.
+func WithOnUpdate[C types.ColumnAlias](action string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		if c.reference == nil {
+			c.reference = &Reference{}
+		}
+		c.reference.onUpdate = action
+	}
+}
+
+// WithCheck sets CHECK constraint (raw SQL expression).
+func WithCheck[C types.ColumnAlias](expr string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.checkExpr = &expr
+	}
+}
+
+func (c *ColumnDDL[C]) Alias() C {
 	return c.fa
 }
 
-// Column creates a column definition.
-func Column[C types.ColumnAlias](name C, dataType Datatype) *ColumnDef[C] {
-	return &ColumnDef[C]{fa: name, dataType: dataType}
-}
-
 // NotNull sets NOT NULL constraint.
-func (c *ColumnDef[C]) NotNull() *ColumnDef[C] {
+func (c *ColumnDDL[C]) NotNull() *ColumnDDL[C] {
 	c.notNull = true
 	c.explicitNull = false
 	return c
 }
 
 // Nullable sets explicit NULL constraint.
-func (c *ColumnDef[C]) Nullable() *ColumnDef[C] {
+func (c *ColumnDDL[C]) Nullable() *ColumnDDL[C] {
 	c.notNull = false
 	c.explicitNull = true
 	return c
 }
 
 // Unique sets UNIQUE constraint.
-func (c *ColumnDef[C]) Unique() *ColumnDef[C] {
+func (c *ColumnDDL[C]) Unique() *ColumnDDL[C] {
 	c.unique = true
 	return c
 }
 
 // PrimaryKey sets PRIMARY KEY constraint.
-func (c *ColumnDef[C]) PrimaryKey() *ColumnDef[C] {
+func (c *ColumnDDL[C]) PrimaryKey() *ColumnDDL[C] {
 	c.primaryKey = true
 	return c
 }
 
 // Default sets DEFAULT value (raw SQL expression).
-func (c *ColumnDef[C]) Default(value string) *ColumnDef[C] {
+func (c *ColumnDDL[C]) Default(value string) *ColumnDDL[C] {
 	c.defaultValue = &value
 	return c
 }
 
 // References sets REFERENCES clause.
-func (c *ColumnDef[C]) References(table, column string) *ColumnDef[C] {
+func (c *ColumnDDL[C]) References(table, column string) *ColumnDDL[C] {
 	c.reference = &Reference{table: table, column: column}
 	return c
 }
 
 // OnDelete sets ON DELETE action for REFERENCES.
-func (c *ColumnDef[C]) OnDelete(action string) *ColumnDef[C] {
+func (c *ColumnDDL[C]) OnDelete(action string) *ColumnDDL[C] {
 	if c.reference == nil {
 		c.reference = &Reference{}
 	}
@@ -84,7 +168,7 @@ func (c *ColumnDef[C]) OnDelete(action string) *ColumnDef[C] {
 }
 
 // OnUpdate sets ON UPDATE action for REFERENCES.
-func (c *ColumnDef[C]) OnUpdate(action string) *ColumnDef[C] {
+func (c *ColumnDDL[C]) OnUpdate(action string) *ColumnDDL[C] {
 	if c.reference == nil {
 		c.reference = &Reference{}
 	}
@@ -93,60 +177,67 @@ func (c *ColumnDef[C]) OnUpdate(action string) *ColumnDef[C] {
 }
 
 // Check sets CHECK constraint (raw SQL expression).
-func (c *ColumnDef[C]) Check(expr string) *ColumnDef[C] {
+func (c *ColumnDDL[C]) Check(expr string) *ColumnDDL[C] {
 	c.checkExpr = &expr
 	return c
 }
 
-func (c *ColumnDef[C]) Build() (string, []any) {
-	var b strings.Builder
-	paramIndex := 1
-	args := make([]any, 0)
-	c.AddToBuilder(&b, "", &paramIndex, &args)
-	return b.String(), nil
-}
+func (c *ColumnDDL[C]) SchemaSql() string {
+	var sql strings.Builder
 
-func (c *ColumnDef[C]) AddToBuilder(buf *strings.Builder, _ string, _ *int, _ *[]any) {
-	buf.WriteString(c.fa.String())
-	if c.dataType.String() != "" {
-		buf.WriteByte(' ')
-		buf.WriteString(c.dataType.String())
-	}
+	// ColumnDDL alias and data type
+	sql.WriteString(c.fa.String())
+	sql.WriteString(" ")
+	sql.WriteString(c.dataType.String())
+
+	// NOT NULL / NULL
 	if c.notNull {
-		buf.WriteString(" NOT NULL")
+		sql.WriteString(" NOT NULL")
 	} else if c.explicitNull {
-		buf.WriteString(" NULL")
+		sql.WriteString(" NULL")
 	}
-	if c.defaultValue != nil {
-		buf.WriteString(" DEFAULT ")
-		buf.WriteString(*c.defaultValue)
-	}
+
+	// UNIQUE
 	if c.unique {
-		buf.WriteString(" UNIQUE")
+		sql.WriteString(" UNIQUE")
 	}
+
+	// PRIMARY KEY
 	if c.primaryKey {
-		buf.WriteString(" PRIMARY KEY")
+		sql.WriteString(" PRIMARY KEY")
 	}
-	if c.reference != nil && c.reference.table != "" {
-		buf.WriteString(" REFERENCES ")
-		buf.WriteString(c.reference.table)
-		if c.reference.column != "" {
-			buf.WriteByte('(')
-			buf.WriteString(c.reference.column)
-			buf.WriteByte(')')
-		}
+
+	// DEFAULT
+	if c.defaultValue != nil {
+		sql.WriteString(" DEFAULT ")
+		sql.WriteString(*c.defaultValue)
+	}
+
+	// REFERENCES
+	if c.reference != nil {
+		sql.WriteString(" REFERENCES ")
+		sql.WriteString(c.reference.table)
+		sql.WriteString("(")
+		sql.WriteString(c.reference.column)
+		sql.WriteString(")")
+
 		if c.reference.onDelete != "" {
-			buf.WriteString(" ON DELETE ")
-			buf.WriteString(c.reference.onDelete)
+			sql.WriteString(" ON DELETE ")
+			sql.WriteString(c.reference.onDelete)
 		}
+
 		if c.reference.onUpdate != "" {
-			buf.WriteString(" ON UPDATE ")
-			buf.WriteString(c.reference.onUpdate)
+			sql.WriteString(" ON UPDATE ")
+			sql.WriteString(c.reference.onUpdate)
 		}
 	}
+
+	// CHECK
 	if c.checkExpr != nil {
-		buf.WriteString(" CHECK (")
-		buf.WriteString(*c.checkExpr)
-		buf.WriteByte(')')
+		sql.WriteString(" CHECK (")
+		sql.WriteString(*c.checkExpr)
+		sql.WriteString(")")
 	}
+
+	return sql.String()
 }

@@ -27,7 +27,7 @@ type ValueSetterImpl[C types.ColumnAlias] struct {
 	raw   *clause.RawExprClause[C]
 }
 
-func NewValueSetter[C types.ColumnAlias](field C, value any) *ValueSetterImpl[C] {
+func NewSetter[C types.ColumnAlias](field C, value any) *ValueSetterImpl[C] {
 	return &ValueSetterImpl[C]{field: field, value: value}
 }
 

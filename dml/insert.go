@@ -5,15 +5,15 @@ import (
 	"strings"
 
 	"github.com/yaroher/ratel/common/types"
-	"github.com/yaroher/ratel/set"
+	"github.com/yaroher/ratel/dml/set"
 )
 
 // ---------------------------------------------------------------------------
 // INSERT builder -------------------------------------------------------------
 // ---------------------------------------------------------------------------
 
-type InsertQuery[C types.ColumnAlias] struct {
-	BaseQuery[C]
+type InsertQuery[T types.TableAlias, C types.ColumnAlias] struct {
+	BaseQuery[T, C]
 
 	columns []C
 	values  []any // single‑row insert for simplicity; extendable to [][]any
@@ -24,12 +24,18 @@ type InsertQuery[C types.ColumnAlias] struct {
 	updateAssigns  []C // SET … = … when DO UPDATE used
 }
 
-func (q *InsertQuery[C]) ScanAbleFields() []string {
-	//TODO implement me
-	panic("implement me")
+func (q *InsertQuery[T, C]) ScanAbleFields() []string {
+	if len(q.UsingFields) == 0 {
+		return nil
+	}
+	fields := make([]string, len(q.UsingFields))
+	for i, f := range q.UsingFields {
+		fields[i] = f.String()
+	}
+	return fields
 }
 
-func (q *InsertQuery[C]) Build() (string, []any) {
+func (q *InsertQuery[T, C]) Build() (string, []any) {
 	idx := 1
 	sb := sbPool.Get().(*strings.Builder)
 	sb.Reset()
@@ -37,14 +43,14 @@ func (q *InsertQuery[C]) Build() (string, []any) {
 	sb.Grow(128 + len(q.columns)*16)
 
 	args := make([]any, 0, len(q.values)+len(q.updateAssigns))
-	q.AddToBuilder(sb, q.TableAlias(), &idx, &args)
+	q.AddToBuilder(sb, q.Ta.String(), &idx, &args)
 	sql := sb.String() // копия в новую строку
 	sbPool.Put(sb)
 	return sql, args
 }
 
 //goland:noinspection t
-func (q *InsertQuery[F]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
+func (q *InsertQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	// INSERT INTO tbl (c1,c2) VALUES ($1,$2)
 	buf.WriteString("INSERT INTO ")
 	buf.WriteString(ta)
@@ -105,15 +111,15 @@ func (q *InsertQuery[F]) AddToBuilder(buf *strings.Builder, ta string, paramInde
 	buf.WriteByte(';')
 }
 
-func (q *InsertQuery[C]) Columns(columns ...C) *InsertQuery[C] {
+func (q *InsertQuery[T, C]) Columns(columns ...C) *InsertQuery[T, C] {
 	q.columns = columns
 	return q
 }
-func (q *InsertQuery[C]) Values(values ...any) *InsertQuery[C] {
+func (q *InsertQuery[T, C]) Values(values ...any) *InsertQuery[T, C] {
 	q.values = values
 	return q
 }
-func (q *InsertQuery[C]) From(setters ...set.ValueSetter[C]) *InsertQuery[C] {
+func (q *InsertQuery[T, C]) From(setters ...set.ValueSetter[C]) *InsertQuery[T, C] {
 	cols := make([]C, 0, len(setters))
 	vals := make([]any, 0, len(setters))
 	for _, setter := range setters {
@@ -124,23 +130,23 @@ func (q *InsertQuery[C]) From(setters ...set.ValueSetter[C]) *InsertQuery[C] {
 	q.Values(vals...)
 	return q
 }
-func (q *InsertQuery[F]) OnConflict(columns ...F) *InsertQuery[F] {
+func (q *InsertQuery[T, C]) OnConflict(columns ...C) *InsertQuery[T, C] {
 	q.conflictTarget = columns
 	return q
 }
-func (q *InsertQuery[F]) DoNothing() *InsertQuery[F] {
+func (q *InsertQuery[T, C]) DoNothing() *InsertQuery[T, C] {
 	q.doNothing = true
 	return q
 }
-func (q *InsertQuery[F]) DoUpdate(assign ...F) *InsertQuery[F] {
+func (q *InsertQuery[T, C]) DoUpdate(assign ...C) *InsertQuery[T, C] {
 	q.updateAssigns = assign
 	return q
 }
-func (q *InsertQuery[F]) Returning(fields ...F) *InsertQuery[F] {
+func (q *InsertQuery[T, C]) Returning(fields ...C) *InsertQuery[T, C] {
 	q.UsingFields = fields
 	return q
 }
-func (q *InsertQuery[F]) ReturningAll() *InsertQuery[F] {
+func (q *InsertQuery[T, C]) ReturningAll() *InsertQuery[T, C] {
 	q.UsingFields = q.AllFields
 	return q
 }

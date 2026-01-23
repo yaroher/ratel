@@ -24,8 +24,8 @@ type JoinClause[C types.ColumnAlias] struct {
 	OnClauses []clause.Clause[C]
 }
 
-type SelectQuery[C types.ColumnAlias] struct {
-	BaseQuery[C]
+type SelectQuery[T types.TableAlias, C types.ColumnAlias] struct {
+	BaseQuery[T, C]
 	distinct      bool
 	joins         []JoinClause[C]
 	whereClauses  []clause.Clause[C]
@@ -39,12 +39,18 @@ type SelectQuery[C types.ColumnAlias] struct {
 	forUpdate     bool
 }
 
-func (q *SelectQuery[C]) ScanAbleFields() []string {
-	//TODO implement me
-	panic("implement me")
+func (q *SelectQuery[T, C]) ScanAbleFields() []string {
+	if len(q.UsingFields) == 0 {
+		return nil
+	}
+	fields := make([]string, len(q.UsingFields))
+	for i, f := range q.UsingFields {
+		fields[i] = f.String()
+	}
+	return fields
 }
 
-func (q *SelectQuery[F]) Build() (string, []any) {
+func (q *SelectQuery[T, C]) Build() (string, []any) {
 	i := 1
 	// берём буфер из пула
 	sb := sbPool.Get().(*strings.Builder)
@@ -55,14 +61,14 @@ func (q *SelectQuery[F]) Build() (string, []any) {
 	sb.Grow(approxCap)
 
 	args := make([]any, 0, len(q.whereClauses)*2) // простой грубый estimate
-	q.AddToBuilder(sb, q.TableAlias(), &i, &args)
+	q.AddToBuilder(sb, q.Ta.String(), &i, &args)
 	sql := sb.String() // копия в новую строку
 	sbPool.Put(sb)
 	return sql, args
 }
 
 //goland:noinspection t
-func (q *SelectQuery[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
+func (q *SelectQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	inSubquery := buf.Len() > 0 || *paramIndex > 1 || len(*args) > 0
 	// ---------- SELECT ----------
 	buf.WriteString("SELECT ")
@@ -203,65 +209,59 @@ func (q *SelectQuery[C]) AddToBuilder(buf *strings.Builder, ta string, paramInde
 		buf.WriteByte(';')
 	}
 }
-func (q *SelectQuery[F]) Fields(
-	fields ...F,
-) *SelectQuery[F] {
+func (q *SelectQuery[T, C]) Fields(
+	fields ...C,
+) *SelectQuery[T, C] {
 	q.UsingFields = fields
 	return q
 }
-func (q *SelectQuery[F]) Distinct() *SelectQuery[F] {
+func (q *SelectQuery[T, C]) Distinct() *SelectQuery[T, C] {
 	q.distinct = true
 	return q
 }
-func (q *SelectQuery[F]) Alias(
-	alias string,
-) *SelectQuery[F] {
-	q.Ta = alias
-	return q
-}
-func (q *SelectQuery[C]) Where(clause ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) Where(clause ...clause.Clause[C]) *SelectQuery[T, C] {
 	q.whereClauses = append(q.whereClauses, clause...)
 	return q
 }
-func (q *SelectQuery[C]) GroupBy(fields ...C) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) GroupBy(fields ...C) *SelectQuery[T, C] {
 	q.groupBy = append(q.groupBy, fields...)
 	return q
 }
-func (q *SelectQuery[C]) Having(clause ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) Having(clause ...clause.Clause[C]) *SelectQuery[T, C] {
 	q.havingClauses = append(q.havingClauses, clause...)
 	return q
 }
-func (q *SelectQuery[C]) OrderByASC(fields ...C) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) OrderByASC(fields ...C) *SelectQuery[T, C] {
 	q.orderByASC = append(q.orderByASC, fields...)
 	return q
 }
-func (q *SelectQuery[C]) OrderByDESC(fields ...C) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) OrderByDESC(fields ...C) *SelectQuery[T, C] {
 	q.orderByDESC = append(q.orderByDESC, fields...)
 	return q
 }
-func (q *SelectQuery[C]) OrderByRaw(rawSQL ...string) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) OrderByRaw(rawSQL ...string) *SelectQuery[T, C] {
 	q.orderByRaw = append(q.orderByRaw, rawSQL...)
 	return q
 }
-func (q *SelectQuery[C]) Limit(limit int) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) Limit(limit int) *SelectQuery[T, C] {
 	q.limit = limit
 	return q
 }
-func (q *SelectQuery[C]) Offset(offset int) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) Offset(offset int) *SelectQuery[T, C] {
 	q.offset = offset
 	return q
 }
-func (q *SelectQuery[C]) ForUpdate() *SelectQuery[C] {
+func (q *SelectQuery[T, C]) ForUpdate() *SelectQuery[T, C] {
 	q.forUpdate = true
 	return q
 }
-func (q *SelectQuery[C]) SetLimit(limit int) {
+func (q *SelectQuery[T, C]) SetLimit(limit int) {
 	q.limit = limit
 }
-func (q *SelectQuery[C]) SetOffset(offset int) {
+func (q *SelectQuery[T, C]) SetOffset(offset int) {
 	q.offset = offset
 }
-func (q *SelectQuery[C]) SetOrderBy(asc bool, fields ...C) {
+func (q *SelectQuery[T, C]) SetOrderBy(asc bool, fields ...C) {
 	if asc {
 		q.orderByASC = append(q.orderByASC, fields...)
 	} else {
@@ -270,7 +270,12 @@ func (q *SelectQuery[C]) SetOrderBy(asc bool, fields ...C) {
 }
 
 // Join adds a generic JOIN clause
-func (q *SelectQuery[C]) Join(joinType JoinType, table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) Join(
+	joinType JoinType,
+	table string,
+	alias string,
+	onClauses ...clause.Clause[C],
+) *SelectQuery[T, C] {
 	q.joins = append(q.joins, JoinClause[C]{
 		JoinType:  joinType,
 		Table:     table,
@@ -281,21 +286,21 @@ func (q *SelectQuery[C]) Join(joinType JoinType, table string, alias string, onC
 }
 
 // InnerJoin adds an INNER JOIN clause
-func (q *SelectQuery[C]) InnerJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) InnerJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[T, C] {
 	return q.Join(InnerJoinType, table, alias, onClauses...)
 }
 
 // LeftJoin adds a LEFT JOIN clause
-func (q *SelectQuery[C]) LeftJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) LeftJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[T, C] {
 	return q.Join(LeftJoinType, table, alias, onClauses...)
 }
 
 // RightJoin adds a RIGHT JOIN clause
-func (q *SelectQuery[C]) RightJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) RightJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[T, C] {
 	return q.Join(RightJoinType, table, alias, onClauses...)
 }
 
 // FullJoin adds a FULL JOIN clause
-func (q *SelectQuery[C]) FullJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[C] {
+func (q *SelectQuery[T, C]) FullJoin(table string, alias string, onClauses ...clause.Clause[C]) *SelectQuery[T, C] {
 	return q.Join(FullJoinType, table, alias, onClauses...)
 }

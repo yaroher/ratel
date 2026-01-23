@@ -17,20 +17,20 @@ type BetweenOperand[V any, C types.ColumnAlias] interface {
 type InOperand[V any, C types.ColumnAlias] interface {
 	In(...V) Clause[C]
 	NotIn(...V) Clause[C]
-	InOf(query types.Buildable) Clause[C]
+	InOf(query types.Query) Clause[C]
 	InRaw(string, ...any) Clause[C]
 }
 type AnyOperand[V any, C types.ColumnAlias] interface {
 	Any(...V) Clause[C]
 	NotAny(...V) Clause[C]
-	AnyOf(query types.Buildable) Clause[C]
+	AnyOf(query types.Query) Clause[C]
 	AnyRaw(string, ...any) Clause[C]
 }
 
 type EqOperand[V any, C types.ColumnAlias] interface {
 	Eq(V) Clause[C]
 	Neq(V) Clause[C]
-	EqOf(query types.Buildable) Clause[C]
+	EqOf(query types.Query) Clause[C]
 	EqRaw(string, ...any) Clause[C]
 }
 type LogicalOperand[C types.ColumnAlias] interface {
@@ -39,11 +39,11 @@ type LogicalOperand[C types.ColumnAlias] interface {
 	Not(clause Clause[C]) Clause[C]
 }
 type AdditionalQueryOperand[C types.ColumnAlias] interface {
-	Of(query types.Buildable) Clause[C]
-	NotOf(query types.Buildable) Clause[C]
+	Of(query types.Query) Clause[C]
+	NotOf(query types.Query) Clause[C]
 	Raw(string, string, ...any) Clause[C]
 	NotRaw(string, string, ...any) Clause[C]
-	ExistsOf(query types.Buildable) Clause[C]
+	ExistsOf(query types.Query) Clause[C]
 	ExistsRaw(string, ...any) Clause[C]
 }
 
@@ -79,31 +79,31 @@ type IsNullOperand[C types.ColumnAlias] interface {
 
 // ArrayOperand defines operations specific to PostgreSQL array types
 type ArrayOperand[V any, C types.ColumnAlias] interface {
-	Contains(...V) Clause[C]
-	ContainedBy(...V) Clause[C]
-	Overlap(...V) Clause[C]
-	ContainsRaw(string, ...any) Clause[C]
-	ContainedByRaw(string, ...any) Clause[C]
-	OverlapRaw(string, ...any) Clause[C]
-	LengthEq(int) Clause[C]
-	LengthGt(int) Clause[C]
-	LengthLt(int) Clause[C]
+	ARRAYContains(...V) Clause[C]
+	ARRAYContainedBy(...V) Clause[C]
+	ARRAYOverlap(...V) Clause[C]
+	ARRAYContainsRaw(string, ...any) Clause[C]
+	ARRAYContainedByRaw(string, ...any) Clause[C]
+	ARRAYOverlapRaw(string, ...any) Clause[C]
+	ARRAYLengthEq(int) Clause[C]
+	ARRAYLengthGt(int) Clause[C]
+	ARRAYLengthLt(int) Clause[C]
 }
 
 // JsonOperand defines operations specific to PostgreSQL JSON/JSONB types
 type JsonOperand[C types.ColumnAlias] interface {
-	GetField(key string) *JsonFieldAccess[C]
-	GetFieldText(key string) *JsonFieldAccess[C]
-	GetPath(path ...string) *JsonFieldAccess[C]
-	GetPathText(path ...string) *JsonFieldAccess[C]
-	Contains(jsonValue string) Clause[C]
-	ContainedBy(jsonValue string) Clause[C]
-	HasKey(key string) Clause[C]
-	HasAnyKey(keys ...string) Clause[C]
-	HasAllKeys(keys ...string) Clause[C]
-	JsonPathQuery(path string) Clause[C]
-	JsonPathPredicate(path string) Clause[C]
-	IsNull() Clause[C]
-	IsNotNull() Clause[C]
-	Raw(operator string, sql string, args ...any) Clause[C]
+	JSONGetField(key string) *JsonFieldAccess[C]
+	JSONGetFieldText(key string) *JsonFieldAccess[C]
+	JSONGetPath(path ...string) *JsonFieldAccess[C]
+	JSONGetPathText(path ...string) *JsonFieldAccess[C]
+	JSONContains(jsonValue string) Clause[C]
+	JSONContainedBy(jsonValue string) Clause[C]
+	JSONHasKey(key string) Clause[C]
+	JSONHasAnyKey(keys ...string) Clause[C]
+	JSONHasAllKeys(keys ...string) Clause[C]
+	JSONJsonPathQuery(path string) Clause[C]
+	JSONJsonPathPredicate(path string) Clause[C]
+	JSONIsNull() Clause[C]
+	JSONIsNotNull() Clause[C]
+	JSONRaw(operator string, sql string, args ...any) Clause[C]
 }
