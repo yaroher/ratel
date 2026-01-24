@@ -33,6 +33,10 @@ func (c *TableDDL[T, C]) Unique(columns ...[]C) *TableDDL[T, C] {
 	return c
 }
 
+func (c *TableDDL[T, C]) Alias() T {
+	return c.alias
+}
+
 func (c *TableDDL[T, C]) SchemaSql() []string {
 	var statements []string
 	var sql strings.Builder

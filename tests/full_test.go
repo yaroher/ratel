@@ -191,7 +191,7 @@ func TestFullIntegration(t *testing.T) {
 	users.TableDDL.Unique([]ColumnAlias{ColEmail})
 
 	// Create table in database
-	for _, sql := range users.TableDDL.SchemaSql() {
+	for _, sql := range users.SchemaSql() {
 		t.Logf("Executing DDL: %s", sql)
 		if _, err := pool.Exec(ctx, sql); err != nil {
 			t.Fatalf("failed to create table: %v", err)

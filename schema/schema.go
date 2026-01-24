@@ -11,6 +11,7 @@ type Table[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C]] struct {
 	*ddl.TableDDL[T, C]
 	*dml.TableDML[T, C]
 	*exec.TableExecutor[T, C, S]
+	constructor func() S
 }
 
 func NewTable[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C]](
@@ -26,5 +27,6 @@ func NewTable[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C]](
 		TableDDL:      ddl.NewTableDDL[T, C](alias, columns...),
 		TableDML:      dml.NewTableDML[T, C](alias, allAliases...),
 		TableExecutor: exec.NewTableExecutor[T, C, S](alias, allAliases, constructor),
+		constructor:   constructor,
 	}
 }
