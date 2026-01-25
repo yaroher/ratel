@@ -1,455 +1,734 @@
 package tests
 
 import (
-	"context"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/yaroher/ratel/ddl"
 	"github.com/yaroher/ratel/dml/set"
 	"github.com/yaroher/ratel/schema"
 )
 
-// Table and Column aliases
-type TableAlias string
+type CurrencyAlias string
 
-func (t TableAlias) String() string { return string(t) }
+func (c CurrencyAlias) String() string { return string(c) }
 
-type ColumnAlias string
+const CurrencyAliasName = "currency"
 
-func (c ColumnAlias) String() string { return string(c) }
+type CurrencyColumnAlias string
 
-const (
-	UsersTable TableAlias = "users"
-)
+func (c CurrencyColumnAlias) String() string { return string(c) }
 
 const (
-	ColID        ColumnAlias = "id"
-	ColName      ColumnAlias = "name"
-	ColEmail     ColumnAlias = "email"
-	ColAge       ColumnAlias = "age"
-	ColCreatedAt ColumnAlias = "created_at"
+	CurrencyColumnAliasCode CurrencyColumnAlias = "code"
+	CurrencyColumnAliasName CurrencyColumnAlias = "name"
 )
 
-// User represents a row in the users table
-type User struct {
-	ID        int32
-	Name      string
+type CurrencyScanner struct {
+	Code string
+	Name string
+}
+
+func (c CurrencyScanner) GetTarget(s string) func() any {
+	switch CurrencyColumnAlias(s) {
+	case "code":
+		return func() any { return &c.Code }
+	case "name":
+		return func() any { return &c.Name }
+	default:
+		panic("unknown field: " + s)
+	}
+}
+
+func (c CurrencyScanner) GetSetter(f CurrencyColumnAlias) func() set.ValueSetter[CurrencyColumnAlias] {
+	switch f {
+	case "code":
+		return func() set.ValueSetter[CurrencyColumnAlias] { return set.NewSetter(f, &c.Code) }
+	case "name":
+		return func() set.ValueSetter[CurrencyColumnAlias] { return set.NewSetter(f, &c.Name) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (c CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
+	switch f {
+	case "code":
+		return func() any { return c.Code }
+	case "name":
+		return func() any { return c.Name }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+type CurrencyTable struct {
+	*schema.Table[CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner]
+	Code schema.CharColumnI[CurrencyColumnAlias]
+	Name schema.TextColumnI[CurrencyColumnAlias]
+}
+
+var currency = func() CurrencyTable {
+	codeCol := schema.CharColumn(CurrencyColumnAliasCode, 3, ddl.WithPrimaryKey[CurrencyColumnAlias]())
+	nameCol := schema.TextColumn(CurrencyColumnAliasName, ddl.WithNotNull[CurrencyColumnAlias]())
+	return CurrencyTable{
+		Table: schema.NewTable[CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner](
+			CurrencyAliasName,
+			func() *CurrencyScanner { return &CurrencyScanner{} },
+			[]*ddl.ColumnDDL[CurrencyColumnAlias]{
+				codeCol.DDL(),
+				nameCol.DDL(),
+			},
+		),
+		Code: codeCol,
+		Name: nameCol,
+	}
+}()
+
+type UsersAlias string
+
+func (u UsersAlias) String() string { return string(u) }
+
+const UsersAliasName = "users"
+
+type UsersColumnAlias string
+
+func (u UsersColumnAlias) String() string { return string(u) }
+
+const (
+	UsersColumnAliasUserID    UsersColumnAlias = "user_id"
+	UsersColumnAliasEmail     UsersColumnAlias = "email"
+	UsersColumnAliasFullName  UsersColumnAlias = "full_name"
+	UsersColumnAliasIsActive  UsersColumnAlias = "is_active"
+	UsersColumnAliasCreatedAt UsersColumnAlias = "created_at"
+	UsersColumnAliasUpdatedAt UsersColumnAlias = "updated_at"
+)
+
+type UsersScanner struct {
+	UserID    int64
 	Email     string
-	Age       *int32
+	FullName  string
+	IsActive  bool
 	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
-// GetTarget implements exec.Scanner interface
-func (u *User) GetTarget(field string) func() any {
-	switch ColumnAlias(field) {
-	case ColID:
-		return func() any { return &u.ID }
-	case ColName:
-		return func() any { return &u.Name }
-	case ColEmail:
+func (u UsersScanner) GetTarget(s string) func() any {
+	switch UsersColumnAlias(s) {
+	case "user_id":
+		return func() any { return &u.UserID }
+	case "email":
 		return func() any { return &u.Email }
-	case ColAge:
-		return func() any { return &u.Age }
-	case ColCreatedAt:
+	case "full_name":
+		return func() any { return &u.FullName }
+	case "is_active":
+		return func() any { return &u.IsActive }
+	case "created_at":
 		return func() any { return &u.CreatedAt }
+	case "updated_at":
+		return func() any { return &u.UpdatedAt }
 	default:
-		panic("unknown field: " + field)
+		panic("unknown field: " + s)
 	}
 }
 
-// GetSetter implements exec.Scanner interface
-func (u *User) GetSetter(field ColumnAlias) func() set.ValueSetter[ColumnAlias] {
-	switch field {
-	case ColID:
-		return func() set.ValueSetter[ColumnAlias] { return set.NewSetter(field, u.ID) }
-	case ColName:
-		return func() set.ValueSetter[ColumnAlias] { return set.NewSetter(field, u.Name) }
-	case ColEmail:
-		return func() set.ValueSetter[ColumnAlias] { return set.NewSetter(field, u.Email) }
-	case ColAge:
-		return func() set.ValueSetter[ColumnAlias] { return set.NewSetter(field, u.Age) }
-	case ColCreatedAt:
-		return func() set.ValueSetter[ColumnAlias] { return set.NewSetter(field, u.CreatedAt) }
+func (u UsersScanner) GetSetter(f UsersColumnAlias) func() set.ValueSetter[UsersColumnAlias] {
+	switch f {
+	case "user_id":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.UserID) }
+	case "email":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.Email) }
+	case "full_name":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.FullName) }
+	case "is_active":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.IsActive) }
+	case "created_at":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.CreatedAt) }
+	case "updated_at":
+		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.UpdatedAt) }
 	default:
-		panic("unknown field: " + string(field))
+		panic("unknown field: " + string(f))
 	}
 }
 
-// GetValue implements exec.Scanner interface
-func (u *User) GetValue(field ColumnAlias) func() any {
-	switch field {
-	case ColID:
-		return func() any { return u.ID }
-	case ColName:
-		return func() any { return u.Name }
-	case ColEmail:
+func (u UsersScanner) GetValue(f UsersColumnAlias) func() any {
+	switch f {
+	case "user_id":
+		return func() any { return u.UserID }
+	case "email":
 		return func() any { return u.Email }
-	case ColAge:
-		return func() any { return u.Age }
-	case ColCreatedAt:
+	case "full_name":
+		return func() any { return u.FullName }
+	case "is_active":
+		return func() any { return u.IsActive }
+	case "created_at":
 		return func() any { return u.CreatedAt }
+	case "updated_at":
+		return func() any { return u.UpdatedAt }
 	default:
-		panic("unknown field: " + string(field))
+		panic("unknown field: " + string(f))
 	}
 }
 
-// setupPostgres creates a PostgreSQL container and returns the connection pool
-func setupPostgres(t *testing.T) (*pgxpool.Pool, func()) {
-	ctx := context.Background()
+type UsersTable struct {
+	*schema.Table[UsersAlias, UsersColumnAlias, *UsersScanner]
+	UserID    schema.BigSerialColumnI[UsersColumnAlias]
+	Email     schema.TextColumnI[UsersColumnAlias]
+	FullName  schema.TextColumnI[UsersColumnAlias]
+	IsActive  schema.BooleanColumnI[UsersColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[UsersColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[UsersColumnAlias]
+}
 
-	// Start PostgreSQL container
-	pgContainer, err := postgres.Run(ctx,
-		"postgres:16-alpine",
-		postgres.WithDatabase("testdb"),
-		postgres.WithUsername("testuser"),
-		postgres.WithPassword("testpass"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(60*time.Second)),
+var users = func() UsersTable {
+	userIDCol := schema.BigSerialColumn(UsersColumnAliasUserID, ddl.WithPrimaryKey[UsersColumnAlias]())
+	emailCol := schema.TextColumn(
+		UsersColumnAliasEmail,
+		ddl.WithNotNull[UsersColumnAlias](),
+		ddl.WithUnique[UsersColumnAlias](),
+	)
+	fullNameCol := schema.TextColumn(UsersColumnAliasFullName, ddl.WithNotNull[UsersColumnAlias]())
+	isActiveCol := schema.BooleanColumn(
+		UsersColumnAliasIsActive,
+		ddl.WithNotNull[UsersColumnAlias](),
+		ddl.WithDefault[UsersColumnAlias]("true"),
+	)
+	createdAtCol := schema.TimestamptzColumn(
+		UsersColumnAliasCreatedAt,
+		ddl.WithNotNull[UsersColumnAlias](),
+		ddl.WithDefault[UsersColumnAlias]("now()"),
+	)
+	updatedAtCol := schema.TimestamptzColumn(
+		UsersColumnAliasUpdatedAt,
+		ddl.WithNotNull[UsersColumnAlias](),
+		ddl.WithDefault[UsersColumnAlias]("now()"),
+	)
+	return UsersTable{
+		Table: schema.NewTable[UsersAlias, UsersColumnAlias, *UsersScanner](
+			UsersAliasName,
+			func() *UsersScanner { return &UsersScanner{} },
+			[]*ddl.ColumnDDL[UsersColumnAlias]{
+				userIDCol.DDL(),
+				emailCol.DDL(),
+				fullNameCol.DDL(),
+				isActiveCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+		),
+		UserID:    userIDCol,
+		Email:     emailCol,
+		FullName:  fullNameCol,
+		IsActive:  isActiveCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
+
+type ProductsAlias string
+
+func (p ProductsAlias) String() string { return string(p) }
+
+const ProductsAliasName = "products"
+
+type ProductsColumnAlias string
+
+func (p ProductsColumnAlias) String() string { return string(p) }
+
+const (
+	ProductsColumnAliasProductID ProductsColumnAlias = "product_id"
+	ProductsColumnAliasSKU       ProductsColumnAlias = "sku"
+	ProductsColumnAliasName      ProductsColumnAlias = "name"
+	ProductsColumnAliasPrice     ProductsColumnAlias = "price"
+	ProductsColumnAliasCurrency  ProductsColumnAlias = "currency"
+	ProductsColumnAliasStockQty  ProductsColumnAlias = "stock_qty"
+	ProductsColumnAliasIsDeleted ProductsColumnAlias = "is_deleted"
+	ProductsColumnAliasCreatedAt ProductsColumnAlias = "created_at"
+	ProductsColumnAliasUpdatedAt ProductsColumnAlias = "updated_at"
+)
+
+type ProductsScanner struct {
+	ProductID int64
+	SKU       string
+	Name      string
+	Price     float64
+	Currency  string
+	StockQty  int32
+	IsDeleted bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (p ProductsScanner) GetTarget(s string) func() any {
+	switch ProductsColumnAlias(s) {
+	case "product_id":
+		return func() any { return &p.ProductID }
+	case "sku":
+		return func() any { return &p.SKU }
+	case "name":
+		return func() any { return &p.Name }
+	case "price":
+		return func() any { return &p.Price }
+	case "currency":
+		return func() any { return &p.Currency }
+	case "stock_qty":
+		return func() any { return &p.StockQty }
+	case "is_deleted":
+		return func() any { return &p.IsDeleted }
+	case "created_at":
+		return func() any { return &p.CreatedAt }
+	case "updated_at":
+		return func() any { return &p.UpdatedAt }
+	default:
+		panic("unknown field: " + s)
+	}
+}
+
+func (p ProductsScanner) GetSetter(f ProductsColumnAlias) func() set.ValueSetter[ProductsColumnAlias] {
+	switch f {
+	case "product_id":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.ProductID) }
+	case "sku":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.SKU) }
+	case "name":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.Name) }
+	case "price":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.Price) }
+	case "currency":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.Currency) }
+	case "stock_qty":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.StockQty) }
+	case "is_deleted":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.IsDeleted) }
+	case "created_at":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.CreatedAt) }
+	case "updated_at":
+		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.UpdatedAt) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (p ProductsScanner) GetValue(f ProductsColumnAlias) func() any {
+	switch f {
+	case "product_id":
+		return func() any { return p.ProductID }
+	case "sku":
+		return func() any { return p.SKU }
+	case "name":
+		return func() any { return p.Name }
+	case "price":
+		return func() any { return p.Price }
+	case "currency":
+		return func() any { return p.Currency }
+	case "stock_qty":
+		return func() any { return p.StockQty }
+	case "is_deleted":
+		return func() any { return p.IsDeleted }
+	case "created_at":
+		return func() any { return p.CreatedAt }
+	case "updated_at":
+		return func() any { return p.UpdatedAt }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+type ProductsTable struct {
+	*schema.Table[ProductsAlias, ProductsColumnAlias, *ProductsScanner]
+	ProductID schema.BigSerialColumnI[ProductsColumnAlias]
+	SKU       schema.TextColumnI[ProductsColumnAlias]
+	Name      schema.TextColumnI[ProductsColumnAlias]
+	Price     schema.NumericColumnI[ProductsColumnAlias]
+	Currency  schema.CharColumnI[ProductsColumnAlias]
+	StockQty  schema.IntegerColumnI[ProductsColumnAlias]
+	IsDeleted schema.BooleanColumnI[ProductsColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[ProductsColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[ProductsColumnAlias]
+}
+
+var products ProductsTable = func() ProductsTable {
+	productIDCol := schema.BigSerialColumn(ProductsColumnAliasProductID, ddl.WithPrimaryKey[ProductsColumnAlias]())
+	skuCol := schema.TextColumn(
+		ProductsColumnAliasSKU,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithUnique[ProductsColumnAlias](),
+	)
+	nameCol := schema.TextColumn(ProductsColumnAliasName, ddl.WithNotNull[ProductsColumnAlias]())
+	priceCol := schema.NumericColumn(ProductsColumnAliasPrice, 12, 2, ddl.WithNotNull[ProductsColumnAlias]())
+	currencyCol := schema.CharColumn(
+		ProductsColumnAliasCurrency,
+		3,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithReferences[ProductsColumnAlias]("currency", "code"),
+	)
+	stockQtyCol := schema.IntegerColumn(
+		ProductsColumnAliasStockQty,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithDefault[ProductsColumnAlias]("0"),
+		ddl.WithCheck[ProductsColumnAlias]("stock_qty >= 0"),
+	)
+	isDeletedCol := schema.BooleanColumn(
+		ProductsColumnAliasIsDeleted,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithDefault[ProductsColumnAlias]("false"),
+	)
+	createdAtCol := schema.TimestamptzColumn(
+		ProductsColumnAliasCreatedAt,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithDefault[ProductsColumnAlias]("now()"),
+	)
+	updatedAtCol := schema.TimestamptzColumn(
+		ProductsColumnAliasUpdatedAt,
+		ddl.WithNotNull[ProductsColumnAlias](),
+		ddl.WithDefault[ProductsColumnAlias]("now()"),
+	)
+	return ProductsTable{
+		Table: schema.NewTable[ProductsAlias, ProductsColumnAlias, *ProductsScanner](
+			ProductsAliasName,
+			func() *ProductsScanner { return &ProductsScanner{} },
+			[]*ddl.ColumnDDL[ProductsColumnAlias]{
+				productIDCol.DDL(),
+				skuCol.DDL(),
+				nameCol.DDL(),
+				priceCol.DDL(),
+				currencyCol.DDL(),
+				stockQtyCol.DDL(),
+				isDeletedCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+			ddl.WithIndexes[ProductsAlias, ProductsColumnAlias](ddl.NewIndex[ProductsAlias, ProductsColumnAlias](
+				string(ProductsIndexNotDeleted),
+				ProductsAliasName,
+			).OnColumns(ProductsColumnAliasProductID).Where("is_deleted = false")),
+		),
+		ProductID: productIDCol,
+		SKU:       skuCol,
+		Name:      nameCol,
+		Price:     priceCol,
+		Currency:  currencyCol,
+		StockQty:  stockQtyCol,
+		IsDeleted: isDeletedCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
+
+type OrdersAlias string
+
+func (o OrdersAlias) String() string { return string(o) }
+
+const OrdersAliasName = "orders"
+
+type OrdersColumnAlias string
+
+func (o OrdersColumnAlias) String() string { return string(o) }
+
+const (
+	OrdersColumnAliasOrderID       OrdersColumnAlias = "order_id"
+	OrdersColumnAliasUserID        OrdersColumnAlias = "user_id"
+	OrdersColumnAliasStatus        OrdersColumnAlias = "status"
+	OrdersColumnAliasCurrency      OrdersColumnAlias = "currency"
+	OrdersColumnAliasCreatedAt     OrdersColumnAlias = "created_at"
+	OrdersColumnAliasUpdatedAt     OrdersColumnAlias = "updated_at"
+	OrdersColumnAliasCreatedAtDesc OrdersColumnAlias = "created_at DESC"
+)
+
+type OrdersScanner struct {
+	OrderID   int64
+	UserID    int64
+	Status    string
+	Currency  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func (o OrdersScanner) GetTarget(s string) func() any {
+	switch OrdersColumnAlias(s) {
+	case "order_id":
+		return func() any { return &o.OrderID }
+	case "user_id":
+		return func() any { return &o.UserID }
+	case "status":
+		return func() any { return &o.Status }
+	case "currency":
+		return func() any { return &o.Currency }
+	case "created_at":
+		return func() any { return &o.CreatedAt }
+	case "updated_at":
+		return func() any { return &o.UpdatedAt }
+	default:
+		panic("unknown field: " + s)
+	}
+}
+
+func (o OrdersScanner) GetSetter(f OrdersColumnAlias) func() set.ValueSetter[OrdersColumnAlias] {
+	switch f {
+	case "order_id":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.OrderID) }
+	case "user_id":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.UserID) }
+	case "status":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.Status) }
+	case "currency":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.Currency) }
+	case "created_at":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.CreatedAt) }
+	case "updated_at":
+		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.UpdatedAt) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (o OrdersScanner) GetValue(f OrdersColumnAlias) func() any {
+	switch f {
+	case "order_id":
+		return func() any { return o.OrderID }
+	case "user_id":
+		return func() any { return o.UserID }
+	case "status":
+		return func() any { return o.Status }
+	case "currency":
+		return func() any { return o.Currency }
+	case "created_at":
+		return func() any { return o.CreatedAt }
+	case "updated_at":
+		return func() any { return o.UpdatedAt }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+type OrdersTable struct {
+	*schema.Table[OrdersAlias, OrdersColumnAlias, *OrdersScanner]
+	OrderID   schema.BigSerialColumnI[OrdersColumnAlias]
+	UserID    schema.BigIntColumnI[OrdersColumnAlias]
+	Status    schema.TextColumnI[OrdersColumnAlias]
+	Currency  schema.CharColumnI[OrdersColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[OrdersColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[OrdersColumnAlias]
+}
+
+var orders = func() OrdersTable {
+	orderIDCol := schema.BigSerialColumn(OrdersColumnAliasOrderID, ddl.WithPrimaryKey[OrdersColumnAlias]())
+	userIDCol := schema.BigIntColumn(
+		OrdersColumnAliasUserID,
+		ddl.WithNotNull[OrdersColumnAlias](),
+		ddl.WithReferences[OrdersColumnAlias]("users", "user_id"),
+	)
+	statusCol := schema.TextColumn(
+		OrdersColumnAliasStatus,
+		ddl.WithNotNull[OrdersColumnAlias](),
+		ddl.WithCheck[OrdersColumnAlias]("status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED')"),
+	)
+	currencyCol := schema.CharColumn(
+		OrdersColumnAliasCurrency,
+		3,
+		ddl.WithNotNull[OrdersColumnAlias](),
+		ddl.WithReferences[OrdersColumnAlias]("currency", "code"),
+	)
+	createdAtCol := schema.TimestamptzColumn(
+		OrdersColumnAliasCreatedAt,
+		ddl.WithNotNull[OrdersColumnAlias](),
+		ddl.WithDefault[OrdersColumnAlias]("now()"),
+	)
+	updatedAtCol := schema.TimestamptzColumn(
+		OrdersColumnAliasUpdatedAt,
+		ddl.WithNotNull[OrdersColumnAlias](),
+		ddl.WithDefault[OrdersColumnAlias]("now()"),
+	)
+	return OrdersTable{
+		Table: schema.NewTable[OrdersAlias, OrdersColumnAlias, *OrdersScanner](
+			OrdersAliasName,
+			func() *OrdersScanner { return &OrdersScanner{} },
+			[]*ddl.ColumnDDL[OrdersColumnAlias]{
+				orderIDCol.DDL(),
+				userIDCol.DDL(),
+				statusCol.DDL(),
+				currencyCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+			ddl.WithIndexes[OrdersAlias, OrdersColumnAlias](
+				ddl.NewIndex[OrdersAlias, OrdersColumnAlias](
+					string(OrdersIndexUserCreated),
+					OrdersAliasName,
+				).OnColumns(OrdersColumnAliasUserID, OrdersColumnAliasCreatedAtDesc)),
+		),
+		OrderID:   orderIDCol,
+		UserID:    userIDCol,
+		Status:    statusCol,
+		Currency:  currencyCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
+
+type OrderItemsAlias string
+
+func (o OrderItemsAlias) String() string { return string(o) }
+
+const OrderItemsAliasName = "order_items"
+
+type OrderItemsColumnAlias string
+
+func (o OrderItemsColumnAlias) String() string { return string(o) }
+
+const (
+	OrderItemsColumnAliasOrderID   OrderItemsColumnAlias = "order_id"
+	OrderItemsColumnAliasLineNo    OrderItemsColumnAlias = "line_no"
+	OrderItemsColumnAliasProductID OrderItemsColumnAlias = "product_id"
+	OrderItemsColumnAliasQty       OrderItemsColumnAlias = "qty"
+	OrderItemsColumnAliasUnitPrice OrderItemsColumnAlias = "unit_price"
+)
+
+type OrderItemsScanner struct {
+	OrderID   int64
+	LineNo    int32
+	ProductID int64
+	Qty       int32
+	UnitPrice float64
+}
+
+func (o OrderItemsScanner) GetTarget(s string) func() any {
+	switch OrderItemsColumnAlias(s) {
+	case "order_id":
+		return func() any { return &o.OrderID }
+	case "line_no":
+		return func() any { return &o.LineNo }
+	case "product_id":
+		return func() any { return &o.ProductID }
+	case "qty":
+		return func() any { return &o.Qty }
+	case "unit_price":
+		return func() any { return &o.UnitPrice }
+	default:
+		panic("unknown field: " + s)
+	}
+}
+
+func (o OrderItemsScanner) GetSetter(f OrderItemsColumnAlias) func() set.ValueSetter[OrderItemsColumnAlias] {
+	switch f {
+	case "order_id":
+		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.OrderID) }
+	case "line_no":
+		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.LineNo) }
+	case "product_id":
+		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.ProductID) }
+	case "qty":
+		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.Qty) }
+	case "unit_price":
+		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.UnitPrice) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (o OrderItemsScanner) GetValue(f OrderItemsColumnAlias) func() any {
+	switch f {
+	case "order_id":
+		return func() any { return o.OrderID }
+	case "line_no":
+		return func() any { return o.LineNo }
+	case "product_id":
+		return func() any { return o.ProductID }
+	case "qty":
+		return func() any { return o.Qty }
+	case "unit_price":
+		return func() any { return o.UnitPrice }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+type OrderItemsTable struct {
+	*schema.Table[OrderItemsAlias, OrderItemsColumnAlias, *OrderItemsScanner]
+	OrderID   schema.BigIntColumnI[OrderItemsColumnAlias]
+	LineNo    schema.IntegerColumnI[OrderItemsColumnAlias]
+	ProductID schema.BigIntColumnI[OrderItemsColumnAlias]
+	Qty       schema.IntegerColumnI[OrderItemsColumnAlias]
+	UnitPrice schema.NumericColumnI[OrderItemsColumnAlias]
+}
+
+var orderItems OrderItemsTable = func() OrderItemsTable {
+	orderIDCol := schema.BigIntColumn(
+		OrderItemsColumnAliasOrderID,
+		ddl.WithNotNull[OrderItemsColumnAlias](),
+		ddl.WithReferences[OrderItemsColumnAlias]("orders", "order_id"),
+		ddl.WithOnDelete[OrderItemsColumnAlias]("CASCADE"),
+	)
+	lineNoCol := schema.IntegerColumn(
+		OrderItemsColumnAliasLineNo,
+		ddl.WithNotNull[OrderItemsColumnAlias](),
+		ddl.WithCheck[OrderItemsColumnAlias]("line_no > 0"),
+	)
+	productIDCol := schema.BigIntColumn(
+		OrderItemsColumnAliasProductID,
+		ddl.WithNotNull[OrderItemsColumnAlias](),
+		ddl.WithReferences[OrderItemsColumnAlias]("products", "product_id"),
+	)
+	qtyCol := schema.IntegerColumn(
+		OrderItemsColumnAliasQty,
+		ddl.WithNotNull[OrderItemsColumnAlias](),
+		ddl.WithCheck[OrderItemsColumnAlias]("qty > 0"),
+	)
+	unitPriceCol := schema.NumericColumn(OrderItemsColumnAliasUnitPrice, 12, 2, ddl.WithNotNull[OrderItemsColumnAlias]())
+	return OrderItemsTable{
+		Table: schema.NewTable[OrderItemsAlias, OrderItemsColumnAlias, *OrderItemsScanner](
+			OrderItemsAliasName,
+			func() *OrderItemsScanner { return &OrderItemsScanner{} },
+			[]*ddl.ColumnDDL[OrderItemsColumnAlias]{
+				orderIDCol.DDL(),
+				lineNoCol.DDL(),
+				productIDCol.DDL(),
+				qtyCol.DDL(),
+				unitPriceCol.DDL(),
+			},
+			ddl.WithUniqueColumns[OrderItemsAlias, OrderItemsColumnAlias]([]OrderItemsColumnAlias{
+				OrderItemsColumnAliasOrderID,
+				OrderItemsColumnAliasProductID,
+			}),
+			ddl.WithIndexes[OrderItemsAlias, OrderItemsColumnAlias](ddl.NewIndex[OrderItemsAlias, OrderItemsColumnAlias](
+				string(OrderItemsIndexProduct),
+				OrderItemsAliasName,
+			).OnColumns(OrderItemsColumnAliasProductID)),
+		),
+		OrderID:   orderIDCol,
+		LineNo:    lineNoCol,
+		ProductID: productIDCol,
+		Qty:       qtyCol,
+		UnitPrice: unitPriceCol,
+	}
+}()
+
+const OrdersIndexUserCreated OrdersAlias = "ix_orders_user_created"
+const OrderItemsIndexProduct OrderItemsAlias = "ix_order_items_product"
+const ProductsIndexNotDeleted ProductsAlias = "ix_products_not_deleted"
+
+func TestDumpSchemaSQL(t *testing.T) {
+	currencyStatements := currency.SchemaSql()
+	usersStatements := users.SchemaSql()
+	productsStatements := products.SchemaSql()
+	ordersStatements := orders.SchemaSql()
+	orderItemsStatements := orderItems.SchemaSql()
+	sqlString := strings.Join(
+		[]string{
+			strings.Join(currencyStatements, ";\n"),
+			strings.Join(usersStatements, ";\n"),
+			strings.Join(productsStatements, ";\n"),
+			strings.Join(ordersStatements, ";\n"),
+			strings.Join(orderItemsStatements, ";\n"),
+		}, "\n")
+	err := os.WriteFile(
+		"generated.sql",
+		[]byte(sqlString+"\n"),
+		0644,
 	)
 	if err != nil {
-		t.Fatalf("failed to start postgres container: %v", err)
+		panic(err)
 	}
-
-	// Get connection string
-	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("failed to get connection string: %v", err)
-	}
-
-	// Create connection pool
-	pool, err := pgxpool.New(ctx, connStr)
-	if err != nil {
-		t.Fatalf("failed to create connection pool: %v", err)
-	}
-
-	// Test connection
-	if err := pool.Ping(ctx); err != nil {
-		t.Fatalf("failed to ping database: %v", err)
-	}
-
-	cleanup := func() {
-		pool.Close()
-		if err := pgContainer.Terminate(ctx); err != nil {
-			t.Logf("failed to terminate container: %v", err)
-		}
-	}
-
-	return pool, cleanup
-}
-
-// createUsersTable creates the users table schema
-func createUsersTable() *schema.Table[TableAlias, ColumnAlias, *User] {
-	return schema.NewTable[TableAlias, ColumnAlias, *User](
-		UsersTable,
-		func() *User { return &User{} },
-		ddl.NewColumnDDL(
-			ColID,
-			ddl.SERIAL,
-			ddl.WithPrimaryKey[ColumnAlias](),
-		),
-		ddl.NewColumnDDL(
-			ColName,
-			ddl.TEXT,
-			ddl.WithNotNull[ColumnAlias](),
-		),
-		ddl.NewColumnDDL(
-			ColEmail,
-			ddl.TEXT,
-			ddl.WithNotNull[ColumnAlias](),
-		),
-		ddl.NewColumnDDL(
-			ColAge,
-			ddl.INTEGER,
-			ddl.WithNullable[ColumnAlias](),
-		),
-		ddl.NewColumnDDL(
-			ColCreatedAt,
-			ddl.TIMESTAMPTZ,
-			ddl.WithNotNull[ColumnAlias](),
-			ddl.WithDefault[ColumnAlias]("CURRENT_TIMESTAMP"),
-		),
-	)
-}
-
-func TestFullIntegration(t *testing.T) {
-	pool, cleanup := setupPostgres(t)
-	defer cleanup()
-
-	ctx := context.Background()
-
-	// Create table schema
-	users := createUsersTable()
-
-	// Add unique constraint on email
-	users.TableDDL.Unique([]ColumnAlias{ColEmail})
-
-	// Create table in database
-	for _, sql := range users.SchemaSql() {
-		t.Logf("Executing DDL: %s", sql)
-		if _, err := pool.Exec(ctx, sql); err != nil {
-			t.Fatalf("failed to create table: %v", err)
-		}
-	}
-
-	t.Run("Insert", func(t *testing.T) {
-		// Define columns for semantic API
-		name := schema.TextColumn[ColumnAlias](ColName)
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-		age := schema.NullIntegerColumn[ColumnAlias](ColAge)
-
-		// Insert a user
-		age30 := int32(30)
-		insertQuery := users.Insert().From(
-			name.Set("John Doe"),
-			email.Set("john@example.com"),
-			age.Set(&age30),
-		).Returning(ColID, ColName, ColEmail, ColAge, ColCreatedAt)
-
-		sql, args := insertQuery.Build()
-		t.Logf("Insert SQL: %s, Args: %v", sql, args)
-
-		user, err := users.QueryRow(ctx, pool, insertQuery)
-		if err != nil {
-			t.Fatalf("failed to insert user: %v", err)
-		}
-
-		if user.Name != "John Doe" {
-			t.Errorf("expected name 'John Doe', got '%s'", user.Name)
-		}
-		if user.Email != "john@example.com" {
-			t.Errorf("expected email 'john@example.com', got '%s'", user.Email)
-		}
-		if user.Age == nil || *user.Age != 30 {
-			t.Errorf("expected age 30, got %v", user.Age)
-		}
-		if user.ID == 0 {
-			t.Error("expected non-zero ID")
-		}
-
-		t.Logf("Inserted user: ID=%d, Name=%s, Email=%s, Age=%d, CreatedAt=%v",
-			user.ID, user.Name, user.Email, *user.Age, user.CreatedAt)
-	})
-
-	t.Run("Insert Multiple Users", func(t *testing.T) {
-		name := schema.TextColumn[ColumnAlias](ColName)
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-		age := schema.NullIntegerColumn[ColumnAlias](ColAge)
-
-		users := []struct {
-			name  string
-			email string
-			age   *int32
-		}{
-			{"Alice Smith", "alice@example.com", ptr(int32(25))},
-			{"Bob Johnson", "bob@example.com", ptr(int32(35))},
-			{"Charlie Brown", "charlie@example.com", nil},
-		}
-
-		for _, u := range users {
-			query := createUsersTable().Insert().From(
-				name.Set(u.name),
-				email.Set(u.email),
-				age.Set(u.age),
-			)
-			sql, args := query.Build()
-			t.Logf("Insert SQL: %s, Args: %v", sql, args)
-
-			_, err := pool.Exec(ctx, sql, args...)
-			if err != nil {
-				t.Fatalf("failed to insert user %s: %v", u.name, err)
-			}
-		}
-	})
-
-	t.Run("Select All", func(t *testing.T) {
-		selectQuery := users.SelectAll().OrderByASC(ColID)
-
-		sql, args := selectQuery.Build()
-		t.Logf("Select SQL: %s, Args: %v", sql, args)
-
-		userList, err := users.Query(ctx, pool, selectQuery)
-		if err != nil {
-			t.Fatalf("failed to select users: %v", err)
-		}
-
-		if len(userList) != 4 {
-			t.Errorf("expected 4 users, got %d", len(userList))
-		}
-
-		for i, u := range userList {
-			t.Logf("User[%d]: ID=%d, Name=%s, Email=%s, Age=%v",
-				i, u.ID, u.Name, u.Email, u.Age)
-		}
-	})
-
-	t.Run("Select With Where", func(t *testing.T) {
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-
-		selectQuery := users.SelectAll().
-			Where(email.Eq("alice@example.com"))
-
-		sql, args := selectQuery.Build()
-		t.Logf("Select Where SQL: %s, Args: %v", sql, args)
-
-		user, err := users.QueryRow(ctx, pool, selectQuery)
-		if err != nil {
-			t.Fatalf("failed to select user: %v", err)
-		}
-
-		if user.Name != "Alice Smith" {
-			t.Errorf("expected name 'Alice Smith', got '%s'", user.Name)
-		}
-
-		t.Logf("Found user: Name=%s, Email=%s", user.Name, user.Email)
-	})
-
-	t.Run("Select With Complex Where", func(t *testing.T) {
-		age := schema.NullIntegerColumn[ColumnAlias](ColAge)
-		name := schema.TextColumn[ColumnAlias](ColName)
-
-		selectQuery := users.SelectAll().
-			Where(
-				users.And(
-					age.IsNotNull(),
-					age.Gte(ptr(int32(30))),
-					name.Like("%John%"),
-				),
-			).
-			OrderByDESC(ColAge)
-
-		sql, args := selectQuery.Build()
-		t.Logf("Complex Select SQL: %s, Args: %v", sql, args)
-
-		userList, err := users.Query(ctx, pool, selectQuery)
-		if err != nil {
-			t.Fatalf("failed to select users: %v", err)
-		}
-
-		for _, u := range userList {
-			t.Logf("Found user: Name=%s, Age=%v", u.Name, u.Age)
-			if u.Age == nil || *u.Age < 30 {
-				t.Errorf("expected age >= 30, got %v", u.Age)
-			}
-		}
-	})
-
-	t.Run("Update", func(t *testing.T) {
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-		age := schema.NullIntegerColumn[ColumnAlias](ColAge)
-
-		newAge := int32(26)
-		updateQuery := users.Update().
-			Set(age.Set(&newAge)).
-			Where(email.Eq("alice@example.com")).
-			ReturningAll()
-
-		sql, args := updateQuery.Build()
-		t.Logf("Update SQL: %s, Args: %v", sql, args)
-
-		user, err := users.QueryRow(ctx, pool, updateQuery)
-		if err != nil {
-			t.Fatalf("failed to update user: %v", err)
-		}
-
-		if user.Age == nil || *user.Age != 26 {
-			t.Errorf("expected age 26, got %v", user.Age)
-		}
-
-		t.Logf("Updated user: Name=%s, Age=%d", user.Name, *user.Age)
-	})
-
-	t.Run("Delete", func(t *testing.T) {
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-
-		deleteQuery := users.Delete().
-			Where(email.Eq("charlie@example.com"))
-
-		sql, args := deleteQuery.Build()
-		t.Logf("Delete SQL: %s, Args: %v", sql, args)
-
-		affected, err := users.Execute(ctx, pool, deleteQuery)
-		if err != nil {
-			t.Fatalf("failed to delete user: %v", err)
-		}
-
-		if affected != 1 {
-			t.Errorf("expected 1 row affected, got %d", affected)
-		}
-
-		t.Logf("Deleted %d user(s)", affected)
-
-		// Verify deletion
-		selectQuery := users.Select1().Where(email.Eq("charlie@example.com"))
-		_, err = users.QueryRow(ctx, pool, selectQuery)
-		if err == nil {
-			t.Error("expected error when selecting deleted user")
-		}
-	})
-
-	t.Run("Pagination", func(t *testing.T) {
-		selectQuery := users.SelectAll().
-			OrderByASC(ColID).
-			Limit(2).
-			Offset(1)
-
-		sql, args := selectQuery.Build()
-		t.Logf("Pagination SQL: %s, Args: %v", sql, args)
-
-		userList, err := users.Query(ctx, pool, selectQuery)
-		if err != nil {
-			t.Fatalf("failed to select users with pagination: %v", err)
-		}
-
-		if len(userList) != 2 {
-			t.Errorf("expected 2 users, got %d", len(userList))
-		}
-
-		for _, u := range userList {
-			t.Logf("Paginated user: Name=%s", u.Name)
-		}
-	})
-
-	t.Run("Insert On Conflict Do Nothing", func(t *testing.T) {
-		name := schema.TextColumn[ColumnAlias](ColName)
-		email := schema.TextColumn[ColumnAlias](ColEmail)
-
-		// Try to insert duplicate email
-		insertQuery := users.Insert().From(
-			name.Set("John Duplicate"),
-			email.Set("john@example.com"),
-		).OnConflict(ColEmail).DoNothing()
-
-		sql, args := insertQuery.Build()
-		t.Logf("Insert On Conflict SQL: %s, Args: %v", sql, args)
-
-		_, err := pool.Exec(ctx, sql, args...)
-		if err != nil {
-			t.Fatalf("failed to execute insert on conflict: %v", err)
-		}
-
-		// Verify original user is unchanged
-		selectQuery := users.SelectAll().Where(
-			schema.TextColumn[ColumnAlias](ColEmail).Eq("john@example.com"),
-		)
-		user, err := users.QueryRow(ctx, pool, selectQuery)
-		if err != nil {
-			t.Fatalf("failed to select user: %v", err)
-		}
-
-		if user.Name != "John Doe" {
-			t.Errorf("expected name 'John Doe', got '%s'", user.Name)
-		}
-	})
-}
-
-// Helper function to create pointer
-func ptr[T any](v T) *T {
-	return &v
 }

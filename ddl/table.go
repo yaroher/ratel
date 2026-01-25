@@ -13,14 +13,33 @@ type TableDDL[T types.TableAlias, C types.ColumnAlias] struct {
 	unique  [][]C
 }
 
+type TableOptions[T types.TableAlias, C types.ColumnAlias] func(*TableDDL[T, C])
+
+func WithIndexes[T types.TableAlias, C types.ColumnAlias](indexes ...*Index[T, C]) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.indexes = append(ddl.indexes, indexes...)
+	}
+}
+
+func WithUniqueColumns[T types.TableAlias, C types.ColumnAlias](columns ...[]C) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.unique = append(ddl.unique, columns...)
+	}
+}
+
 func NewTableDDL[T types.TableAlias, C types.ColumnAlias](
 	alias T,
-	columns ...*ColumnDDL[C],
+	columns []*ColumnDDL[C],
+	options ...TableOptions[T, C],
 ) *TableDDL[T, C] {
-	return &TableDDL[T, C]{
+	result := &TableDDL[T, C]{
 		alias:   alias,
 		columns: columns,
 	}
+	for _, opt := range options {
+		opt(result)
+	}
+	return result
 }
 
 func (c *TableDDL[T, C]) Indexes(indexes ...*Index[T, C]) *TableDDL[T, C] {

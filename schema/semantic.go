@@ -28,9 +28,18 @@ func newColumn[V any, C types.ColumnAlias](
 	}
 }
 
+func (c *Column[V, C]) DDL() *ddl.ColumnDDL[C] {
+	return c.ColumnDDL
+}
+
+type ddlAbles[C types.ColumnAlias] interface {
+	DDL() *ddl.ColumnDDL[C]
+}
+
 // SMALLINT
 
 type SmallIntColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[int16, C]
 	clause.CommonScalarOperand[int16, C]
 }
@@ -40,6 +49,7 @@ func SmallIntColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 }
 
 type NullSmallIntColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*int16, C]
 	clause.CommonScalarOperand[*int16, C]
 	clause.IsNullOperand[C]
@@ -52,6 +62,7 @@ func NullSmallIntColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOptio
 // INTEGER
 
 type IntegerColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[int32, C]
 	clause.CommonScalarOperand[int32, C]
 }
@@ -61,6 +72,7 @@ func IntegerColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C])
 }
 
 type NullIntegerColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*int32, C]
 	clause.CommonScalarOperand[*int32, C]
 	clause.IsNullOperand[C]
@@ -73,6 +85,7 @@ func NullIntegerColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption
 // BIGINT
 
 type BigIntColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[int64, C]
 	clause.CommonScalarOperand[int64, C]
 }
@@ -82,6 +95,7 @@ func BigIntColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) 
 }
 
 type NullBigIntColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*int64, C]
 	clause.CommonScalarOperand[*int64, C]
 	clause.IsNullOperand[C]
@@ -91,9 +105,54 @@ func NullBigIntColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[
 	return newColumn[*int64, C](alias, ddl.BIGINT, append(options, ddl.WithNullable[C]())...)
 }
 
+type BigSerialColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[int64, C]
+	clause.CommonScalarOperand[int64, C]
+}
+
+func BigSerialColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) BigSerialColumnI[C] {
+	return newColumn[int64, C](alias, ddl.BIGSERIAL, options...)
+}
+
+type NullBigSerialColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[*int64, C]
+	clause.CommonScalarOperand[*int64, C]
+	clause.IsNullOperand[C]
+}
+
+func NullBigSerialColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) NullBigSerialColumnI[C] {
+	return newColumn[*int64, C](alias, ddl.BIGSERIAL, append(options, ddl.WithNullable[C]())...)
+}
+
+// NUMERIC
+
+type NumericColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[float64, C]
+	clause.CommonScalarOperand[float64, C]
+}
+
+func NumericColumn[C types.ColumnAlias](alias C, precision, scale int, options ...ddl.ColumnOption[C]) NumericColumnI[C] {
+	return newColumn[float64, C](alias, ddl.Numeric(precision, scale), options...)
+}
+
+type NullNumericColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[*float64, C]
+	clause.CommonScalarOperand[*float64, C]
+	clause.IsNullOperand[C]
+}
+
+func NullNumericColumn[C types.ColumnAlias](alias C, precision, scale int, options ...ddl.ColumnOption[C]) NullNumericColumnI[C] {
+	return newColumn[*float64, C](alias, ddl.Numeric(precision, scale), append(options, ddl.WithNullable[C]())...)
+}
+
 // REAL
 
 type RealColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[float32, C]
 	clause.CommonScalarOperand[float32, C]
 }
@@ -103,6 +162,7 @@ func RealColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) Re
 }
 
 type NullRealColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*float32, C]
 	clause.CommonScalarOperand[*float32, C]
 	clause.IsNullOperand[C]
@@ -115,6 +175,7 @@ func NullRealColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 // DOUBLE PRECISION
 
 type DoublePrecisionColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[float64, C]
 	clause.CommonScalarOperand[float64, C]
 }
@@ -124,6 +185,7 @@ func DoublePrecisionColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOp
 }
 
 type NullDoublePrecisionColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*float64, C]
 	clause.CommonScalarOperand[*float64, C]
 	clause.IsNullOperand[C]
@@ -136,6 +198,7 @@ func NullDoublePrecisionColumn[C types.ColumnAlias](alias C, options ...ddl.Colu
 // TEXT
 
 type TextColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[string, C]
 	clause.CommonScalarOperand[string, C]
 	clause.LikeOperand[C]
@@ -146,6 +209,7 @@ func TextColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) Te
 }
 
 type NullTextColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*string, C]
 	clause.CommonScalarOperand[*string, C]
 	clause.IsNullOperand[C]
@@ -155,9 +219,34 @@ func NullTextColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 	return newColumn[*string, C](alias, ddl.TEXT, append(options, ddl.WithNullable[C]())...)
 }
 
+// CHAR
+
+type CharColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[string, C]
+	clause.CommonScalarOperand[string, C]
+	clause.LikeOperand[C]
+}
+
+func CharColumn[C types.ColumnAlias](alias C, length int, options ...ddl.ColumnOption[C]) CharColumnI[C] {
+	return newColumn[string, C](alias, ddl.Char(length), options...)
+}
+
+type NullCharColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[*string, C]
+	clause.CommonScalarOperand[*string, C]
+	clause.IsNullOperand[C]
+}
+
+func NullCharColumn[C types.ColumnAlias](alias C, length int, options ...ddl.ColumnOption[C]) NullCharColumnI[C] {
+	return newColumn[*string, C](alias, ddl.Char(length), append(options, ddl.WithNullable[C]())...)
+}
+
 // BOOLEAN
 
 type BooleanColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[bool, C]
 	clause.CommonScalarOperand[bool, C]
 }
@@ -167,6 +256,7 @@ func BooleanColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C])
 }
 
 type NullBooleanColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*bool, C]
 	clause.CommonScalarOperand[*bool, C]
 	clause.IsNullOperand[C]
@@ -179,6 +269,7 @@ func NullBooleanColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption
 // UUID
 
 type UuidColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[pgtype.UUID, C]
 	clause.CommonScalarOperand[pgtype.UUID, C]
 }
@@ -188,6 +279,7 @@ func UuidColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) Uu
 }
 
 type NullUuidColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*pgtype.UUID, C]
 	clause.CommonScalarOperand[*pgtype.UUID, C]
 	clause.IsNullOperand[C]
@@ -200,6 +292,7 @@ func NullUuidColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 // TIME
 
 type TimeColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[time.Time, C]
 	clause.CommonScalarOperand[time.Time, C]
 }
@@ -209,6 +302,7 @@ func TimeColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) Ti
 }
 
 type NullTimeColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*time.Time, C]
 	clause.CommonScalarOperand[*time.Time, C]
 	clause.IsNullOperand[C]
@@ -221,6 +315,7 @@ func NullTimeColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 // TIMESTAMPTZ
 
 type TimestamptzColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[time.Time, C]
 	clause.CommonScalarOperand[time.Time, C]
 }
@@ -230,6 +325,7 @@ func TimestamptzColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption
 }
 
 type NullTimestamptzColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*time.Time, C]
 	clause.CommonScalarOperand[*time.Time, C]
 	clause.IsNullOperand[C]
@@ -242,6 +338,7 @@ func NullTimestamptzColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOp
 // INTERVAL
 
 type IntervalColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[time.Duration, C]
 	clause.CommonScalarOperand[time.Duration, C]
 }
@@ -251,6 +348,7 @@ func IntervalColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]
 }
 
 type NullIntervalColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[*time.Duration, C]
 	clause.CommonScalarOperand[*time.Duration, C]
 	clause.IsNullOperand[C]
@@ -260,9 +358,33 @@ func NullIntervalColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOptio
 	return newColumn[*time.Duration, C](alias, ddl.INTERVAL, append(options, ddl.WithNullable[C]())...)
 }
 
+// BYTEA
+
+type ByteaColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[[]byte, C]
+	clause.CommonScalarOperand[[]byte, C]
+}
+
+func ByteaColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) ByteaColumnI[C] {
+	return newColumn[[]byte, C](alias, ddl.BYTEA, options...)
+}
+
+type NullByteaColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set.SetterColumn[*[]byte, C]
+	clause.CommonScalarOperand[*[]byte, C]
+	clause.IsNullOperand[C]
+}
+
+func NullByteaColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) NullByteaColumnI[C] {
+	return newColumn[*[]byte, C](alias, ddl.BYTEA, append(options, ddl.WithNullable[C]())...)
+}
+
 // JSON/JSONB
 
 type JSONColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[[]byte, C]
 	clause.JsonOperand[C]
 }
@@ -272,6 +394,7 @@ func JSONColumn[C types.ColumnAlias](alias C, options ...ddl.ColumnOption[C]) JS
 }
 
 type NullJSONColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
 	set.SetterColumn[[]byte, C]
 	clause.JsonOperand[C]
 	clause.IsNullOperand[C]

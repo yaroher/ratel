@@ -17,14 +17,15 @@ type Table[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C]] struct {
 func NewTable[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C]](
 	alias T,
 	constructor func() S,
-	columns ...*ddl.ColumnDDL[C],
+	columns []*ddl.ColumnDDL[C],
+	ddlOptions ...ddl.TableOptions[T, C],
 ) *Table[T, C, S] {
 	allAliases := make([]C, 0, len(columns))
 	for _, col := range columns {
 		allAliases = append(allAliases, col.Alias())
 	}
 	return &Table[T, C, S]{
-		TableDDL:      ddl.NewTableDDL[T, C](alias, columns...),
+		TableDDL:      ddl.NewTableDDL[T, C](alias, columns, ddlOptions...),
 		TableDML:      dml.NewTableDML[T, C](alias, allAliases...),
 		TableExecutor: exec.NewTableExecutor[T, C, S](alias, allAliases, constructor),
 		constructor:   constructor,

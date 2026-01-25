@@ -7,7 +7,7 @@ import (
 )
 
 type Index[T types.TableAlias, C types.ColumnAlias] struct {
-	name         T
+	name         string
 	table        T
 	unique       bool
 	concurrently bool
@@ -16,7 +16,7 @@ type Index[T types.TableAlias, C types.ColumnAlias] struct {
 	where        string
 }
 
-func NewIndex[T types.TableAlias, C types.ColumnAlias](name T, table T) *Index[T, C] {
+func NewIndex[T types.TableAlias, C types.ColumnAlias](name string, table T) *Index[T, C] {
 	return &Index[T, C]{
 		name:  name,
 		table: table,
@@ -69,7 +69,7 @@ func (i *Index[T, C]) SchemaSql() string {
 	}
 
 	sql.WriteString("IF NOT EXISTS ")
-	sql.WriteString(i.name.String())
+	sql.WriteString(i.name)
 	sql.WriteString(" ON ")
 	sql.WriteString(i.table.String())
 

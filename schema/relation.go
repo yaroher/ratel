@@ -1,0 +1,156 @@
+package schema
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/yaroher/ratel/common/types"
+	"github.com/yaroher/ratel/dml"
+	"github.com/yaroher/ratel/exec"
+)
+
+// ForwardRelation represents a "has many" or "has one" relationship
+// From current table to related table (e.g., User -> Posts)
+type ForwardRelation[
+	T types.TableAlias, // Current table alias
+	C types.ColumnAlias, // Current table column alias
+	S exec.Scanner[C], // Current table scanner
+	RT types.TableAlias, // Related table alias
+	RC types.ColumnAlias, // Related table column alias
+	RS exec.Scanner[RC], // Related table scanner
+] struct {
+	foreignKeyName string // Foreign key in related table pointing to current table (as string)
+	localKeyName   string // Primary key in current table (as string)
+	relatedName    RT     // Name of the related table
+}
+
+// BackwardRelation represents a "belongs to" relationship
+// From current table to parent table (e.g., Post -> User)
+type BackwardRelation[
+	T types.TableAlias, // Current table alias
+	C types.ColumnAlias, // Current table column alias
+	S exec.Scanner[C], // Current table scanner
+	RT types.TableAlias, // Related table alias
+	RC types.ColumnAlias, // Related table column alias
+	RS exec.Scanner[RC], // Related table scanner
+] struct {
+	foreignKeyName string // Foreign key in current table (as string)
+	ownerKeyName   string // Primary key in related table (as string)
+	relatedName    RT     // Name of the related table
+}
+
+// HasMany creates a forward relation (one-to-many)
+// Example: User has many Posts
+func HasMany[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C], RT types.TableAlias, RC types.ColumnAlias, RS exec.Scanner[RC]](
+	currentTableAlias T,
+	relatedTable *Table[RT, RC, RS],
+	foreignKey RC, // foreign key in related table
+	localKey C, // primary key in current table
+) *ForwardRelation[T, C, S, RT, RC, RS] {
+	return &ForwardRelation[T, C, S, RT, RC, RS]{
+		foreignKeyName: foreignKey.String(),
+		localKeyName:   localKey.String(),
+		relatedName:    relatedTable.TableDDL.Alias(),
+	}
+}
+
+// BelongsTo creates a backward relation (many-to-one)
+// Example: Post belongs to User
+func BelongsTo[T types.TableAlias, C types.ColumnAlias, S exec.Scanner[C], RT types.TableAlias, RC types.ColumnAlias, RS exec.Scanner[RC]](
+	currentTableAlias T,
+	relatedTable *Table[RT, RC, RS],
+	foreignKey C, // foreign key in current table
+	ownerKey RC, // primary key in related table
+) *BackwardRelation[T, C, S, RT, RC, RS] {
+	return &BackwardRelation[T, C, S, RT, RC, RS]{
+		foreignKeyName: foreignKey.String(),
+		ownerKeyName:   ownerKey.String(),
+		relatedName:    relatedTable.TableDDL.Alias(),
+	}
+}
+
+// LoadMany loads related records for a forward relation (HasMany)
+func (r *ForwardRelation[T, C, S, RT, RC, RS]) LoadMany(
+	ctx context.Context,
+	db exec.DB,
+	relatedTable *Table[RT, RC, RS],
+	localValue any, // value of the local key (e.g., user.ID)
+) ([]RS, error) {
+	// Build query using raw SQL for WHERE clause
+	rawWhere := relatedTable.Raw(
+		fmt.Sprintf("%s.%s = $1", r.relatedName.String(), r.foreignKeyName),
+		localValue,
+	)
+
+	// Build query: SELECT * FROM related_table WHERE foreign_key = localValue
+	query := relatedTable.SelectAll().Where(rawWhere)
+
+	// Execute query
+	results, err := relatedTable.Query(ctx, db, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load related records: %w", err)
+	}
+
+	return results, nil
+}
+
+// LoadOne loads a related record for a backward relation (BelongsTo)
+func (r *BackwardRelation[T, C, S, RT, RC, RS]) LoadOne(
+	ctx context.Context,
+	db exec.DB,
+	relatedTable *Table[RT, RC, RS],
+	foreignValue any, // value of the foreign key (e.g., post.UserID)
+) (RS, error) {
+	// Build query using raw SQL for WHERE clause
+	rawWhere := relatedTable.Raw(
+		fmt.Sprintf("%s.%s = $1", r.relatedName.String(), r.ownerKeyName),
+		foreignValue,
+	)
+
+	// Build query: SELECT * FROM related_table WHERE owner_key = foreignValue
+	query := relatedTable.SelectAll().Where(rawWhere)
+
+	// Execute query
+	result, err := relatedTable.QueryRow(ctx, db, query)
+	if err != nil {
+		return result, fmt.Errorf("failed to load related record: %w", err)
+	}
+
+	return result, nil
+}
+
+// WithJoin adds a JOIN clause to a SelectQuery for forward relation
+func (r *ForwardRelation[T, C, S, RT, RC, RS]) WithJoin(
+	currentTable *Table[T, C, S],
+	query *dml.SelectQuery[T, C],
+	joinType dml.JoinType,
+) *dml.SelectQuery[T, C] {
+	// Create ON clause using raw SQL: current_table.localKey = related_table.foreignKey
+	currentTableName := currentTable.TableDDL.Alias().String()
+	leftExpr := fmt.Sprintf("%s.%s", currentTableName, r.localKeyName)
+	rightExpr := fmt.Sprintf("%s.%s", r.relatedName.String(), r.foreignKeyName)
+
+	onClause := currentTable.Raw(
+		fmt.Sprintf("%s = %s", leftExpr, rightExpr),
+	)
+
+	return query.Join(joinType, r.relatedName.String(), r.relatedName.String(), onClause)
+}
+
+// WithJoin adds a JOIN clause to a SelectQuery for backward relation
+func (r *BackwardRelation[T, C, S, RT, RC, RS]) WithJoin(
+	currentTable *Table[T, C, S],
+	query *dml.SelectQuery[T, C],
+	joinType dml.JoinType,
+) *dml.SelectQuery[T, C] {
+	// Create ON clause using raw SQL: current_table.foreignKey = related_table.ownerKey
+	currentTableName := currentTable.TableDDL.Alias().String()
+	leftExpr := fmt.Sprintf("%s.%s", currentTableName, r.foreignKeyName)
+	rightExpr := fmt.Sprintf("%s.%s", r.relatedName.String(), r.ownerKeyName)
+
+	onClause := currentTable.Raw(
+		fmt.Sprintf("%s = %s", leftExpr, rightExpr),
+	)
+
+	return query.Join(joinType, r.relatedName.String(), r.relatedName.String(), onClause)
+}
