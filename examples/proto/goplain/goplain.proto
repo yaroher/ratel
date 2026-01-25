@@ -1,0 +1,174 @@
+syntax = "proto3";
+
+option go_package = "github.com/yaroher/protoc-gen-go-plain/goplain";
+
+package goplain;
+
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/type.proto";
+
+message GoIdent {
+    string name = 1;
+    string import_path = 2;
+}
+
+message OverrideSelector {
+    optional string target_full_path = 1;
+    // from google.protobuf.Field
+    optional google.protobuf.Field.Kind field_kind = 2;
+    optional google.protobuf.Field.Cardinality field_cardinality = 3;
+    optional string field_type_url = 4;
+}
+
+message TypeOverride {
+    OverrideSelector selector = 1;
+    GoIdent target_go_type = 2;
+    // If types are not directly compatible, casters will be requested
+    // as parameters to IntoPlain/IntoPb methods using cast.Caster[A,B] interface
+}
+
+message MessageOptions {
+    bool generate = 1;
+    /*
+        Type alias instead of message.
+        This means that this message has one field named "<scalar_type> value"
+        example:
+            message Int32Alias {
+                option (plain.field).type_alias = true;
+                int32 value = 1;
+            }
+            // this:
+            message Int32AliasUSAGE {
+                Int32Alias value = 1;
+            }
+            // becomes:
+            message Int32AliasUSAGE {
+                int32 value = 1;
+            }
+    */
+    bool type_alias = 2;
+    string type_alias_field = 3;
+    /*
+       Virtual fields for this message.
+       Number is filled automatically.
+       This does not affect the original message numbers alignment cause this field does not apply to the original message.
+       Needs only to included in plain message and use in final code with plain messages.
+       Example:
+           message User {
+               (plain.message).virtual_fields = [
+                   {name: "password_hash", kind: TYPE_STRING}
+               ];
+               string name = 1;
+           }
+           // becomes:
+           message UserPlain {
+               string name = 1;
+               string password_hash = 2;
+           }
+   */
+    repeated google.protobuf.Field virtual_fields = 4;
+}
+
+message FileOptions {
+    repeated TypeOverride go_types_overrides = 1;
+    repeated google.protobuf.Type virtual_types = 2;
+}
+
+extend google.protobuf.FileOptions {
+    FileOptions file = 60000;
+}
+
+extend google.protobuf.MessageOptions {
+    MessageOptions message = 60000;
+}
+
+message FieldOptions {
+    GoIdent override_type = 1;
+    /*
+        Field serialization options.
+        If set to true, the field will be serialized as a JSON object.
+
+        Example:
+            message User {
+                string name = 1;
+                Address address = 2 [(goplain.field).serialized = true];
+                repeated Address addresses = 3 [(goplain.field).serialized = true];
+            }
+
+        Becomes:
+            message UserPlain {
+                string name = 1;
+
+                // without prefix:
+                bytes address = 2;
+                repeated bytes addresses = 3;
+            }
+    */
+    bool serialize = 2;
+    /*
+        Embed field into parent message
+
+        Example:
+            message Address {
+                string street = 1;
+            }
+            message User {
+                string name = 1;
+                Address address = 2 [(goplain.field).embed = {with_prefix: true}];
+            }
+
+        Becomes:
+            message UserPlain {
+                string name = 1;
+
+                // without prefix:
+                string street = 2;
+
+                // or with prefix:
+                string address_street = 3;
+            }
+        */
+    bool embed = 4;
+    bool embed_with_prefix = 5;
+    bool enum_as_string = 7;
+    bool enum_as_int = 8;
+}
+
+extend google.protobuf.FieldOptions {
+    FieldOptions field = 60000;
+}
+
+message OneofOptions {
+    /*
+        Embed oneof into parent message
+
+        Example:
+            message User {
+                string name = 1;
+                oneof address {
+                    (goplain.oneof).embed = true;
+                    Address address = 2;
+                    string street = 3;
+                }
+            }
+
+         Becomes:
+            message UserPlain {
+                string name = 1;
+
+                // without prefix:
+                Address address = 2;
+                string street = 3;
+
+                // or with prefix:
+                Address address_address = 4;
+                string address_street = 5;
+            }
+    */
+    bool embed = 1; // only meanfull for go-plain structs (not protoc-gen-go)
+    bool embed_with_prefix = 2;
+}
+
+extend google.protobuf.OneofOptions {
+    OneofOptions oneof = 50000;
+}

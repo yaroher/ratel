@@ -1,0 +1,232 @@
+syntax = "proto3";
+
+package ratel;
+
+option go_package = "github.com/yaroher/ratel/ratelproto";
+
+import "google/protobuf/descriptor.proto";
+
+/*
+  ============================================================================
+  Ratel ORM - Proto Options Reference
+  ============================================================================
+  
+  Types and struct generation handled by protoc-gen-go-plain.
+  Ratel focuses only on:
+    - Table schema generation
+    - Relations (OneToMany, ManyToMany)
+    - SQL constraints & indexes
+  
+  ============================================================================
+  Usage Example
+  ============================================================================
+  
+  message User {
+    option (ratel.table) = {
+      generate: true
+      table_name: "users"
+      indexes: [
+        // Simple index
+        { columns: ["email"] },
+        // Unique index with custom name
+        { name: "idx_users_email_unique", columns: ["email"], unique: true },
+        // Composite index
+        { columns: ["last_name", "first_name"] },
+        // Partial index
+        { columns: ["email"], where: "is_active = true" },
+        // Expression index
+        { expressions: ["lower(email)"], unique: true },
+        // GIN index for array/jsonb
+        { columns: ["tags"], using: "gin" },
+        // Covering index
+        { columns: ["user_id"], include: ["email", "full_name"] }
+      ]
+    };
+    
+    int64 id = 1 [(ratel.column) = {
+      constraints: { primary_key: true }
+    }];
+    
+    string email = 2 [(ratel.column) = {
+      constraints: { unique: true }
+    }];
+    
+    // OneToMany: User has many Orders
+    repeated Order orders = 10 [(ratel.relation) = {
+      one_to_many: {
+        ref_name: "user_id"
+        on_delete_cascade: true
+      }
+    }];
+  }
+  
+  message Order {
+    option (ratel.table) = {
+      generate: true
+      indexes: [
+        { columns: ["user_id"] },
+        { columns: ["status", "created_at"] }
+      ]
+    };
+    
+    int64 id = 1 [(ratel.column) = { constraints: { primary_key: true } }];
+    int64 user_id = 2;
+    
+    // ManyToMany: Order has many Products through order_products
+    repeated Product products = 10 [(ratel.relation) = {
+      many_to_many: {
+        ref_on_delete_cascade: true
+        back_ref_on_delete_cascade: true
+      }
+    }];
+  }
+  
+*/
+
+// ============================================================================
+// Table Options (MessageOptions)
+// ============================================================================
+
+message Table {
+  // Generate table schema for this message
+  bool generate = 1;
+  
+  // Override table name (default: snake_case of message name)
+  optional string table_name = 2;
+  
+  // Virtual fields (columns not in proto message)
+  repeated VirtualColumn virtual_columns = 3;
+  
+  // Table-level constraints (e.g., "UNIQUE (a, b)", "CHECK (x > 0)")
+  repeated string constraints = 4;
+  
+  // Indexes
+  repeated Index indexes = 5;
+}
+
+// ============================================================================
+// Index Definition
+// ============================================================================
+
+message Index {
+  // Index name (auto-generated if empty: idx_<table>_<columns>)
+  string name = 1;
+  
+  // Columns to index
+  repeated string columns = 2;
+  
+  // Unique index
+  bool unique = 3;
+  
+  // Partial index WHERE clause (e.g., "is_deleted = false")
+  string where = 4;
+  
+  // Index method: btree (default), hash, gin, gist, spgist, brin
+  string using = 5;
+  
+  // Include columns (INCLUDE clause for covering indexes)
+  repeated string include = 6;
+  
+  // Expression columns (e.g., "lower(email)", "created_at::date")
+  // Use instead of 'columns' for expression-based indexes
+  repeated string expressions = 7;
+  
+  // Concurrent index creation (CREATE INDEX CONCURRENTLY)
+  bool concurrent = 8;
+}
+
+// ============================================================================
+// Column Constraints
+// ============================================================================
+
+message Constraint {
+  bool unique = 1;
+  bool primary_key = 2;
+  string default_value = 3;
+  
+  // Raw SQL constraint (overrides above if set)
+  string raw = 4;
+}
+
+// ============================================================================
+// Virtual Column (for columns not in proto)
+// ============================================================================
+
+message VirtualColumn {
+  string sql_name = 1;
+  string sql_type = 2;  // e.g., "BIGINT", "TEXT", "TIMESTAMPTZ"
+  Constraint constraints = 3;
+  bool is_nullable = 4;
+  bool is_array = 5;
+}
+
+// ============================================================================
+// Column Options (FieldOptions)
+// ============================================================================
+
+message Column {
+  // Skip this field in table generation
+  bool skip = 1;
+  
+  // Column constraints
+  Constraint constraints = 2;
+}
+
+// ============================================================================
+// Relations
+// ============================================================================
+
+message OneToMany {
+  // FK column name in related table (default: <table>_id)
+  string ref_name = 1;
+  
+  // Raw constraint for FK (overrides default REFERENCES)
+  string constraint = 2;
+  
+  // Add ON DELETE CASCADE
+  bool on_delete_cascade = 3;
+  
+  // FK column already exists in related table (don't create virtual)
+  bool existed_field = 4;
+}
+
+message ManyToMany {
+  // Optional pivot table configuration
+  optional Table pivot_table = 1;
+  
+  // FK constraints
+  bool ref_on_delete_cascade = 2;
+  string ref_constraint = 3;
+  bool back_ref_on_delete_cascade = 4;
+  string back_ref_constraint = 5;
+}
+
+message Relation {
+  oneof relation {
+    OneToMany one_to_many = 1;
+    ManyToMany many_to_many = 2;
+  }
+}
+
+// ============================================================================
+// File-level Options
+// ============================================================================
+
+// Additional Go code to inject into generated file
+extend google.protobuf.FileOptions {
+  repeated string additional_code = 50000;
+  repeated Table virtual_tables = 50001;
+}
+
+// ============================================================================
+// Extend protobuf options
+// ============================================================================
+
+extend google.protobuf.MessageOptions {
+  Table table = 50002;
+}
+
+extend google.protobuf.FieldOptions {
+  Column column = 50003;
+  Relation relation = 50004;
+}

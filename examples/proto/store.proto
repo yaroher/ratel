@@ -1,0 +1,247 @@
+syntax = "proto3";
+
+package store;
+
+option go_package = "github.com/yaroher/ratel/examples/proto/storepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "ratelproto/ratelproto.proto";
+import "examples/proto/goplain/goplain.proto";
+
+// ============================================================================
+// Currency - справочник валют
+// ============================================================================
+message Currency {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "currency"
+  };
+  
+  string code = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  string name = 2;
+}
+
+// ============================================================================
+// User - пользователь системы
+// ============================================================================
+message User {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "users"
+    indexes: [
+      { columns: ["email"] },
+      { columns: ["is_active", "created_at"] }
+    ]
+  };
+  
+  int64 user_id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  string email = 2 [(ratel.column) = {
+    constraints: { unique: true }
+  }];
+  
+  string full_name = 3;
+  
+  bool is_active = 4 [(ratel.column) = {
+    constraints: { default_value: "true" }
+  }];
+  
+  google.protobuf.Timestamp created_at = 5 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  google.protobuf.Timestamp updated_at = 6 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  // OneToMany: User has many Orders
+  repeated Order orders = 10 [(ratel.relation) = {
+    one_to_many: {
+      ref_name: "user_id"
+      on_delete_cascade: true
+    }
+  }];
+}
+
+// ============================================================================
+// Category - категория товаров (с иерархией)
+// ============================================================================
+message Category {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "categories"
+  };
+  
+  int64 category_id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  string name = 2;
+  
+  string slug = 3 [(ratel.column) = {
+    constraints: { unique: true }
+  }];
+  
+  google.protobuf.Int64Value parent_id = 4;
+}
+
+// ============================================================================
+// Tag - тег для товаров
+// ============================================================================
+message Tag {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "tags"
+  };
+  
+  int64 tag_id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  string name = 2;
+  
+  string slug = 3 [(ratel.column) = {
+    constraints: { unique: true }
+  }];
+}
+
+// ============================================================================
+// Product - товар
+// ============================================================================
+message Product {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "products"
+    constraints: ["CHECK (stock_qty >= 0)"]
+    indexes: [
+      { columns: ["sku"] },
+      { columns: ["currency"] },
+      { columns: ["is_deleted", "created_at"], where: "is_deleted = false" }
+    ]
+  };
+  
+  int64 product_id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  string sku = 2 [(ratel.column) = {
+    constraints: { unique: true }
+  }];
+  
+  string name = 3;
+  
+  double price = 4;
+  
+  string currency = 5;  // FK to currency.code
+  
+  int32 stock_qty = 6 [(ratel.column) = {
+    constraints: { default_value: "0" }
+  }];
+  
+  bool is_deleted = 7 [(ratel.column) = {
+    constraints: { default_value: "false" }
+  }];
+  
+  google.protobuf.Timestamp created_at = 8 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  google.protobuf.Timestamp updated_at = 9 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  // ManyToMany: Product has many Categories
+  repeated Category categories = 10 [(ratel.relation) = {
+    many_to_many: {
+      ref_on_delete_cascade: true
+      back_ref_on_delete_cascade: true
+    }
+  }];
+  
+  // ManyToMany: Product has many Tags
+  repeated Tag tags = 11 [(ratel.relation) = {
+    many_to_many: {
+      ref_on_delete_cascade: true
+      back_ref_on_delete_cascade: true
+    }
+  }];
+}
+
+// ============================================================================
+// Order - заказ
+// ============================================================================
+message Order {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "orders"
+    constraints: ["CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))"]
+    indexes: [
+      { columns: ["user_id"] },
+      { columns: ["status"] },
+      { columns: ["created_at"] }
+    ]
+  };
+  
+  int64 order_id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  int64 user_id = 2;  // FK to users.user_id
+  
+  string status = 3 [(ratel.column) = {
+    constraints: { default_value: "'NEW'" }
+  }];
+  
+  string currency = 4;  // FK to currency.code
+  
+  google.protobuf.Timestamp created_at = 5 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  google.protobuf.Timestamp updated_at = 6 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  // OneToMany: Order has many OrderItems
+  repeated OrderItem items = 10 [(ratel.relation) = {
+    one_to_many: {
+      ref_name: "order_id"
+      on_delete_cascade: true
+    }
+  }];
+}
+
+// ============================================================================
+// OrderItem - позиция заказа
+// ============================================================================
+message OrderItem {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "order_items"
+    constraints: [
+      "PRIMARY KEY (order_id, line_no)",
+      "UNIQUE (order_id, product_id)",
+      "CHECK (line_no > 0)",
+      "CHECK (qty > 0)"
+    ]
+  };
+  
+  int64 order_id = 1;   // FK to orders.order_id
+  int32 line_no = 2;
+  int64 product_id = 3; // FK to products.product_id
+  int32 qty = 4;
+  double unit_price = 5;
+}
