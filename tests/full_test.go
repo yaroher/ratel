@@ -2,11 +2,11 @@ package tests
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/yaroher/ratel/ddl"
+	"github.com/yaroher/ratel/dml"
 	"github.com/yaroher/ratel/dml/set"
 	"github.com/yaroher/ratel/schema"
 )
@@ -31,7 +31,7 @@ type CurrencyScanner struct {
 	Name string
 }
 
-func (c CurrencyScanner) GetTarget(s string) func() any {
+func (c *CurrencyScanner) GetTarget(s string) func() any {
 	switch CurrencyColumnAlias(s) {
 	case "code":
 		return func() any { return &c.Code }
@@ -42,7 +42,7 @@ func (c CurrencyScanner) GetTarget(s string) func() any {
 	}
 }
 
-func (c CurrencyScanner) GetSetter(f CurrencyColumnAlias) func() set.ValueSetter[CurrencyColumnAlias] {
+func (c *CurrencyScanner) GetSetter(f CurrencyColumnAlias) func() set.ValueSetter[CurrencyColumnAlias] {
 	switch f {
 	case "code":
 		return func() set.ValueSetter[CurrencyColumnAlias] { return set.NewSetter(f, &c.Code) }
@@ -53,7 +53,7 @@ func (c CurrencyScanner) GetSetter(f CurrencyColumnAlias) func() set.ValueSetter
 	}
 }
 
-func (c CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
+func (c *CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
 	switch f {
 	case "code":
 		return func() any { return c.Code }
@@ -115,7 +115,7 @@ type UsersScanner struct {
 	UpdatedAt time.Time
 }
 
-func (u UsersScanner) GetTarget(s string) func() any {
+func (u *UsersScanner) GetTarget(s string) func() any {
 	switch UsersColumnAlias(s) {
 	case "user_id":
 		return func() any { return &u.UserID }
@@ -134,7 +134,7 @@ func (u UsersScanner) GetTarget(s string) func() any {
 	}
 }
 
-func (u UsersScanner) GetSetter(f UsersColumnAlias) func() set.ValueSetter[UsersColumnAlias] {
+func (u *UsersScanner) GetSetter(f UsersColumnAlias) func() set.ValueSetter[UsersColumnAlias] {
 	switch f {
 	case "user_id":
 		return func() set.ValueSetter[UsersColumnAlias] { return set.NewSetter(f, &u.UserID) }
@@ -153,7 +153,7 @@ func (u UsersScanner) GetSetter(f UsersColumnAlias) func() set.ValueSetter[Users
 	}
 }
 
-func (u UsersScanner) GetValue(f UsersColumnAlias) func() any {
+func (u *UsersScanner) GetValue(f UsersColumnAlias) func() any {
 	switch f {
 	case "user_id":
 		return func() any { return u.UserID }
@@ -261,7 +261,7 @@ type ProductsScanner struct {
 	UpdatedAt time.Time
 }
 
-func (p ProductsScanner) GetTarget(s string) func() any {
+func (p *ProductsScanner) GetTarget(s string) func() any {
 	switch ProductsColumnAlias(s) {
 	case "product_id":
 		return func() any { return &p.ProductID }
@@ -286,7 +286,7 @@ func (p ProductsScanner) GetTarget(s string) func() any {
 	}
 }
 
-func (p ProductsScanner) GetSetter(f ProductsColumnAlias) func() set.ValueSetter[ProductsColumnAlias] {
+func (p *ProductsScanner) GetSetter(f ProductsColumnAlias) func() set.ValueSetter[ProductsColumnAlias] {
 	switch f {
 	case "product_id":
 		return func() set.ValueSetter[ProductsColumnAlias] { return set.NewSetter(f, &p.ProductID) }
@@ -311,7 +311,7 @@ func (p ProductsScanner) GetSetter(f ProductsColumnAlias) func() set.ValueSetter
 	}
 }
 
-func (p ProductsScanner) GetValue(f ProductsColumnAlias) func() any {
+func (p *ProductsScanner) GetValue(f ProductsColumnAlias) func() any {
 	switch f {
 	case "product_id":
 		return func() any { return p.ProductID }
@@ -446,7 +446,7 @@ type OrdersScanner struct {
 	UpdatedAt time.Time
 }
 
-func (o OrdersScanner) GetTarget(s string) func() any {
+func (o *OrdersScanner) GetTarget(s string) func() any {
 	switch OrdersColumnAlias(s) {
 	case "order_id":
 		return func() any { return &o.OrderID }
@@ -465,7 +465,7 @@ func (o OrdersScanner) GetTarget(s string) func() any {
 	}
 }
 
-func (o OrdersScanner) GetSetter(f OrdersColumnAlias) func() set.ValueSetter[OrdersColumnAlias] {
+func (o *OrdersScanner) GetSetter(f OrdersColumnAlias) func() set.ValueSetter[OrdersColumnAlias] {
 	switch f {
 	case "order_id":
 		return func() set.ValueSetter[OrdersColumnAlias] { return set.NewSetter(f, &o.OrderID) }
@@ -484,7 +484,7 @@ func (o OrdersScanner) GetSetter(f OrdersColumnAlias) func() set.ValueSetter[Ord
 	}
 }
 
-func (o OrdersScanner) GetValue(f OrdersColumnAlias) func() any {
+func (o *OrdersScanner) GetValue(f OrdersColumnAlias) func() any {
 	switch f {
 	case "order_id":
 		return func() any { return o.OrderID }
@@ -594,7 +594,7 @@ type OrderItemsScanner struct {
 	UnitPrice float64
 }
 
-func (o OrderItemsScanner) GetTarget(s string) func() any {
+func (o *OrderItemsScanner) GetTarget(s string) func() any {
 	switch OrderItemsColumnAlias(s) {
 	case "order_id":
 		return func() any { return &o.OrderID }
@@ -611,7 +611,7 @@ func (o OrderItemsScanner) GetTarget(s string) func() any {
 	}
 }
 
-func (o OrderItemsScanner) GetSetter(f OrderItemsColumnAlias) func() set.ValueSetter[OrderItemsColumnAlias] {
+func (o *OrderItemsScanner) GetSetter(f OrderItemsColumnAlias) func() set.ValueSetter[OrderItemsColumnAlias] {
 	switch f {
 	case "order_id":
 		return func() set.ValueSetter[OrderItemsColumnAlias] { return set.NewSetter(f, &o.OrderID) }
@@ -628,7 +628,7 @@ func (o OrderItemsScanner) GetSetter(f OrderItemsColumnAlias) func() set.ValueSe
 	}
 }
 
-func (o OrderItemsScanner) GetValue(f OrderItemsColumnAlias) func() any {
+func (o *OrderItemsScanner) GetValue(f OrderItemsColumnAlias) func() any {
 	switch f {
 	case "order_id":
 		return func() any { return o.OrderID }
@@ -705,30 +705,56 @@ var orderItems OrderItemsTable = func() OrderItemsTable {
 	}
 }()
 
+var _ schema.RelationTableAlias[CurrencyAlias] = currency.Table
+var _ schema.RelationTableAlias[UsersAlias] = users.Table
+var _ schema.RelationTableAlias[OrdersAlias] = orders.Table
+var _ schema.RelationTableJoin[OrdersAlias, OrdersColumnAlias] = orders.Table
+var _ schema.RelationTableQuery[OrdersAlias, OrdersColumnAlias, *OrdersScanner] = orders.Table
+
+var currencyRef schema.RelationTableAlias[CurrencyAlias] = currency.Table
+var usersRef schema.RelationTableAlias[UsersAlias] = users.Table
+var ordersRef schema.RelationTableAlias[OrdersAlias] = orders.Table
+
+var usersOrders = schema.HasMany[UsersAlias, UsersColumnAlias, *UsersScanner, OrdersAlias, OrdersColumnAlias, *OrdersScanner](
+	UsersAliasName,
+	ordersRef,
+	OrdersColumnAliasUserID,
+	UsersColumnAliasUserID,
+)
+
+var ordersUser = schema.BelongsTo[OrdersAlias, OrdersColumnAlias, *OrdersScanner, UsersAlias, UsersColumnAlias, *UsersScanner](
+	OrdersAliasName,
+	usersRef,
+	OrdersColumnAliasUserID,
+	UsersColumnAliasUserID,
+)
+
+var ordersCurrency = schema.BelongsTo[OrdersAlias, OrdersColumnAlias, *OrdersScanner, CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner](
+	OrdersAliasName,
+	currencyRef,
+	OrdersColumnAliasCurrency,
+	CurrencyColumnAliasCode,
+)
+
 const OrdersIndexUserCreated OrdersAlias = "ix_orders_user_created"
 const OrderItemsIndexProduct OrderItemsAlias = "ix_order_items_product"
 const ProductsIndexNotDeleted ProductsAlias = "ix_products_not_deleted"
 
 func TestDumpSchemaSQL(t *testing.T) {
-	currencyStatements := currency.SchemaSql()
-	usersStatements := users.SchemaSql()
-	productsStatements := products.SchemaSql()
-	ordersStatements := orders.SchemaSql()
-	orderItemsStatements := orderItems.SchemaSql()
-	sqlString := strings.Join(
-		[]string{
-			strings.Join(currencyStatements, ";\n"),
-			strings.Join(usersStatements, ";\n"),
-			strings.Join(productsStatements, ";\n"),
-			strings.Join(ordersStatements, ";\n"),
-			strings.Join(orderItemsStatements, ";\n"),
-		}, "\n")
-	err := os.WriteFile(
-		"generated.sql",
-		[]byte(sqlString+"\n"),
-		0644,
-	)
+	sqlString := ddl.SchemaSQL(currency, users, products, orders, orderItems)
+	err := os.WriteFile("generated.sql", []byte(sqlString), 0644)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestRelationsUsage(t *testing.T) {
+	usersQuery := usersOrders.WithJoin(users.Table, users.SelectAll(), dml.LeftJoinType)
+	usersSQL, _ := usersQuery.Build()
+	t.Log(usersSQL)
+
+	ordersQuery := ordersUser.WithJoin(orders.Table, orders.SelectAll(), dml.LeftJoinType)
+	ordersQuery = ordersCurrency.WithJoin(orders.Table, ordersQuery, dml.LeftJoinType)
+	ordersSQL, _ := ordersQuery.Build()
+	t.Log(ordersSQL)
 }
