@@ -8,7 +8,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.34.0
-	github.com/yaroher/protoc-gen-go-plain v0.7.4
+	github.com/yaroher/protoc-gen-go-plain v0.7.6
 	google.golang.org/protobuf v1.36.11
 )
 

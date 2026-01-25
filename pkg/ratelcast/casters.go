@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // TimestampToTime converts *timestamppb.Timestamp to time.Time
@@ -82,4 +83,17 @@ func NullableBool(v *bool) bool {
 // BoolToNullable converts bool to *bool
 func BoolToNullable(v bool) *bool {
 	return &v
+}
+
+// Int64ValueToInt64 converts *wrapperspb.Int64Value to int64
+func Int64ValueToInt64(v *wrapperspb.Int64Value) int64 {
+	if v == nil {
+		return 0
+	}
+	return v.GetValue()
+}
+
+// Int64ToInt64Value converts int64 to *wrapperspb.Int64Value
+func Int64ToInt64Value(v int64) *wrapperspb.Int64Value {
+	return wrapperspb.Int64(v)
 }

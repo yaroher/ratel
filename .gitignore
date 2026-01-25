@@ -1,4 +1,4 @@
 .claude
 .idea
 bin
-protoc-gen-ratel
+./protoc-gen-ratel

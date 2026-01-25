@@ -10,6 +10,55 @@ import "ratelproto/ratelproto.proto";
 import "examples/proto/goplain/goplain.proto";
 
 // ============================================================================
+// Type Aliases для ID
+// ============================================================================
+
+// UserID - type alias для ID пользователя
+message UserID {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  int64 value = 1;
+}
+
+// ProductID - type alias для ID товара
+message ProductID {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  int64 value = 1;
+}
+
+// OrderID - type alias для ID заказа
+message OrderID {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  int64 value = 1;
+}
+
+// CategoryID - type alias для ID категории
+message CategoryID {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  int64 value = 1;
+}
+
+// TagID - type alias для ID тега
+message TagID {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  int64 value = 1;
+}
+
+// ============================================================================
 // Currency - справочник валют
 // ============================================================================
 message Currency {
@@ -40,7 +89,7 @@ message User {
     ]
   };
   
-  int64 user_id = 1 [(ratel.column) = {
+  UserID user_id = 1 [(ratel.column) = {
     constraints: { primary_key: true }
   }];
   
@@ -81,7 +130,7 @@ message Category {
     table_name: "categories"
   };
   
-  int64 category_id = 1 [(ratel.column) = {
+  CategoryID category_id = 1 [(ratel.column) = {
     constraints: { primary_key: true }
   }];
   
@@ -104,7 +153,7 @@ message Tag {
     table_name: "tags"
   };
   
-  int64 tag_id = 1 [(ratel.column) = {
+  TagID tag_id = 1 [(ratel.column) = {
     constraints: { primary_key: true }
   }];
   
@@ -131,7 +180,7 @@ message Product {
     ]
   };
   
-  int64 product_id = 1 [(ratel.column) = {
+  ProductID product_id = 1 [(ratel.column) = {
     constraints: { primary_key: true }
   }];
   
@@ -194,11 +243,11 @@ message Order {
     ]
   };
   
-  int64 order_id = 1 [(ratel.column) = {
+  OrderID order_id = 1 [(ratel.column) = {
     constraints: { primary_key: true }
   }];
   
-  int64 user_id = 2;  // FK to users.user_id
+  UserID user_id = 2;  // FK to users.user_id
   
   string status = 3 [(ratel.column) = {
     constraints: { default_value: "'NEW'" }
@@ -239,9 +288,9 @@ message OrderItem {
     ]
   };
   
-  int64 order_id = 1;   // FK to orders.order_id
+  OrderID order_id = 1;   // FK to orders.order_id
   int32 line_no = 2;
-  int64 product_id = 3; // FK to products.product_id
+  ProductID product_id = 3; // FK to products.product_id
   int32 qty = 4;
   double unit_price = 5;
 }

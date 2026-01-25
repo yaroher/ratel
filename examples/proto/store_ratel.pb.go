@@ -4,59 +4,112 @@
 package storepb
 
 import (
+	"time"
+
 	"github.com/yaroher/ratel/pkg/ddl"
+	"github.com/yaroher/ratel/pkg/dml/set"
+	"github.com/yaroher/ratel/pkg/exec"
 	"github.com/yaroher/ratel/pkg/schema"
 )
 
-// CurrencyTableAlias is the table alias type for currency
-type CurrencyTableAlias string
+var _ = time.Time{}
 
-func (CurrencyTableAlias) TableName() string { return "currency" }
+// CurrencyAlias is the table alias type for the currency table
+type CurrencyAlias string
 
-// CurrencyColumnAlias is the column alias type for currency
+func (a CurrencyAlias) String() string { return string(a) }
+
+const CurrencyAliasName CurrencyAlias = "currency"
+
+// CurrencyColumnAlias represents column names for the currency table
 type CurrencyColumnAlias string
 
 func (c CurrencyColumnAlias) String() string { return string(c) }
 
-// Column aliases for currency
 const (
 	CurrencyColumnCode CurrencyColumnAlias = "code"
 	CurrencyColumnName CurrencyColumnAlias = "name"
 )
 
-// CurrencyTable is the table definition for currency
-type CurrencyTable struct {
-	schema.BaseTable[CurrencyTableAlias, CurrencyColumnAlias, CurrencyScanner]
+func (s *CurrencyScanner) GetTarget(col string) func() any {
+	switch CurrencyColumnAlias(col) {
+	case CurrencyColumnCode:
+		return func() any { return &s.Code }
+	case CurrencyColumnName:
+		return func() any { return &s.Name }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *CurrencyScanner) GetSetter(f CurrencyColumnAlias) func() set.ValueSetter[CurrencyColumnAlias] {
+	switch f {
+	case CurrencyColumnCode:
+		return func() set.ValueSetter[CurrencyColumnAlias] { return set.NewSetter(f, &s.Code) }
+	case CurrencyColumnName:
+		return func() set.ValueSetter[CurrencyColumnAlias] { return set.NewSetter(f, &s.Name) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
+	switch f {
+	case CurrencyColumnCode:
+		return func() any { return s.Code }
+	case CurrencyColumnName:
+		return func() any { return s.Name }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the currency table
+func (s *CurrencyScanner) Relations() []exec.RelationLoader[*CurrencyScanner] {
+	return nil // TODO: generate relations
+}
+
+// CurrencysTable represents the currency table with its columns
+type CurrencysTable struct {
+	*schema.Table[CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner]
 	Code schema.TextColumnI[CurrencyColumnAlias]
 	Name schema.TextColumnI[CurrencyColumnAlias]
 }
 
-// Currencys is the table instance for currency
-var Currencys = &CurrencyTable{
-	Code: schema.NewColumn[CurrencyColumnAlias](CurrencyColumnCode, 0),
-	Name: schema.NewColumn[CurrencyColumnAlias](CurrencyColumnName, 1),
-}
+// Currencys is the global currency table instance
+var Currencys = func() CurrencysTable {
+	codeCol := schema.TextColumn(CurrencyColumnCode, ddl.WithPrimaryKey[CurrencyColumnAlias]())
+	nameCol := schema.TextColumn(CurrencyColumnName)
 
-// DDL returns the table DDL
-func (t *CurrencyTable) DDL() *ddl.Table {
-	return ddl.NewTable("currency",
-		ddl.Column("code", "TEXT PRIMARY KEY"),
-		ddl.Column("name", "TEXT"),
-	)
-}
+	return CurrencysTable{
+		Table: schema.NewTable[CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner](
+			CurrencyAliasName,
+			func() *CurrencyScanner { return &CurrencyScanner{} },
+			[]*ddl.ColumnDDL[CurrencyColumnAlias]{
+				codeCol.DDL(),
+				nameCol.DDL(),
+			},
+		),
+		Code: codeCol,
+		Name: nameCol,
+	}
+}()
 
-// UserTableAlias is the table alias type for users
-type UserTableAlias string
+// CurrencysRef is a reference to the currency table for relations
+var CurrencysRef schema.RelationTableAlias[CurrencyAlias] = Currencys.Table
 
-func (UserTableAlias) TableName() string { return "users" }
+// UserAlias is the table alias type for the users table
+type UserAlias string
 
-// UserColumnAlias is the column alias type for users
+func (a UserAlias) String() string { return string(a) }
+
+const UserAliasName UserAlias = "users"
+
+// UserColumnAlias represents column names for the users table
 type UserColumnAlias string
 
 func (c UserColumnAlias) String() string { return string(c) }
 
-// Column aliases for users
 const (
 	UserColumnUserId    UserColumnAlias = "user_id"
 	UserColumnEmail     UserColumnAlias = "email"
@@ -66,51 +119,125 @@ const (
 	UserColumnUpdatedAt UserColumnAlias = "updated_at"
 )
 
-// UserTable is the table definition for users
-type UserTable struct {
-	schema.BaseTable[UserTableAlias, UserColumnAlias, UserScanner]
+func (s *UserScanner) GetTarget(col string) func() any {
+	switch UserColumnAlias(col) {
+	case UserColumnUserId:
+		return func() any { return &s.UserId }
+	case UserColumnEmail:
+		return func() any { return &s.Email }
+	case UserColumnFullName:
+		return func() any { return &s.FullName }
+	case UserColumnIsActive:
+		return func() any { return &s.IsActive }
+	case UserColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case UserColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *UserScanner) GetSetter(f UserColumnAlias) func() set.ValueSetter[UserColumnAlias] {
+	switch f {
+	case UserColumnUserId:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case UserColumnEmail:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.Email) }
+	case UserColumnFullName:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.FullName) }
+	case UserColumnIsActive:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.IsActive) }
+	case UserColumnCreatedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case UserColumnUpdatedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *UserScanner) GetValue(f UserColumnAlias) func() any {
+	switch f {
+	case UserColumnUserId:
+		return func() any { return s.UserId }
+	case UserColumnEmail:
+		return func() any { return s.Email }
+	case UserColumnFullName:
+		return func() any { return s.FullName }
+	case UserColumnIsActive:
+		return func() any { return s.IsActive }
+	case UserColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case UserColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the users table
+func (s *UserScanner) Relations() []exec.RelationLoader[*UserScanner] {
+	return nil // TODO: generate relations
+}
+
+// UsersTable represents the users table with its columns
+type UsersTable struct {
+	*schema.Table[UserAlias, UserColumnAlias, *UserScanner]
 	UserId    schema.BigSerialColumnI[UserColumnAlias]
 	Email     schema.TextColumnI[UserColumnAlias]
 	FullName  schema.TextColumnI[UserColumnAlias]
-	IsActive  schema.BoolColumnI[UserColumnAlias]
-	CreatedAt schema.TimestampColumnI[UserColumnAlias]
-	UpdatedAt schema.TimestampColumnI[UserColumnAlias]
+	IsActive  schema.BooleanColumnI[UserColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[UserColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[UserColumnAlias]
 }
 
-// Users is the table instance for users
-var Users = &UserTable{
-	UserId:    schema.NewColumn[UserColumnAlias](UserColumnUserId, 0),
-	Email:     schema.NewColumn[UserColumnAlias](UserColumnEmail, 1),
-	FullName:  schema.NewColumn[UserColumnAlias](UserColumnFullName, 2),
-	IsActive:  schema.NewColumn[UserColumnAlias](UserColumnIsActive, 3),
-	CreatedAt: schema.NewColumn[UserColumnAlias](UserColumnCreatedAt, 4),
-	UpdatedAt: schema.NewColumn[UserColumnAlias](UserColumnUpdatedAt, 5),
-}
+// Users is the global users table instance
+var Users = func() UsersTable {
+	userIdCol := schema.BigSerialColumn(UserColumnUserId, ddl.WithPrimaryKey[UserColumnAlias]())
+	emailCol := schema.TextColumn(UserColumnEmail, ddl.WithUnique[UserColumnAlias]())
+	fullNameCol := schema.TextColumn(UserColumnFullName)
+	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"))
+	createdAtCol := schema.TimestamptzColumn(UserColumnCreatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(UserColumnUpdatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
 
-// DDL returns the table DDL
-func (t *UserTable) DDL() *ddl.Table {
-	return ddl.NewTable("users",
-		ddl.Column("user_id", "BIGINT PRIMARY KEY"),
-		ddl.Column("email", "TEXT UNIQUE"),
-		ddl.Column("full_name", "TEXT"),
-		ddl.Column("is_active", "BOOLEAN DEFAULT true"),
-		ddl.Column("created_at", "TIMESTAMPTZ DEFAULT now()"),
-		ddl.Column("updated_at", "TIMESTAMPTZ DEFAULT now()"),
-	)
-}
+	return UsersTable{
+		Table: schema.NewTable[UserAlias, UserColumnAlias, *UserScanner](
+			UserAliasName,
+			func() *UserScanner { return &UserScanner{} },
+			[]*ddl.ColumnDDL[UserColumnAlias]{
+				userIdCol.DDL(),
+				emailCol.DDL(),
+				fullNameCol.DDL(),
+				isActiveCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+		),
+		UserId:    userIdCol,
+		Email:     emailCol,
+		FullName:  fullNameCol,
+		IsActive:  isActiveCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
 
-// CategoryTableAlias is the table alias type for categories
-type CategoryTableAlias string
+// UsersRef is a reference to the users table for relations
+var UsersRef schema.RelationTableAlias[UserAlias] = Users.Table
 
-func (CategoryTableAlias) TableName() string { return "categories" }
+// CategoryAlias is the table alias type for the categories table
+type CategoryAlias string
 
-// CategoryColumnAlias is the column alias type for categories
+func (a CategoryAlias) String() string { return string(a) }
+
+const CategoryAliasName CategoryAlias = "categories"
+
+// CategoryColumnAlias represents column names for the categories table
 type CategoryColumnAlias string
 
 func (c CategoryColumnAlias) String() string { return string(c) }
 
-// Column aliases for categories
 const (
 	CategoryColumnCategoryId CategoryColumnAlias = "category_id"
 	CategoryColumnName       CategoryColumnAlias = "name"
@@ -118,87 +245,200 @@ const (
 	CategoryColumnParentId   CategoryColumnAlias = "parent_id"
 )
 
-// CategoryTable is the table definition for categories
-type CategoryTable struct {
-	schema.BaseTable[CategoryTableAlias, CategoryColumnAlias, CategoryScanner]
+func (s *CategoryScanner) GetTarget(col string) func() any {
+	switch CategoryColumnAlias(col) {
+	case CategoryColumnCategoryId:
+		return func() any { return &s.CategoryId }
+	case CategoryColumnName:
+		return func() any { return &s.Name }
+	case CategoryColumnSlug:
+		return func() any { return &s.Slug }
+	case CategoryColumnParentId:
+		return func() any { return &s.ParentId }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *CategoryScanner) GetSetter(f CategoryColumnAlias) func() set.ValueSetter[CategoryColumnAlias] {
+	switch f {
+	case CategoryColumnCategoryId:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.CategoryId) }
+	case CategoryColumnName:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.Name) }
+	case CategoryColumnSlug:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.Slug) }
+	case CategoryColumnParentId:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.ParentId) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *CategoryScanner) GetValue(f CategoryColumnAlias) func() any {
+	switch f {
+	case CategoryColumnCategoryId:
+		return func() any { return s.CategoryId }
+	case CategoryColumnName:
+		return func() any { return s.Name }
+	case CategoryColumnSlug:
+		return func() any { return s.Slug }
+	case CategoryColumnParentId:
+		return func() any { return s.ParentId }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the categories table
+func (s *CategoryScanner) Relations() []exec.RelationLoader[*CategoryScanner] {
+	return nil // TODO: generate relations
+}
+
+// CategorysTable represents the categories table with its columns
+type CategorysTable struct {
+	*schema.Table[CategoryAlias, CategoryColumnAlias, *CategoryScanner]
 	CategoryId schema.BigSerialColumnI[CategoryColumnAlias]
 	Name       schema.TextColumnI[CategoryColumnAlias]
 	Slug       schema.TextColumnI[CategoryColumnAlias]
-	ParentId   schema.BigIntColumnI[CategoryColumnAlias]
+	ParentId   schema.NullBigIntColumnI[CategoryColumnAlias]
 }
 
-// Categorys is the table instance for categories
-var Categorys = &CategoryTable{
-	CategoryId: schema.NewColumn[CategoryColumnAlias](CategoryColumnCategoryId, 0),
-	Name:       schema.NewColumn[CategoryColumnAlias](CategoryColumnName, 1),
-	Slug:       schema.NewColumn[CategoryColumnAlias](CategoryColumnSlug, 2),
-	ParentId:   schema.NewColumn[CategoryColumnAlias](CategoryColumnParentId, 3),
-}
+// Categorys is the global categories table instance
+var Categorys = func() CategorysTable {
+	categoryIdCol := schema.BigSerialColumn(CategoryColumnCategoryId, ddl.WithPrimaryKey[CategoryColumnAlias]())
+	nameCol := schema.TextColumn(CategoryColumnName)
+	slugCol := schema.TextColumn(CategoryColumnSlug, ddl.WithUnique[CategoryColumnAlias]())
+	parentIdCol := schema.NullBigIntColumn(CategoryColumnParentId)
 
-// DDL returns the table DDL
-func (t *CategoryTable) DDL() *ddl.Table {
-	return ddl.NewTable("categories",
-		ddl.Column("category_id", "BIGINT PRIMARY KEY"),
-		ddl.Column("name", "TEXT"),
-		ddl.Column("slug", "TEXT UNIQUE"),
-		ddl.Column("parent_id", "BIGINT"),
-	)
-}
+	return CategorysTable{
+		Table: schema.NewTable[CategoryAlias, CategoryColumnAlias, *CategoryScanner](
+			CategoryAliasName,
+			func() *CategoryScanner { return &CategoryScanner{} },
+			[]*ddl.ColumnDDL[CategoryColumnAlias]{
+				categoryIdCol.DDL(),
+				nameCol.DDL(),
+				slugCol.DDL(),
+				parentIdCol.DDL(),
+			},
+		),
+		CategoryId: categoryIdCol,
+		Name:       nameCol,
+		Slug:       slugCol,
+		ParentId:   parentIdCol,
+	}
+}()
 
-// TagTableAlias is the table alias type for tags
-type TagTableAlias string
+// CategorysRef is a reference to the categories table for relations
+var CategorysRef schema.RelationTableAlias[CategoryAlias] = Categorys.Table
 
-func (TagTableAlias) TableName() string { return "tags" }
+// TagAlias is the table alias type for the tags table
+type TagAlias string
 
-// TagColumnAlias is the column alias type for tags
+func (a TagAlias) String() string { return string(a) }
+
+const TagAliasName TagAlias = "tags"
+
+// TagColumnAlias represents column names for the tags table
 type TagColumnAlias string
 
 func (c TagColumnAlias) String() string { return string(c) }
 
-// Column aliases for tags
 const (
 	TagColumnTagId TagColumnAlias = "tag_id"
 	TagColumnName  TagColumnAlias = "name"
 	TagColumnSlug  TagColumnAlias = "slug"
 )
 
-// TagTable is the table definition for tags
-type TagTable struct {
-	schema.BaseTable[TagTableAlias, TagColumnAlias, TagScanner]
+func (s *TagScanner) GetTarget(col string) func() any {
+	switch TagColumnAlias(col) {
+	case TagColumnTagId:
+		return func() any { return &s.TagId }
+	case TagColumnName:
+		return func() any { return &s.Name }
+	case TagColumnSlug:
+		return func() any { return &s.Slug }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *TagScanner) GetSetter(f TagColumnAlias) func() set.ValueSetter[TagColumnAlias] {
+	switch f {
+	case TagColumnTagId:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.TagId) }
+	case TagColumnName:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.Name) }
+	case TagColumnSlug:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.Slug) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *TagScanner) GetValue(f TagColumnAlias) func() any {
+	switch f {
+	case TagColumnTagId:
+		return func() any { return s.TagId }
+	case TagColumnName:
+		return func() any { return s.Name }
+	case TagColumnSlug:
+		return func() any { return s.Slug }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the tags table
+func (s *TagScanner) Relations() []exec.RelationLoader[*TagScanner] {
+	return nil // TODO: generate relations
+}
+
+// TagsTable represents the tags table with its columns
+type TagsTable struct {
+	*schema.Table[TagAlias, TagColumnAlias, *TagScanner]
 	TagId schema.BigSerialColumnI[TagColumnAlias]
 	Name  schema.TextColumnI[TagColumnAlias]
 	Slug  schema.TextColumnI[TagColumnAlias]
 }
 
-// Tags is the table instance for tags
-var Tags = &TagTable{
-	TagId: schema.NewColumn[TagColumnAlias](TagColumnTagId, 0),
-	Name:  schema.NewColumn[TagColumnAlias](TagColumnName, 1),
-	Slug:  schema.NewColumn[TagColumnAlias](TagColumnSlug, 2),
-}
+// Tags is the global tags table instance
+var Tags = func() TagsTable {
+	tagIdCol := schema.BigSerialColumn(TagColumnTagId, ddl.WithPrimaryKey[TagColumnAlias]())
+	nameCol := schema.TextColumn(TagColumnName)
+	slugCol := schema.TextColumn(TagColumnSlug, ddl.WithUnique[TagColumnAlias]())
 
-// DDL returns the table DDL
-func (t *TagTable) DDL() *ddl.Table {
-	return ddl.NewTable("tags",
-		ddl.Column("tag_id", "BIGINT PRIMARY KEY"),
-		ddl.Column("name", "TEXT"),
-		ddl.Column("slug", "TEXT UNIQUE"),
-	)
-}
+	return TagsTable{
+		Table: schema.NewTable[TagAlias, TagColumnAlias, *TagScanner](
+			TagAliasName,
+			func() *TagScanner { return &TagScanner{} },
+			[]*ddl.ColumnDDL[TagColumnAlias]{
+				tagIdCol.DDL(),
+				nameCol.DDL(),
+				slugCol.DDL(),
+			},
+		),
+		TagId: tagIdCol,
+		Name:  nameCol,
+		Slug:  slugCol,
+	}
+}()
 
-// ProductTableAlias is the table alias type for products
-type ProductTableAlias string
+// TagsRef is a reference to the tags table for relations
+var TagsRef schema.RelationTableAlias[TagAlias] = Tags.Table
 
-func (ProductTableAlias) TableName() string { return "products" }
+// ProductAlias is the table alias type for the products table
+type ProductAlias string
 
-// ProductColumnAlias is the column alias type for products
+func (a ProductAlias) String() string { return string(a) }
+
+const ProductAliasName ProductAlias = "products"
+
+// ProductColumnAlias represents column names for the products table
 type ProductColumnAlias string
 
 func (c ProductColumnAlias) String() string { return string(c) }
 
-// Column aliases for products
 const (
 	ProductColumnProductId ProductColumnAlias = "product_id"
 	ProductColumnSku       ProductColumnAlias = "sku"
@@ -211,61 +451,155 @@ const (
 	ProductColumnUpdatedAt ProductColumnAlias = "updated_at"
 )
 
-// ProductTable is the table definition for products
-type ProductTable struct {
-	schema.BaseTable[ProductTableAlias, ProductColumnAlias, ProductScanner]
+func (s *ProductScanner) GetTarget(col string) func() any {
+	switch ProductColumnAlias(col) {
+	case ProductColumnProductId:
+		return func() any { return &s.ProductId }
+	case ProductColumnSku:
+		return func() any { return &s.Sku }
+	case ProductColumnName:
+		return func() any { return &s.Name }
+	case ProductColumnPrice:
+		return func() any { return &s.Price }
+	case ProductColumnCurrency:
+		return func() any { return &s.Currency }
+	case ProductColumnStockQty:
+		return func() any { return &s.StockQty }
+	case ProductColumnIsDeleted:
+		return func() any { return &s.IsDeleted }
+	case ProductColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case ProductColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *ProductScanner) GetSetter(f ProductColumnAlias) func() set.ValueSetter[ProductColumnAlias] {
+	switch f {
+	case ProductColumnProductId:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.ProductId) }
+	case ProductColumnSku:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Sku) }
+	case ProductColumnName:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Name) }
+	case ProductColumnPrice:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Price) }
+	case ProductColumnCurrency:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Currency) }
+	case ProductColumnStockQty:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.StockQty) }
+	case ProductColumnIsDeleted:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.IsDeleted) }
+	case ProductColumnCreatedAt:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case ProductColumnUpdatedAt:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *ProductScanner) GetValue(f ProductColumnAlias) func() any {
+	switch f {
+	case ProductColumnProductId:
+		return func() any { return s.ProductId }
+	case ProductColumnSku:
+		return func() any { return s.Sku }
+	case ProductColumnName:
+		return func() any { return s.Name }
+	case ProductColumnPrice:
+		return func() any { return s.Price }
+	case ProductColumnCurrency:
+		return func() any { return s.Currency }
+	case ProductColumnStockQty:
+		return func() any { return s.StockQty }
+	case ProductColumnIsDeleted:
+		return func() any { return s.IsDeleted }
+	case ProductColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case ProductColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the products table
+func (s *ProductScanner) Relations() []exec.RelationLoader[*ProductScanner] {
+	return nil // TODO: generate relations
+}
+
+// ProductsTable represents the products table with its columns
+type ProductsTable struct {
+	*schema.Table[ProductAlias, ProductColumnAlias, *ProductScanner]
 	ProductId schema.BigSerialColumnI[ProductColumnAlias]
 	Sku       schema.TextColumnI[ProductColumnAlias]
 	Name      schema.TextColumnI[ProductColumnAlias]
-	Price     schema.FloatColumnI[ProductColumnAlias]
+	Price     schema.DoublePrecisionColumnI[ProductColumnAlias]
 	Currency  schema.TextColumnI[ProductColumnAlias]
-	StockQty  schema.IntColumnI[ProductColumnAlias]
-	IsDeleted schema.BoolColumnI[ProductColumnAlias]
-	CreatedAt schema.TimestampColumnI[ProductColumnAlias]
-	UpdatedAt schema.TimestampColumnI[ProductColumnAlias]
+	StockQty  schema.IntegerColumnI[ProductColumnAlias]
+	IsDeleted schema.BooleanColumnI[ProductColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[ProductColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[ProductColumnAlias]
 }
 
-// Products is the table instance for products
-var Products = &ProductTable{
-	ProductId: schema.NewColumn[ProductColumnAlias](ProductColumnProductId, 0),
-	Sku:       schema.NewColumn[ProductColumnAlias](ProductColumnSku, 1),
-	Name:      schema.NewColumn[ProductColumnAlias](ProductColumnName, 2),
-	Price:     schema.NewColumn[ProductColumnAlias](ProductColumnPrice, 3),
-	Currency:  schema.NewColumn[ProductColumnAlias](ProductColumnCurrency, 4),
-	StockQty:  schema.NewColumn[ProductColumnAlias](ProductColumnStockQty, 5),
-	IsDeleted: schema.NewColumn[ProductColumnAlias](ProductColumnIsDeleted, 6),
-	CreatedAt: schema.NewColumn[ProductColumnAlias](ProductColumnCreatedAt, 7),
-	UpdatedAt: schema.NewColumn[ProductColumnAlias](ProductColumnUpdatedAt, 8),
-}
+// Products is the global products table instance
+var Products = func() ProductsTable {
+	productIdCol := schema.BigSerialColumn(ProductColumnProductId, ddl.WithPrimaryKey[ProductColumnAlias]())
+	skuCol := schema.TextColumn(ProductColumnSku, ddl.WithUnique[ProductColumnAlias]())
+	nameCol := schema.TextColumn(ProductColumnName)
+	priceCol := schema.DoublePrecisionColumn(ProductColumnPrice)
+	currencyCol := schema.TextColumn(ProductColumnCurrency)
+	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"))
+	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"))
+	createdAtCol := schema.TimestamptzColumn(ProductColumnCreatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(ProductColumnUpdatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
 
-// DDL returns the table DDL
-func (t *ProductTable) DDL() *ddl.Table {
-	return ddl.NewTable("products",
-		ddl.Column("product_id", "BIGINT PRIMARY KEY"),
-		ddl.Column("sku", "TEXT UNIQUE"),
-		ddl.Column("name", "TEXT"),
-		ddl.Column("price", "DOUBLE PRECISION"),
-		ddl.Column("currency", "TEXT"),
-		ddl.Column("stock_qty", "INTEGER DEFAULT 0"),
-		ddl.Column("is_deleted", "BOOLEAN DEFAULT false"),
-		ddl.Column("created_at", "TIMESTAMPTZ DEFAULT now()"),
-		ddl.Column("updated_at", "TIMESTAMPTZ DEFAULT now()"),
-		ddl.WithConstraint("CHECK (stock_qty >= 0)"),
-	)
-}
+	return ProductsTable{
+		Table: schema.NewTable[ProductAlias, ProductColumnAlias, *ProductScanner](
+			ProductAliasName,
+			func() *ProductScanner { return &ProductScanner{} },
+			[]*ddl.ColumnDDL[ProductColumnAlias]{
+				productIdCol.DDL(),
+				skuCol.DDL(),
+				nameCol.DDL(),
+				priceCol.DDL(),
+				currencyCol.DDL(),
+				stockQtyCol.DDL(),
+				isDeletedCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+		),
+		ProductId: productIdCol,
+		Sku:       skuCol,
+		Name:      nameCol,
+		Price:     priceCol,
+		Currency:  currencyCol,
+		StockQty:  stockQtyCol,
+		IsDeleted: isDeletedCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
 
-// OrderTableAlias is the table alias type for orders
-type OrderTableAlias string
+// ProductsRef is a reference to the products table for relations
+var ProductsRef schema.RelationTableAlias[ProductAlias] = Products.Table
 
-func (OrderTableAlias) TableName() string { return "orders" }
+// OrderAlias is the table alias type for the orders table
+type OrderAlias string
 
-// OrderColumnAlias is the column alias type for orders
+func (a OrderAlias) String() string { return string(a) }
+
+const OrderAliasName OrderAlias = "orders"
+
+// OrderColumnAlias represents column names for the orders table
 type OrderColumnAlias string
 
 func (c OrderColumnAlias) String() string { return string(c) }
 
-// Column aliases for orders
 const (
 	OrderColumnOrderId   OrderColumnAlias = "order_id"
 	OrderColumnUserId    OrderColumnAlias = "user_id"
@@ -275,52 +609,125 @@ const (
 	OrderColumnUpdatedAt OrderColumnAlias = "updated_at"
 )
 
-// OrderTable is the table definition for orders
-type OrderTable struct {
-	schema.BaseTable[OrderTableAlias, OrderColumnAlias, OrderScanner]
+func (s *OrderScanner) GetTarget(col string) func() any {
+	switch OrderColumnAlias(col) {
+	case OrderColumnOrderId:
+		return func() any { return &s.OrderId }
+	case OrderColumnUserId:
+		return func() any { return &s.UserId }
+	case OrderColumnStatus:
+		return func() any { return &s.Status }
+	case OrderColumnCurrency:
+		return func() any { return &s.Currency }
+	case OrderColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case OrderColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *OrderScanner) GetSetter(f OrderColumnAlias) func() set.ValueSetter[OrderColumnAlias] {
+	switch f {
+	case OrderColumnOrderId:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.OrderId) }
+	case OrderColumnUserId:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case OrderColumnStatus:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.Status) }
+	case OrderColumnCurrency:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.Currency) }
+	case OrderColumnCreatedAt:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case OrderColumnUpdatedAt:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *OrderScanner) GetValue(f OrderColumnAlias) func() any {
+	switch f {
+	case OrderColumnOrderId:
+		return func() any { return s.OrderId }
+	case OrderColumnUserId:
+		return func() any { return s.UserId }
+	case OrderColumnStatus:
+		return func() any { return s.Status }
+	case OrderColumnCurrency:
+		return func() any { return s.Currency }
+	case OrderColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case OrderColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the orders table
+func (s *OrderScanner) Relations() []exec.RelationLoader[*OrderScanner] {
+	return nil // TODO: generate relations
+}
+
+// OrdersTable represents the orders table with its columns
+type OrdersTable struct {
+	*schema.Table[OrderAlias, OrderColumnAlias, *OrderScanner]
 	OrderId   schema.BigSerialColumnI[OrderColumnAlias]
 	UserId    schema.BigIntColumnI[OrderColumnAlias]
 	Status    schema.TextColumnI[OrderColumnAlias]
 	Currency  schema.TextColumnI[OrderColumnAlias]
-	CreatedAt schema.TimestampColumnI[OrderColumnAlias]
-	UpdatedAt schema.TimestampColumnI[OrderColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[OrderColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[OrderColumnAlias]
 }
 
-// Orders is the table instance for orders
-var Orders = &OrderTable{
-	OrderId:   schema.NewColumn[OrderColumnAlias](OrderColumnOrderId, 0),
-	UserId:    schema.NewColumn[OrderColumnAlias](OrderColumnUserId, 1),
-	Status:    schema.NewColumn[OrderColumnAlias](OrderColumnStatus, 2),
-	Currency:  schema.NewColumn[OrderColumnAlias](OrderColumnCurrency, 3),
-	CreatedAt: schema.NewColumn[OrderColumnAlias](OrderColumnCreatedAt, 4),
-	UpdatedAt: schema.NewColumn[OrderColumnAlias](OrderColumnUpdatedAt, 5),
-}
+// Orders is the global orders table instance
+var Orders = func() OrdersTable {
+	orderIdCol := schema.BigSerialColumn(OrderColumnOrderId, ddl.WithPrimaryKey[OrderColumnAlias]())
+	userIdCol := schema.BigIntColumn(OrderColumnUserId)
+	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"))
+	currencyCol := schema.TextColumn(OrderColumnCurrency)
+	createdAtCol := schema.TimestamptzColumn(OrderColumnCreatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
 
-// DDL returns the table DDL
-func (t *OrderTable) DDL() *ddl.Table {
-	return ddl.NewTable("orders",
-		ddl.Column("order_id", "BIGINT PRIMARY KEY"),
-		ddl.Column("user_id", "BIGINT"),
-		ddl.Column("status", "TEXT DEFAULT 'NEW'"),
-		ddl.Column("currency", "TEXT"),
-		ddl.Column("created_at", "TIMESTAMPTZ DEFAULT now()"),
-		ddl.Column("updated_at", "TIMESTAMPTZ DEFAULT now()"),
-		ddl.WithConstraint("CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))"),
-	)
-}
+	return OrdersTable{
+		Table: schema.NewTable[OrderAlias, OrderColumnAlias, *OrderScanner](
+			OrderAliasName,
+			func() *OrderScanner { return &OrderScanner{} },
+			[]*ddl.ColumnDDL[OrderColumnAlias]{
+				orderIdCol.DDL(),
+				userIdCol.DDL(),
+				statusCol.DDL(),
+				currencyCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+			},
+		),
+		OrderId:   orderIdCol,
+		UserId:    userIdCol,
+		Status:    statusCol,
+		Currency:  currencyCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+	}
+}()
 
-// OrderItemTableAlias is the table alias type for order_items
-type OrderItemTableAlias string
+// OrdersRef is a reference to the orders table for relations
+var OrdersRef schema.RelationTableAlias[OrderAlias] = Orders.Table
 
-func (OrderItemTableAlias) TableName() string { return "order_items" }
+// OrderItemAlias is the table alias type for the order_items table
+type OrderItemAlias string
 
-// OrderItemColumnAlias is the column alias type for order_items
+func (a OrderItemAlias) String() string { return string(a) }
+
+const OrderItemAliasName OrderItemAlias = "order_items"
+
+// OrderItemColumnAlias represents column names for the order_items table
 type OrderItemColumnAlias string
 
 func (c OrderItemColumnAlias) String() string { return string(c) }
 
-// Column aliases for order_items
 const (
 	OrderItemColumnOrderId   OrderItemColumnAlias = "order_id"
 	OrderItemColumnLineNo    OrderItemColumnAlias = "line_no"
@@ -329,37 +736,99 @@ const (
 	OrderItemColumnUnitPrice OrderItemColumnAlias = "unit_price"
 )
 
-// OrderItemTable is the table definition for order_items
-type OrderItemTable struct {
-	schema.BaseTable[OrderItemTableAlias, OrderItemColumnAlias, OrderItemScanner]
+func (s *OrderItemScanner) GetTarget(col string) func() any {
+	switch OrderItemColumnAlias(col) {
+	case OrderItemColumnOrderId:
+		return func() any { return &s.OrderId }
+	case OrderItemColumnLineNo:
+		return func() any { return &s.LineNo }
+	case OrderItemColumnProductId:
+		return func() any { return &s.ProductId }
+	case OrderItemColumnQty:
+		return func() any { return &s.Qty }
+	case OrderItemColumnUnitPrice:
+		return func() any { return &s.UnitPrice }
+	default:
+		panic("unknown field: " + col)
+	}
+}
 
+func (s *OrderItemScanner) GetSetter(f OrderItemColumnAlias) func() set.ValueSetter[OrderItemColumnAlias] {
+	switch f {
+	case OrderItemColumnOrderId:
+		return func() set.ValueSetter[OrderItemColumnAlias] { return set.NewSetter(f, &s.OrderId) }
+	case OrderItemColumnLineNo:
+		return func() set.ValueSetter[OrderItemColumnAlias] { return set.NewSetter(f, &s.LineNo) }
+	case OrderItemColumnProductId:
+		return func() set.ValueSetter[OrderItemColumnAlias] { return set.NewSetter(f, &s.ProductId) }
+	case OrderItemColumnQty:
+		return func() set.ValueSetter[OrderItemColumnAlias] { return set.NewSetter(f, &s.Qty) }
+	case OrderItemColumnUnitPrice:
+		return func() set.ValueSetter[OrderItemColumnAlias] { return set.NewSetter(f, &s.UnitPrice) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *OrderItemScanner) GetValue(f OrderItemColumnAlias) func() any {
+	switch f {
+	case OrderItemColumnOrderId:
+		return func() any { return s.OrderId }
+	case OrderItemColumnLineNo:
+		return func() any { return s.LineNo }
+	case OrderItemColumnProductId:
+		return func() any { return s.ProductId }
+	case OrderItemColumnQty:
+		return func() any { return s.Qty }
+	case OrderItemColumnUnitPrice:
+		return func() any { return s.UnitPrice }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the order_items table
+func (s *OrderItemScanner) Relations() []exec.RelationLoader[*OrderItemScanner] {
+	return nil // TODO: generate relations
+}
+
+// OrderItemsTable represents the order_items table with its columns
+type OrderItemsTable struct {
+	*schema.Table[OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner]
 	OrderId   schema.BigIntColumnI[OrderItemColumnAlias]
-	LineNo    schema.IntColumnI[OrderItemColumnAlias]
+	LineNo    schema.IntegerColumnI[OrderItemColumnAlias]
 	ProductId schema.BigIntColumnI[OrderItemColumnAlias]
-	Qty       schema.IntColumnI[OrderItemColumnAlias]
-	UnitPrice schema.FloatColumnI[OrderItemColumnAlias]
+	Qty       schema.IntegerColumnI[OrderItemColumnAlias]
+	UnitPrice schema.DoublePrecisionColumnI[OrderItemColumnAlias]
 }
 
-// OrderItems is the table instance for order_items
-var OrderItems = &OrderItemTable{
-	OrderId:   schema.NewColumn[OrderItemColumnAlias](OrderItemColumnOrderId, 0),
-	LineNo:    schema.NewColumn[OrderItemColumnAlias](OrderItemColumnLineNo, 1),
-	ProductId: schema.NewColumn[OrderItemColumnAlias](OrderItemColumnProductId, 2),
-	Qty:       schema.NewColumn[OrderItemColumnAlias](OrderItemColumnQty, 3),
-	UnitPrice: schema.NewColumn[OrderItemColumnAlias](OrderItemColumnUnitPrice, 4),
-}
+// OrderItems is the global order_items table instance
+var OrderItems = func() OrderItemsTable {
+	orderIdCol := schema.BigIntColumn(OrderItemColumnOrderId)
+	lineNoCol := schema.IntegerColumn(OrderItemColumnLineNo)
+	productIdCol := schema.BigIntColumn(OrderItemColumnProductId)
+	qtyCol := schema.IntegerColumn(OrderItemColumnQty)
+	unitPriceCol := schema.DoublePrecisionColumn(OrderItemColumnUnitPrice)
 
-// DDL returns the table DDL
-func (t *OrderItemTable) DDL() *ddl.Table {
-	return ddl.NewTable("order_items",
-		ddl.Column("order_id", "BIGINT"),
-		ddl.Column("line_no", "INTEGER"),
-		ddl.Column("product_id", "BIGINT"),
-		ddl.Column("qty", "INTEGER"),
-		ddl.Column("unit_price", "DOUBLE PRECISION"),
-		ddl.WithConstraint("PRIMARY KEY (order_id, line_no)"),
-		ddl.WithConstraint("UNIQUE (order_id, product_id)"),
-		ddl.WithConstraint("CHECK (line_no > 0)"),
-		ddl.WithConstraint("CHECK (qty > 0)"),
-	)
-}
+	return OrderItemsTable{
+		Table: schema.NewTable[OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner](
+			OrderItemAliasName,
+			func() *OrderItemScanner { return &OrderItemScanner{} },
+			[]*ddl.ColumnDDL[OrderItemColumnAlias]{
+				orderIdCol.DDL(),
+				lineNoCol.DDL(),
+				productIdCol.DDL(),
+				qtyCol.DDL(),
+				unitPriceCol.DDL(),
+			},
+		),
+		OrderId:   orderIdCol,
+		LineNo:    lineNoCol,
+		ProductId: productIdCol,
+		Qty:       qtyCol,
+		UnitPrice: unitPriceCol,
+	}
+}()
+
+// OrderItemsRef is a reference to the order_items table for relations
+var OrderItemsRef schema.RelationTableAlias[OrderItemAlias] = OrderItems.Table

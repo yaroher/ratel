@@ -4,8 +4,8 @@
 package storepb
 
 import (
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
+	ratelcast "github.com/yaroher/ratel/pkg/ratelcast"
+	time "time"
 )
 
 // ============================================================================
@@ -50,13 +50,13 @@ func (p *CurrencyScanner) IntoPb() *Currency {
 //	User - пользователь системы
 //	============================================================================
 type UserScanner struct {
-	UserId    int64                  `json:"userId"`
-	Email     string                 `json:"email"`
-	FullName  string                 `json:"fullName"`
-	IsActive  bool                   `json:"isActive"`
-	CreatedAt *timestamppb.Timestamp `json:"createdAt"`
-	UpdatedAt *timestamppb.Timestamp `json:"updatedAt"`
-	Orders    []OrderScanner         `json:"orders"`
+	UserId    int64          `json:"userId"` // origin: type_alias, empath: user_id
+	Email     string         `json:"email"`
+	FullName  string         `json:"fullName"`
+	IsActive  bool           `json:"isActive"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	Orders    []OrderScanner `json:"orders"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -68,18 +68,25 @@ func (pb *User) IntoPlain() *UserScanner {
 	}
 	p := &UserScanner{}
 
-	p.UserId = pb.UserId
-	p.Src_ = append(p.Src_, 0)
+	// UserId type alias from user_id
+	if pb.GetUserId() != nil {
+		p.UserId = pb.GetUserId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
 	p.Email = pb.Email
 	p.Src_ = append(p.Src_, 1)
 	p.FullName = pb.FullName
 	p.Src_ = append(p.Src_, 2)
 	p.IsActive = pb.IsActive
 	p.Src_ = append(p.Src_, 3)
-	p.CreatedAt = pb.CreatedAt
-	p.Src_ = append(p.Src_, 4)
-	p.UpdatedAt = pb.UpdatedAt
-	p.Src_ = append(p.Src_, 5)
+	if pb.CreatedAt != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
+		p.Src_ = append(p.Src_, 4)
+	}
+	if pb.UpdatedAt != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
+		p.Src_ = append(p.Src_, 5)
+	}
 	if len(pb.Orders) > 0 {
 		p.Orders = make([]OrderScanner, len(pb.Orders))
 		for i, v := range pb.Orders {
@@ -99,12 +106,15 @@ func (p *UserScanner) IntoPb() *User {
 	}
 	pb := &User{}
 
-	pb.UserId = p.UserId
+	// UserId type alias -> user_id
+	{
+		pb.UserId = &UserID{Value: p.UserId}
+	}
 	pb.Email = p.Email
 	pb.FullName = p.FullName
 	pb.IsActive = p.IsActive
-	pb.CreatedAt = p.CreatedAt
-	pb.UpdatedAt = p.UpdatedAt
+	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Orders) > 0 {
 		pb.Orders = make([]*Order, len(p.Orders))
 		for i := range p.Orders {
@@ -119,10 +129,10 @@ func (p *UserScanner) IntoPb() *User {
 //	Category - категория товаров (с иерархией)
 //	============================================================================
 type CategoryScanner struct {
-	CategoryId int64                  `json:"categoryId"`
-	Name       string                 `json:"name"`
-	Slug       string                 `json:"slug"`
-	ParentId   *wrapperspb.Int64Value `json:"parentId"`
+	CategoryId int64  `json:"categoryId"` // origin: type_alias, empath: category_id
+	Name       string `json:"name"`
+	Slug       string `json:"slug"`
+	ParentId   int64  `json:"parentId"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -134,14 +144,19 @@ func (pb *Category) IntoPlain() *CategoryScanner {
 	}
 	p := &CategoryScanner{}
 
-	p.CategoryId = pb.CategoryId
-	p.Src_ = append(p.Src_, 0)
+	// CategoryId type alias from category_id
+	if pb.GetCategoryId() != nil {
+		p.CategoryId = pb.GetCategoryId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
 	p.Name = pb.Name
 	p.Src_ = append(p.Src_, 1)
 	p.Slug = pb.Slug
 	p.Src_ = append(p.Src_, 2)
-	p.ParentId = pb.ParentId
-	p.Src_ = append(p.Src_, 3)
+	if pb.ParentId != nil {
+		p.ParentId = ratelcast.Int64ValueToInt64(pb.ParentId)
+		p.Src_ = append(p.Src_, 3)
+	}
 	return p
 }
 
@@ -152,10 +167,13 @@ func (p *CategoryScanner) IntoPb() *Category {
 	}
 	pb := &Category{}
 
-	pb.CategoryId = p.CategoryId
+	// CategoryId type alias -> category_id
+	{
+		pb.CategoryId = &CategoryID{Value: p.CategoryId}
+	}
 	pb.Name = p.Name
 	pb.Slug = p.Slug
-	pb.ParentId = p.ParentId
+	pb.ParentId = ratelcast.Int64ToInt64Value(p.ParentId)
 	return pb
 }
 
@@ -164,7 +182,7 @@ func (p *CategoryScanner) IntoPb() *Category {
 //	Tag - тег для товаров
 //	============================================================================
 type TagScanner struct {
-	TagId int64  `json:"tagId"`
+	TagId int64  `json:"tagId"` // origin: type_alias, empath: tag_id
 	Name  string `json:"name"`
 	Slug  string `json:"slug"`
 	// Src_ contains indices of populated fields for sparse serialization
@@ -178,8 +196,11 @@ func (pb *Tag) IntoPlain() *TagScanner {
 	}
 	p := &TagScanner{}
 
-	p.TagId = pb.TagId
-	p.Src_ = append(p.Src_, 0)
+	// TagId type alias from tag_id
+	if pb.GetTagId() != nil {
+		p.TagId = pb.GetTagId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
 	p.Name = pb.Name
 	p.Src_ = append(p.Src_, 1)
 	p.Slug = pb.Slug
@@ -194,7 +215,10 @@ func (p *TagScanner) IntoPb() *Tag {
 	}
 	pb := &Tag{}
 
-	pb.TagId = p.TagId
+	// TagId type alias -> tag_id
+	{
+		pb.TagId = &TagID{Value: p.TagId}
+	}
 	pb.Name = p.Name
 	pb.Slug = p.Slug
 	return pb
@@ -205,17 +229,17 @@ func (p *TagScanner) IntoPb() *Tag {
 //	Product - товар
 //	============================================================================
 type ProductScanner struct {
-	ProductId  int64                  `json:"productId"`
-	Sku        string                 `json:"sku"`
-	Name       string                 `json:"name"`
-	Price      float64                `json:"price"`
-	Currency   string                 `json:"currency"`
-	StockQty   int32                  `json:"stockQty"`
-	IsDeleted  bool                   `json:"isDeleted"`
-	CreatedAt  *timestamppb.Timestamp `json:"createdAt"`
-	UpdatedAt  *timestamppb.Timestamp `json:"updatedAt"`
-	Categories []CategoryScanner      `json:"categories"`
-	Tags       []TagScanner           `json:"tags"`
+	ProductId  int64             `json:"productId"` // origin: type_alias, empath: product_id
+	Sku        string            `json:"sku"`
+	Name       string            `json:"name"`
+	Price      float64           `json:"price"`
+	Currency   string            `json:"currency"`
+	StockQty   int32             `json:"stockQty"`
+	IsDeleted  bool              `json:"isDeleted"`
+	CreatedAt  time.Time         `json:"createdAt"`
+	UpdatedAt  time.Time         `json:"updatedAt"`
+	Categories []CategoryScanner `json:"categories"`
+	Tags       []TagScanner      `json:"tags"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -227,8 +251,11 @@ func (pb *Product) IntoPlain() *ProductScanner {
 	}
 	p := &ProductScanner{}
 
-	p.ProductId = pb.ProductId
-	p.Src_ = append(p.Src_, 0)
+	// ProductId type alias from product_id
+	if pb.GetProductId() != nil {
+		p.ProductId = pb.GetProductId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
 	p.Sku = pb.Sku
 	p.Src_ = append(p.Src_, 1)
 	p.Name = pb.Name
@@ -241,10 +268,14 @@ func (pb *Product) IntoPlain() *ProductScanner {
 	p.Src_ = append(p.Src_, 5)
 	p.IsDeleted = pb.IsDeleted
 	p.Src_ = append(p.Src_, 6)
-	p.CreatedAt = pb.CreatedAt
-	p.Src_ = append(p.Src_, 7)
-	p.UpdatedAt = pb.UpdatedAt
-	p.Src_ = append(p.Src_, 8)
+	if pb.CreatedAt != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
+		p.Src_ = append(p.Src_, 7)
+	}
+	if pb.UpdatedAt != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
+		p.Src_ = append(p.Src_, 8)
+	}
 	if len(pb.Categories) > 0 {
 		p.Categories = make([]CategoryScanner, len(pb.Categories))
 		for i, v := range pb.Categories {
@@ -273,15 +304,18 @@ func (p *ProductScanner) IntoPb() *Product {
 	}
 	pb := &Product{}
 
-	pb.ProductId = p.ProductId
+	// ProductId type alias -> product_id
+	{
+		pb.ProductId = &ProductID{Value: p.ProductId}
+	}
 	pb.Sku = p.Sku
 	pb.Name = p.Name
 	pb.Price = p.Price
 	pb.Currency = p.Currency
 	pb.StockQty = p.StockQty
 	pb.IsDeleted = p.IsDeleted
-	pb.CreatedAt = p.CreatedAt
-	pb.UpdatedAt = p.UpdatedAt
+	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Categories) > 0 {
 		pb.Categories = make([]*Category, len(p.Categories))
 		for i := range p.Categories {
@@ -302,13 +336,13 @@ func (p *ProductScanner) IntoPb() *Product {
 //	Order - заказ
 //	============================================================================
 type OrderScanner struct {
-	OrderId   int64                  `json:"orderId"`
-	UserId    int64                  `json:"userId"`
-	Status    string                 `json:"status"`
-	Currency  string                 `json:"currency"`
-	CreatedAt *timestamppb.Timestamp `json:"createdAt"`
-	UpdatedAt *timestamppb.Timestamp `json:"updatedAt"`
-	Items     []OrderItemScanner     `json:"items"`
+	OrderId   int64              `json:"orderId"` // origin: type_alias, empath: order_id
+	UserId    int64              `json:"userId"`  // origin: type_alias, empath: user_id
+	Status    string             `json:"status"`
+	Currency  string             `json:"currency"`
+	CreatedAt time.Time          `json:"createdAt"`
+	UpdatedAt time.Time          `json:"updatedAt"`
+	Items     []OrderItemScanner `json:"items"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -320,18 +354,28 @@ func (pb *Order) IntoPlain() *OrderScanner {
 	}
 	p := &OrderScanner{}
 
-	p.OrderId = pb.OrderId
-	p.Src_ = append(p.Src_, 0)
-	p.UserId = pb.UserId
-	p.Src_ = append(p.Src_, 1)
+	// OrderId type alias from order_id
+	if pb.GetOrderId() != nil {
+		p.OrderId = pb.GetOrderId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
+	// UserId type alias from user_id
+	if pb.GetUserId() != nil {
+		p.UserId = pb.GetUserId().GetValue()
+		p.Src_ = append(p.Src_, 1)
+	}
 	p.Status = pb.Status
 	p.Src_ = append(p.Src_, 2)
 	p.Currency = pb.Currency
 	p.Src_ = append(p.Src_, 3)
-	p.CreatedAt = pb.CreatedAt
-	p.Src_ = append(p.Src_, 4)
-	p.UpdatedAt = pb.UpdatedAt
-	p.Src_ = append(p.Src_, 5)
+	if pb.CreatedAt != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
+		p.Src_ = append(p.Src_, 4)
+	}
+	if pb.UpdatedAt != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
+		p.Src_ = append(p.Src_, 5)
+	}
 	if len(pb.Items) > 0 {
 		p.Items = make([]OrderItemScanner, len(pb.Items))
 		for i, v := range pb.Items {
@@ -351,12 +395,18 @@ func (p *OrderScanner) IntoPb() *Order {
 	}
 	pb := &Order{}
 
-	pb.OrderId = p.OrderId
-	pb.UserId = p.UserId
+	// OrderId type alias -> order_id
+	{
+		pb.OrderId = &OrderID{Value: p.OrderId}
+	}
+	// UserId type alias -> user_id
+	{
+		pb.UserId = &UserID{Value: p.UserId}
+	}
 	pb.Status = p.Status
 	pb.Currency = p.Currency
-	pb.CreatedAt = p.CreatedAt
-	pb.UpdatedAt = p.UpdatedAt
+	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Items) > 0 {
 		pb.Items = make([]*OrderItem, len(p.Items))
 		for i := range p.Items {
@@ -371,9 +421,9 @@ func (p *OrderScanner) IntoPb() *Order {
 //	OrderItem - позиция заказа
 //	============================================================================
 type OrderItemScanner struct {
-	OrderId   int64   `json:"orderId"`
+	OrderId   int64   `json:"orderId"` // origin: type_alias, empath: order_id
 	LineNo    int32   `json:"lineNo"`
-	ProductId int64   `json:"productId"`
+	ProductId int64   `json:"productId"` // origin: type_alias, empath: product_id
 	Qty       int32   `json:"qty"`
 	UnitPrice float64 `json:"unitPrice"`
 	// Src_ contains indices of populated fields for sparse serialization
@@ -387,12 +437,18 @@ func (pb *OrderItem) IntoPlain() *OrderItemScanner {
 	}
 	p := &OrderItemScanner{}
 
-	p.OrderId = pb.OrderId
-	p.Src_ = append(p.Src_, 0)
+	// OrderId type alias from order_id
+	if pb.GetOrderId() != nil {
+		p.OrderId = pb.GetOrderId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
 	p.LineNo = pb.LineNo
 	p.Src_ = append(p.Src_, 1)
-	p.ProductId = pb.ProductId
-	p.Src_ = append(p.Src_, 2)
+	// ProductId type alias from product_id
+	if pb.GetProductId() != nil {
+		p.ProductId = pb.GetProductId().GetValue()
+		p.Src_ = append(p.Src_, 2)
+	}
 	p.Qty = pb.Qty
 	p.Src_ = append(p.Src_, 3)
 	p.UnitPrice = pb.UnitPrice
@@ -407,9 +463,15 @@ func (p *OrderItemScanner) IntoPb() *OrderItem {
 	}
 	pb := &OrderItem{}
 
-	pb.OrderId = p.OrderId
+	// OrderId type alias -> order_id
+	{
+		pb.OrderId = &OrderID{Value: p.OrderId}
+	}
 	pb.LineNo = p.LineNo
-	pb.ProductId = p.ProductId
+	// ProductId type alias -> product_id
+	{
+		pb.ProductId = &ProductID{Value: p.ProductId}
+	}
 	pb.Qty = p.Qty
 	pb.UnitPrice = p.UnitPrice
 	return pb
