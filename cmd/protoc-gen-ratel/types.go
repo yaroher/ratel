@@ -231,7 +231,8 @@ func getSchemaColumnType(col *RatelColumn, msgName string) string {
 }
 
 // getSchemaColumnConstructor returns the schema.XxxColumn constructor call for a column
-func getSchemaColumnConstructor(col *RatelColumn, constName string) string {
+// msgName is the name of the parent message (table) that owns this column
+func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName string) string {
 	isPK := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.PrimaryKey
 	isUnique := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.Unique
 	defaultVal := ""
@@ -252,13 +253,13 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string) string {
 	// Build options
 	var opts []string
 	if isPK {
-		opts = append(opts, "ddl.WithPrimaryKey["+col.Field.Parent.GoIdent.GoName+"ColumnAlias]()")
+		opts = append(opts, "ddl.WithPrimaryKey["+msgName+"ColumnAlias]()")
 	}
 	if isUnique {
-		opts = append(opts, "ddl.WithUnique["+col.Field.Parent.GoIdent.GoName+"ColumnAlias]()")
+		opts = append(opts, "ddl.WithUnique["+msgName+"ColumnAlias]()")
 	}
 	if defaultVal != "" {
-		opts = append(opts, "ddl.WithDefault["+col.Field.Parent.GoIdent.GoName+"ColumnAlias](\""+defaultVal+"\")")
+		opts = append(opts, "ddl.WithDefault["+msgName+"ColumnAlias](\""+defaultVal+"\")")
 	}
 
 	optStr := ""

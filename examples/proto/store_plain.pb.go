@@ -10,7 +10,109 @@ import (
 
 // ============================================================================
 //
-//	Currency - справочник валют
+//	Timestamps - embedded message для created_at/updated_at
+//	============================================================================
+type TimestampsScanner struct {
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Src_ contains indices of populated fields for sparse serialization
+	Src_ []uint16 `json:"_src,omitempty"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *Timestamps) IntoPlain() *TimestampsScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &TimestampsScanner{}
+
+	if pb.CreatedAt != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
+		p.Src_ = append(p.Src_, 0)
+	}
+	if pb.UpdatedAt != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
+		p.Src_ = append(p.Src_, 1)
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *TimestampsScanner) IntoPb() *Timestamps {
+	if p == nil {
+		return nil
+	}
+	pb := &Timestamps{}
+
+	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
+	return pb
+}
+
+// ============================================================================
+//
+//	BaseEntity - базовая сущность с ID и timestamps (nested embed)
+//	============================================================================
+type BaseEntityScanner struct {
+	Id        int64     `json:"id"` // origin: type_alias, empath: id
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	// Src_ contains indices of populated fields for sparse serialization
+	Src_ []uint16 `json:"_src,omitempty"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *BaseEntity) IntoPlain() *BaseEntityScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &BaseEntityScanner{}
+
+	// Id type alias from id
+	if pb.GetId() != nil {
+		p.Id = pb.GetId().GetValue()
+		p.Src_ = append(p.Src_, 0)
+	}
+	// CreatedAt from
+	if pb.GetTimestamps() != nil && pb.GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetTimestamps() != nil && pb.GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *BaseEntityScanner) IntoPb() *BaseEntity {
+	if p == nil {
+		return nil
+	}
+	pb := &BaseEntity{}
+
+	// Id type alias -> id
+	{
+		pb.Id = &EntityID{Value: p.Id}
+	}
+	// CreatedAt ->
+	if pb.Timestamps == nil {
+		pb.Timestamps = &Timestamps{}
+	}
+	pb.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Timestamps == nil {
+		pb.Timestamps = &Timestamps{}
+	}
+	pb.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
+	return pb
+}
+
+// ============================================================================
+//
+//	Currency - справочник валют (не использует BaseEntity)
 //	============================================================================
 type CurrencyScanner struct {
 	Code string `json:"code"`
@@ -47,15 +149,15 @@ func (p *CurrencyScanner) IntoPb() *Currency {
 
 // ============================================================================
 //
-//	User - пользователь системы
+//	User - пользователь системы (с BaseEntity)
 //	============================================================================
 type UserScanner struct {
-	UserId    int64          `json:"userId"` // origin: type_alias, empath: user_id
+	Id        int64          `json:"id"` // origin: embed, empath: id
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
 	Email     string         `json:"email"`
 	FullName  string         `json:"fullName"`
 	IsActive  bool           `json:"isActive"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
 	Orders    []OrderScanner `json:"orders"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
@@ -68,25 +170,27 @@ func (pb *User) IntoPlain() *UserScanner {
 	}
 	p := &UserScanner{}
 
-	// UserId type alias from user_id
-	if pb.GetUserId() != nil {
-		p.UserId = pb.GetUserId().GetValue()
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
 		p.Src_ = append(p.Src_, 0)
 	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
+	}
 	p.Email = pb.Email
-	p.Src_ = append(p.Src_, 1)
-	p.FullName = pb.FullName
-	p.Src_ = append(p.Src_, 2)
-	p.IsActive = pb.IsActive
 	p.Src_ = append(p.Src_, 3)
-	if pb.CreatedAt != nil {
-		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
-		p.Src_ = append(p.Src_, 4)
-	}
-	if pb.UpdatedAt != nil {
-		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
-		p.Src_ = append(p.Src_, 5)
-	}
+	p.FullName = pb.FullName
+	p.Src_ = append(p.Src_, 4)
+	p.IsActive = pb.IsActive
+	p.Src_ = append(p.Src_, 5)
 	if len(pb.Orders) > 0 {
 		p.Orders = make([]OrderScanner, len(pb.Orders))
 		for i, v := range pb.Orders {
@@ -106,15 +210,33 @@ func (p *UserScanner) IntoPb() *User {
 	}
 	pb := &User{}
 
-	// UserId type alias -> user_id
-	{
-		pb.UserId = &UserID{Value: p.UserId}
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
 	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	pb.Email = p.Email
 	pb.FullName = p.FullName
 	pb.IsActive = p.IsActive
-	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
-	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Orders) > 0 {
 		pb.Orders = make([]*Order, len(p.Orders))
 		for i := range p.Orders {
@@ -126,13 +248,15 @@ func (p *UserScanner) IntoPb() *User {
 
 // ============================================================================
 //
-//	Category - категория товаров (с иерархией)
+//	Category - категория товаров (с BaseEntity)
 //	============================================================================
 type CategoryScanner struct {
-	CategoryId int64  `json:"categoryId"` // origin: type_alias, empath: category_id
-	Name       string `json:"name"`
-	Slug       string `json:"slug"`
-	ParentId   int64  `json:"parentId"`
+	Id        int64     `json:"id"` // origin: embed, empath: id
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
+	ParentId  int64     `json:"parentId"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -144,18 +268,28 @@ func (pb *Category) IntoPlain() *CategoryScanner {
 	}
 	p := &CategoryScanner{}
 
-	// CategoryId type alias from category_id
-	if pb.GetCategoryId() != nil {
-		p.CategoryId = pb.GetCategoryId().GetValue()
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
 		p.Src_ = append(p.Src_, 0)
 	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
+	}
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 1)
+	p.Src_ = append(p.Src_, 3)
 	p.Slug = pb.Slug
-	p.Src_ = append(p.Src_, 2)
+	p.Src_ = append(p.Src_, 4)
 	if pb.ParentId != nil {
 		p.ParentId = ratelcast.Int64ValueToInt64(pb.ParentId)
-		p.Src_ = append(p.Src_, 3)
+		p.Src_ = append(p.Src_, 5)
 	}
 	return p
 }
@@ -167,10 +301,30 @@ func (p *CategoryScanner) IntoPb() *Category {
 	}
 	pb := &Category{}
 
-	// CategoryId type alias -> category_id
-	{
-		pb.CategoryId = &CategoryID{Value: p.CategoryId}
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
 	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	pb.Name = p.Name
 	pb.Slug = p.Slug
 	pb.ParentId = ratelcast.Int64ToInt64Value(p.ParentId)
@@ -179,12 +333,14 @@ func (p *CategoryScanner) IntoPb() *Category {
 
 // ============================================================================
 //
-//	Tag - тег для товаров
+//	Tag - тег для товаров (с BaseEntity)
 //	============================================================================
 type TagScanner struct {
-	TagId int64  `json:"tagId"` // origin: type_alias, empath: tag_id
-	Name  string `json:"name"`
-	Slug  string `json:"slug"`
+	Id        int64     `json:"id"` // origin: embed, empath: id
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Name      string    `json:"name"`
+	Slug      string    `json:"slug"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
 }
@@ -196,15 +352,25 @@ func (pb *Tag) IntoPlain() *TagScanner {
 	}
 	p := &TagScanner{}
 
-	// TagId type alias from tag_id
-	if pb.GetTagId() != nil {
-		p.TagId = pb.GetTagId().GetValue()
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
 		p.Src_ = append(p.Src_, 0)
 	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
+	}
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 1)
+	p.Src_ = append(p.Src_, 3)
 	p.Slug = pb.Slug
-	p.Src_ = append(p.Src_, 2)
+	p.Src_ = append(p.Src_, 4)
 	return p
 }
 
@@ -215,10 +381,30 @@ func (p *TagScanner) IntoPb() *Tag {
 	}
 	pb := &Tag{}
 
-	// TagId type alias -> tag_id
-	{
-		pb.TagId = &TagID{Value: p.TagId}
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
 	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	pb.Name = p.Name
 	pb.Slug = p.Slug
 	return pb
@@ -226,18 +412,18 @@ func (p *TagScanner) IntoPb() *Tag {
 
 // ============================================================================
 //
-//	Product - товар
+//	Product - товар (с BaseEntity)
 //	============================================================================
 type ProductScanner struct {
-	ProductId  int64             `json:"productId"` // origin: type_alias, empath: product_id
+	Id         int64             `json:"id"` // origin: embed, empath: id
+	CreatedAt  time.Time         `json:"createdAt"`
+	UpdatedAt  time.Time         `json:"updatedAt"`
 	Sku        string            `json:"sku"`
 	Name       string            `json:"name"`
 	Price      float64           `json:"price"`
 	Currency   string            `json:"currency"`
 	StockQty   int32             `json:"stockQty"`
 	IsDeleted  bool              `json:"isDeleted"`
-	CreatedAt  time.Time         `json:"createdAt"`
-	UpdatedAt  time.Time         `json:"updatedAt"`
 	Categories []CategoryScanner `json:"categories"`
 	Tags       []TagScanner      `json:"tags"`
 	// Src_ contains indices of populated fields for sparse serialization
@@ -251,31 +437,33 @@ func (pb *Product) IntoPlain() *ProductScanner {
 	}
 	p := &ProductScanner{}
 
-	// ProductId type alias from product_id
-	if pb.GetProductId() != nil {
-		p.ProductId = pb.GetProductId().GetValue()
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
 		p.Src_ = append(p.Src_, 0)
 	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
+	}
 	p.Sku = pb.Sku
-	p.Src_ = append(p.Src_, 1)
-	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 2)
-	p.Price = pb.Price
 	p.Src_ = append(p.Src_, 3)
-	p.Currency = pb.Currency
+	p.Name = pb.Name
 	p.Src_ = append(p.Src_, 4)
-	p.StockQty = pb.StockQty
+	p.Price = pb.Price
 	p.Src_ = append(p.Src_, 5)
-	p.IsDeleted = pb.IsDeleted
+	p.Currency = pb.Currency
 	p.Src_ = append(p.Src_, 6)
-	if pb.CreatedAt != nil {
-		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
-		p.Src_ = append(p.Src_, 7)
-	}
-	if pb.UpdatedAt != nil {
-		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
-		p.Src_ = append(p.Src_, 8)
-	}
+	p.StockQty = pb.StockQty
+	p.Src_ = append(p.Src_, 7)
+	p.IsDeleted = pb.IsDeleted
+	p.Src_ = append(p.Src_, 8)
 	if len(pb.Categories) > 0 {
 		p.Categories = make([]CategoryScanner, len(pb.Categories))
 		for i, v := range pb.Categories {
@@ -304,18 +492,36 @@ func (p *ProductScanner) IntoPb() *Product {
 	}
 	pb := &Product{}
 
-	// ProductId type alias -> product_id
-	{
-		pb.ProductId = &ProductID{Value: p.ProductId}
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
 	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	pb.Sku = p.Sku
 	pb.Name = p.Name
 	pb.Price = p.Price
 	pb.Currency = p.Currency
 	pb.StockQty = p.StockQty
 	pb.IsDeleted = p.IsDeleted
-	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
-	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Categories) > 0 {
 		pb.Categories = make([]*Category, len(p.Categories))
 		for i := range p.Categories {
@@ -333,15 +539,15 @@ func (p *ProductScanner) IntoPb() *Product {
 
 // ============================================================================
 //
-//	Order - заказ
+//	Order - заказ (с BaseEntity)
 //	============================================================================
 type OrderScanner struct {
-	OrderId   int64              `json:"orderId"` // origin: type_alias, empath: order_id
-	UserId    int64              `json:"userId"`  // origin: type_alias, empath: user_id
-	Status    string             `json:"status"`
-	Currency  string             `json:"currency"`
+	Id        int64              `json:"id"` // origin: embed, empath: id
 	CreatedAt time.Time          `json:"createdAt"`
 	UpdatedAt time.Time          `json:"updatedAt"`
+	UserId    int64              `json:"userId"` // origin: type_alias, empath: user_id
+	Status    string             `json:"status"`
+	Currency  string             `json:"currency"`
 	Items     []OrderItemScanner `json:"items"`
 	// Src_ contains indices of populated fields for sparse serialization
 	Src_ []uint16 `json:"_src,omitempty"`
@@ -354,28 +560,30 @@ func (pb *Order) IntoPlain() *OrderScanner {
 	}
 	p := &OrderScanner{}
 
-	// OrderId type alias from order_id
-	if pb.GetOrderId() != nil {
-		p.OrderId = pb.GetOrderId().GetValue()
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
 		p.Src_ = append(p.Src_, 0)
+	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+		p.Src_ = append(p.Src_, 1)
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+		p.Src_ = append(p.Src_, 2)
 	}
 	// UserId type alias from user_id
 	if pb.GetUserId() != nil {
 		p.UserId = pb.GetUserId().GetValue()
-		p.Src_ = append(p.Src_, 1)
+		p.Src_ = append(p.Src_, 3)
 	}
 	p.Status = pb.Status
-	p.Src_ = append(p.Src_, 2)
+	p.Src_ = append(p.Src_, 4)
 	p.Currency = pb.Currency
-	p.Src_ = append(p.Src_, 3)
-	if pb.CreatedAt != nil {
-		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
-		p.Src_ = append(p.Src_, 4)
-	}
-	if pb.UpdatedAt != nil {
-		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
-		p.Src_ = append(p.Src_, 5)
-	}
+	p.Src_ = append(p.Src_, 5)
 	if len(pb.Items) > 0 {
 		p.Items = make([]OrderItemScanner, len(pb.Items))
 		for i, v := range pb.Items {
@@ -395,18 +603,36 @@ func (p *OrderScanner) IntoPb() *Order {
 	}
 	pb := &Order{}
 
-	// OrderId type alias -> order_id
-	{
-		pb.OrderId = &OrderID{Value: p.OrderId}
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
 	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	// UserId type alias -> user_id
 	{
-		pb.UserId = &UserID{Value: p.UserId}
+		pb.UserId = &EntityID{Value: p.UserId}
 	}
 	pb.Status = p.Status
 	pb.Currency = p.Currency
-	pb.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
-	pb.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
 	if len(p.Items) > 0 {
 		pb.Items = make([]*OrderItem, len(p.Items))
 		for i := range p.Items {
@@ -418,7 +644,7 @@ func (p *OrderScanner) IntoPb() *Order {
 
 // ============================================================================
 //
-//	OrderItem - позиция заказа
+//	OrderItem - позиция заказа (без BaseEntity - композитный PK)
 //	============================================================================
 type OrderItemScanner struct {
 	OrderId   int64   `json:"orderId"` // origin: type_alias, empath: order_id
@@ -465,12 +691,12 @@ func (p *OrderItemScanner) IntoPb() *OrderItem {
 
 	// OrderId type alias -> order_id
 	{
-		pb.OrderId = &OrderID{Value: p.OrderId}
+		pb.OrderId = &EntityID{Value: p.OrderId}
 	}
 	pb.LineNo = p.LineNo
 	// ProductId type alias -> product_id
 	{
-		pb.ProductId = &ProductID{Value: p.ProductId}
+		pb.ProductId = &EntityID{Value: p.ProductId}
 	}
 	pb.Qty = p.Qty
 	pb.UnitPrice = p.UnitPrice

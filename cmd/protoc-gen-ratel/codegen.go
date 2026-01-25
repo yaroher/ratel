@@ -83,7 +83,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("\tswitch ", colAliasTypeName, "(col) {")
 	for _, col := range table.Columns {
 		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.Field.GoName
+		fieldName := col.GoName
 		gf.P("\tcase ", constName, ":")
 		gf.P("\t\treturn func() any { return &s.", fieldName, " }")
 	}
@@ -98,7 +98,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("\tswitch f {")
 	for _, col := range table.Columns {
 		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.Field.GoName
+		fieldName := col.GoName
 		gf.P("\tcase ", constName, ":")
 		gf.P("\t\treturn func() set.ValueSetter[", colAliasTypeName, "] { return set.NewSetter(f, &s.", fieldName, ") }")
 	}
@@ -113,7 +113,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("\tswitch f {")
 	for _, col := range table.Columns {
 		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.Field.GoName
+		fieldName := col.GoName
 		gf.P("\tcase ", constName, ":")
 		gf.P("\t\treturn func() any { return s.", fieldName, " }")
 	}
@@ -136,7 +136,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("type ", tableStructName, " struct {")
 	gf.P("\t*schema.Table[", aliasTypeName, ", ", colAliasTypeName, ", *", scannerTypeName, "]")
 	for _, col := range table.Columns {
-		fieldName := col.Field.GoName
+		fieldName := col.GoName
 		colType := getSchemaColumnType(col, msgName)
 		gf.P("\t", fieldName, " ", colType)
 	}
@@ -150,9 +150,9 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 
 	// Column variable declarations
 	for _, col := range table.Columns {
-		fieldName := strcase.ToLowerCamel(col.Field.GoName) + "Col"
+		fieldName := strcase.ToLowerCamel(col.GoName) + "Col"
 		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		constructor := getSchemaColumnConstructor(col, constName)
+		constructor := getSchemaColumnConstructor(col, constName, msgName)
 		gf.P("\t", fieldName, " := ", constructor)
 	}
 	gf.P()
@@ -164,7 +164,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("\t\t\tfunc() *", scannerTypeName, " { return &", scannerTypeName, "{} },")
 	gf.P("\t\t\t[]*ddl.ColumnDDL[", colAliasTypeName, "]{")
 	for _, col := range table.Columns {
-		fieldName := strcase.ToLowerCamel(col.Field.GoName) + "Col"
+		fieldName := strcase.ToLowerCamel(col.GoName) + "Col"
 		gf.P("\t\t\t\t", fieldName, ".DDL(),")
 	}
 	gf.P("\t\t\t},")
@@ -172,8 +172,8 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 
 	// Column fields
 	for _, col := range table.Columns {
-		fieldName := strcase.ToLowerCamel(col.Field.GoName) + "Col"
-		gf.P("\t\t", col.Field.GoName, ": ", fieldName, ",")
+		fieldName := strcase.ToLowerCamel(col.GoName) + "Col"
+		gf.P("\t\t", col.GoName, ": ", fieldName, ",")
 	}
 	gf.P("\t}")
 	gf.P("}()")

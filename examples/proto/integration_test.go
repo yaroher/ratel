@@ -74,7 +74,7 @@ func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
 	t.Log("Schema created successfully")
 }
 
-// TestGeneratedModels tests the generated models from proto
+// TestGeneratedModels tests the generated models from proto with nested embed
 func TestGeneratedModels(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
@@ -109,7 +109,7 @@ func TestGeneratedModels(t *testing.T) {
 	})
 
 	// ========================================================================
-	// INSERT: Users
+	// INSERT: Users (with BaseEntity embedded - Id comes from nested embed)
 	// ========================================================================
 	var userIDs []int64
 	t.Run("Insert Users", func(t *testing.T) {
@@ -129,19 +129,19 @@ func TestGeneratedModels(t *testing.T) {
 					UserColumnFullName,
 				).
 				Values(u.email, u.fullName).
-				Returning(UserColumnUserId)
+				Returning(UserColumnId) // Id from BaseEntity
 
 			user, err := Users.QueryRow(ctx, db, query)
 			if err != nil {
 				t.Fatalf("failed to insert user %s: %v", u.email, err)
 			}
-			userIDs = append(userIDs, user.UserId)
-			t.Logf("Inserted user: %s (ID: %d)", u.fullName, user.UserId)
+			userIDs = append(userIDs, user.Id)
+			t.Logf("Inserted user: %s (ID: %d)", u.fullName, user.Id)
 		}
 	})
 
 	// ========================================================================
-	// INSERT: Categories
+	// INSERT: Categories (with BaseEntity embedded)
 	// ========================================================================
 	var categoryIDs []int64
 	t.Run("Insert Categories", func(t *testing.T) {
@@ -160,19 +160,19 @@ func TestGeneratedModels(t *testing.T) {
 					CategoryColumnSlug,
 				).
 				Values(c.name, c.slug).
-				Returning(CategoryColumnCategoryId)
+				Returning(CategoryColumnId) // Id from BaseEntity
 
 			cat, err := Categorys.QueryRow(ctx, db, query)
 			if err != nil {
 				t.Fatalf("failed to insert category %s: %v", c.name, err)
 			}
-			categoryIDs = append(categoryIDs, cat.CategoryId)
-			t.Logf("Inserted category: %s (ID: %d)", c.name, cat.CategoryId)
+			categoryIDs = append(categoryIDs, cat.Id)
+			t.Logf("Inserted category: %s (ID: %d)", c.name, cat.Id)
 		}
 	})
 
 	// ========================================================================
-	// INSERT: Tags
+	// INSERT: Tags (with BaseEntity embedded)
 	// ========================================================================
 	var tagIDs []int64
 	t.Run("Insert Tags", func(t *testing.T) {
@@ -189,19 +189,19 @@ func TestGeneratedModels(t *testing.T) {
 			query := Tags.Insert().
 				Columns(TagColumnName, TagColumnSlug).
 				Values(tg.name, tg.slug).
-				Returning(TagColumnTagId)
+				Returning(TagColumnId) // Id from BaseEntity
 
 			tag, err := Tags.QueryRow(ctx, db, query)
 			if err != nil {
 				t.Fatalf("failed to insert tag %s: %v", tg.name, err)
 			}
-			tagIDs = append(tagIDs, tag.TagId)
-			t.Logf("Inserted tag: %s (ID: %d)", tg.name, tag.TagId)
+			tagIDs = append(tagIDs, tag.Id)
+			t.Logf("Inserted tag: %s (ID: %d)", tg.name, tag.Id)
 		}
 	})
 
 	// ========================================================================
-	// INSERT: Products
+	// INSERT: Products (with BaseEntity embedded)
 	// ========================================================================
 	var productIDs []int64
 	t.Run("Insert Products", func(t *testing.T) {
@@ -227,19 +227,19 @@ func TestGeneratedModels(t *testing.T) {
 					ProductColumnStockQty,
 				).
 				Values(p.sku, p.name, p.price, p.currency, p.stockQty).
-				Returning(ProductColumnProductId)
+				Returning(ProductColumnId) // Id from BaseEntity
 
 			prod, err := Products.QueryRow(ctx, db, query)
 			if err != nil {
 				t.Fatalf("failed to insert product %s: %v", p.name, err)
 			}
-			productIDs = append(productIDs, prod.ProductId)
-			t.Logf("Inserted product: %s (ID: %d)", p.name, prod.ProductId)
+			productIDs = append(productIDs, prod.Id)
+			t.Logf("Inserted product: %s (ID: %d)", p.name, prod.Id)
 		}
 	})
 
 	// ========================================================================
-	// INSERT: Orders
+	// INSERT: Orders (with BaseEntity embedded)
 	// ========================================================================
 	var orderIDs []int64
 	t.Run("Insert Orders", func(t *testing.T) {
@@ -261,19 +261,19 @@ func TestGeneratedModels(t *testing.T) {
 					OrderColumnCurrency,
 				).
 				Values(o.userID, o.status, o.currency).
-				Returning(OrderColumnOrderId)
+				Returning(OrderColumnId) // Id from BaseEntity
 
 			order, err := Orders.QueryRow(ctx, db, query)
 			if err != nil {
 				t.Fatalf("failed to insert order for user %d: %v", o.userID, err)
 			}
-			orderIDs = append(orderIDs, order.OrderId)
-			t.Logf("Inserted order: ID=%d, User=%d, Status=%s", order.OrderId, o.userID, o.status)
+			orderIDs = append(orderIDs, order.Id)
+			t.Logf("Inserted order: ID=%d, User=%d, Status=%s", order.Id, o.userID, o.status)
 		}
 	})
 
 	// ========================================================================
-	// INSERT: Order Items
+	// INSERT: Order Items (no BaseEntity - composite PK)
 	// ========================================================================
 	t.Run("Insert Order Items", func(t *testing.T) {
 		items := []struct {
@@ -322,8 +322,8 @@ func TestGeneratedModels(t *testing.T) {
 		}
 
 		for _, u := range users {
-			t.Logf("User: ID=%d, Email=%s, Name=%s, Active=%v",
-				u.UserId, u.Email, u.FullName, u.IsActive)
+			t.Logf("User: ID=%d, Email=%s, Name=%s, Active=%v, CreatedAt=%v",
+				u.Id, u.Email, u.FullName, u.IsActive, u.CreatedAt)
 		}
 	})
 
@@ -343,7 +343,7 @@ func TestGeneratedModels(t *testing.T) {
 
 		for _, p := range products {
 			t.Logf("Expensive Product: ID=%d, Name=%s, Price=%.2f",
-				p.ProductId, p.Name, p.Price)
+				p.Id, p.Name, p.Price)
 		}
 	})
 
@@ -353,8 +353,8 @@ func TestGeneratedModels(t *testing.T) {
 	t.Run("Update Product Stock", func(t *testing.T) {
 		query := Products.Update().
 			Set(Products.StockQty.Set(100)).
-			Where(Products.ProductId.Eq(productIDs[0])).
-			Returning(ProductColumnProductId, ProductColumnStockQty)
+			Where(Products.Id.Eq(productIDs[0])).
+			Returning(ProductColumnId, ProductColumnStockQty)
 
 		product, err := Products.QueryRow(ctx, db, query)
 		if err != nil {
@@ -364,14 +364,14 @@ func TestGeneratedModels(t *testing.T) {
 		if product.StockQty != 100 {
 			t.Errorf("expected stock_qty=100, got %d", product.StockQty)
 		}
-		t.Logf("Updated product %d stock to %d", product.ProductId, product.StockQty)
+		t.Logf("Updated product %d stock to %d", product.Id, product.StockQty)
 	})
 
 	t.Run("Update Order Status", func(t *testing.T) {
 		query := Orders.Update().
 			Set(Orders.Status.Set("PAID")).
-			Where(Orders.OrderId.Eq(orderIDs[0])).
-			Returning(OrderColumnOrderId, OrderColumnStatus)
+			Where(Orders.Id.Eq(orderIDs[0])).
+			Returning(OrderColumnId, OrderColumnStatus)
 
 		order, err := Orders.QueryRow(ctx, db, query)
 		if err != nil {
@@ -381,7 +381,7 @@ func TestGeneratedModels(t *testing.T) {
 		if order.Status != "PAID" {
 			t.Errorf("expected status=PAID, got %s", order.Status)
 		}
-		t.Logf("Updated order %d status to %s", order.OrderId, order.Status)
+		t.Logf("Updated order %d status to %s", order.Id, order.Status)
 	})
 
 	// ========================================================================
@@ -411,7 +411,7 @@ func TestGeneratedModels(t *testing.T) {
 		// Soft delete by setting is_deleted = true
 		query := Products.Update().
 			Set(Products.IsDeleted.Set(true)).
-			Where(Products.ProductId.Eq(productIDs[2]))
+			Where(Products.Id.Eq(productIDs[2]))
 
 		affected, err := Products.Execute(ctx, db, query)
 		if err != nil {
@@ -427,7 +427,7 @@ func TestGeneratedModels(t *testing.T) {
 		selectQuery := Products.SelectAll().
 			Where(
 				Products.Table.And(
-					Products.ProductId.Eq(productIDs[2]),
+					Products.Id.Eq(productIDs[2]),
 					Products.IsDeleted.Eq(true),
 				),
 			)
@@ -440,7 +440,7 @@ func TestGeneratedModels(t *testing.T) {
 		if !product.IsDeleted {
 			t.Error("product should be marked as deleted")
 		}
-		t.Logf("Verified product %d is soft deleted", product.ProductId)
+		t.Logf("Verified product %d is soft deleted", product.Id)
 	})
 
 	// ========================================================================
@@ -460,6 +460,29 @@ func TestGeneratedModels(t *testing.T) {
 			t.Errorf("expected 2 active products, got %d", len(products))
 		}
 		t.Logf("Found %d active products", len(products))
+	})
+
+	// ========================================================================
+	// Verify timestamps from nested embed
+	// ========================================================================
+	t.Run("Verify Timestamps from Nested Embed", func(t *testing.T) {
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
+
+		user, err := Users.QueryRow(ctx, db, query)
+		if err != nil {
+			t.Fatalf("failed to select user: %v", err)
+		}
+
+		// CreatedAt and UpdatedAt should be set from nested embed BaseEntity.timestamps
+		if user.CreatedAt.IsZero() {
+			t.Error("expected CreatedAt to be set from nested embed")
+		}
+		if user.UpdatedAt.IsZero() {
+			t.Error("expected UpdatedAt to be set from nested embed")
+		}
+		t.Logf("User %d timestamps - CreatedAt: %v, UpdatedAt: %v",
+			user.Id, user.CreatedAt, user.UpdatedAt)
 	})
 
 	// Suppress unused variables

@@ -111,28 +111,28 @@ type UserColumnAlias string
 func (c UserColumnAlias) String() string { return string(c) }
 
 const (
-	UserColumnUserId    UserColumnAlias = "user_id"
+	UserColumnId        UserColumnAlias = "id"
+	UserColumnCreatedAt UserColumnAlias = "created_at"
+	UserColumnUpdatedAt UserColumnAlias = "updated_at"
 	UserColumnEmail     UserColumnAlias = "email"
 	UserColumnFullName  UserColumnAlias = "full_name"
 	UserColumnIsActive  UserColumnAlias = "is_active"
-	UserColumnCreatedAt UserColumnAlias = "created_at"
-	UserColumnUpdatedAt UserColumnAlias = "updated_at"
 )
 
 func (s *UserScanner) GetTarget(col string) func() any {
 	switch UserColumnAlias(col) {
-	case UserColumnUserId:
-		return func() any { return &s.UserId }
+	case UserColumnId:
+		return func() any { return &s.Id }
+	case UserColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case UserColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
 	case UserColumnEmail:
 		return func() any { return &s.Email }
 	case UserColumnFullName:
 		return func() any { return &s.FullName }
 	case UserColumnIsActive:
 		return func() any { return &s.IsActive }
-	case UserColumnCreatedAt:
-		return func() any { return &s.CreatedAt }
-	case UserColumnUpdatedAt:
-		return func() any { return &s.UpdatedAt }
 	default:
 		panic("unknown field: " + col)
 	}
@@ -140,18 +140,18 @@ func (s *UserScanner) GetTarget(col string) func() any {
 
 func (s *UserScanner) GetSetter(f UserColumnAlias) func() set.ValueSetter[UserColumnAlias] {
 	switch f {
-	case UserColumnUserId:
-		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case UserColumnId:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case UserColumnCreatedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case UserColumnUpdatedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	case UserColumnEmail:
 		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.Email) }
 	case UserColumnFullName:
 		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.FullName) }
 	case UserColumnIsActive:
 		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.IsActive) }
-	case UserColumnCreatedAt:
-		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
-	case UserColumnUpdatedAt:
-		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -159,18 +159,18 @@ func (s *UserScanner) GetSetter(f UserColumnAlias) func() set.ValueSetter[UserCo
 
 func (s *UserScanner) GetValue(f UserColumnAlias) func() any {
 	switch f {
-	case UserColumnUserId:
-		return func() any { return s.UserId }
+	case UserColumnId:
+		return func() any { return s.Id }
+	case UserColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case UserColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
 	case UserColumnEmail:
 		return func() any { return s.Email }
 	case UserColumnFullName:
 		return func() any { return s.FullName }
 	case UserColumnIsActive:
 		return func() any { return s.IsActive }
-	case UserColumnCreatedAt:
-		return func() any { return s.CreatedAt }
-	case UserColumnUpdatedAt:
-		return func() any { return s.UpdatedAt }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -184,42 +184,42 @@ func (s *UserScanner) Relations() []exec.RelationLoader[*UserScanner] {
 // UsersTable represents the users table with its columns
 type UsersTable struct {
 	*schema.Table[UserAlias, UserColumnAlias, *UserScanner]
-	UserId    schema.BigSerialColumnI[UserColumnAlias]
+	Id        schema.BigSerialColumnI[UserColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[UserColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[UserColumnAlias]
 	Email     schema.TextColumnI[UserColumnAlias]
 	FullName  schema.TextColumnI[UserColumnAlias]
 	IsActive  schema.BooleanColumnI[UserColumnAlias]
-	CreatedAt schema.TimestamptzColumnI[UserColumnAlias]
-	UpdatedAt schema.TimestamptzColumnI[UserColumnAlias]
 }
 
 // Users is the global users table instance
 var Users = func() UsersTable {
-	userIdCol := schema.BigSerialColumn(UserColumnUserId, ddl.WithPrimaryKey[UserColumnAlias]())
+	idCol := schema.BigSerialColumn(UserColumnId, ddl.WithPrimaryKey[UserColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(UserColumnCreatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(UserColumnUpdatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
 	emailCol := schema.TextColumn(UserColumnEmail, ddl.WithUnique[UserColumnAlias]())
 	fullNameCol := schema.TextColumn(UserColumnFullName)
 	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"))
-	createdAtCol := schema.TimestamptzColumn(UserColumnCreatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(UserColumnUpdatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
 
 	return UsersTable{
 		Table: schema.NewTable[UserAlias, UserColumnAlias, *UserScanner](
 			UserAliasName,
 			func() *UserScanner { return &UserScanner{} },
 			[]*ddl.ColumnDDL[UserColumnAlias]{
-				userIdCol.DDL(),
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
 				emailCol.DDL(),
 				fullNameCol.DDL(),
 				isActiveCol.DDL(),
-				createdAtCol.DDL(),
-				updatedAtCol.DDL(),
 			},
 		),
-		UserId:    userIdCol,
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
 		Email:     emailCol,
 		FullName:  fullNameCol,
 		IsActive:  isActiveCol,
-		CreatedAt: createdAtCol,
-		UpdatedAt: updatedAtCol,
 	}
 }()
 
@@ -239,16 +239,22 @@ type CategoryColumnAlias string
 func (c CategoryColumnAlias) String() string { return string(c) }
 
 const (
-	CategoryColumnCategoryId CategoryColumnAlias = "category_id"
-	CategoryColumnName       CategoryColumnAlias = "name"
-	CategoryColumnSlug       CategoryColumnAlias = "slug"
-	CategoryColumnParentId   CategoryColumnAlias = "parent_id"
+	CategoryColumnId        CategoryColumnAlias = "id"
+	CategoryColumnCreatedAt CategoryColumnAlias = "created_at"
+	CategoryColumnUpdatedAt CategoryColumnAlias = "updated_at"
+	CategoryColumnName      CategoryColumnAlias = "name"
+	CategoryColumnSlug      CategoryColumnAlias = "slug"
+	CategoryColumnParentId  CategoryColumnAlias = "parent_id"
 )
 
 func (s *CategoryScanner) GetTarget(col string) func() any {
 	switch CategoryColumnAlias(col) {
-	case CategoryColumnCategoryId:
-		return func() any { return &s.CategoryId }
+	case CategoryColumnId:
+		return func() any { return &s.Id }
+	case CategoryColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case CategoryColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
 	case CategoryColumnName:
 		return func() any { return &s.Name }
 	case CategoryColumnSlug:
@@ -262,8 +268,12 @@ func (s *CategoryScanner) GetTarget(col string) func() any {
 
 func (s *CategoryScanner) GetSetter(f CategoryColumnAlias) func() set.ValueSetter[CategoryColumnAlias] {
 	switch f {
-	case CategoryColumnCategoryId:
-		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.CategoryId) }
+	case CategoryColumnId:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case CategoryColumnCreatedAt:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case CategoryColumnUpdatedAt:
+		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	case CategoryColumnName:
 		return func() set.ValueSetter[CategoryColumnAlias] { return set.NewSetter(f, &s.Name) }
 	case CategoryColumnSlug:
@@ -277,8 +287,12 @@ func (s *CategoryScanner) GetSetter(f CategoryColumnAlias) func() set.ValueSette
 
 func (s *CategoryScanner) GetValue(f CategoryColumnAlias) func() any {
 	switch f {
-	case CategoryColumnCategoryId:
-		return func() any { return s.CategoryId }
+	case CategoryColumnId:
+		return func() any { return s.Id }
+	case CategoryColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case CategoryColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
 	case CategoryColumnName:
 		return func() any { return s.Name }
 	case CategoryColumnSlug:
@@ -298,15 +312,19 @@ func (s *CategoryScanner) Relations() []exec.RelationLoader[*CategoryScanner] {
 // CategorysTable represents the categories table with its columns
 type CategorysTable struct {
 	*schema.Table[CategoryAlias, CategoryColumnAlias, *CategoryScanner]
-	CategoryId schema.BigSerialColumnI[CategoryColumnAlias]
-	Name       schema.TextColumnI[CategoryColumnAlias]
-	Slug       schema.TextColumnI[CategoryColumnAlias]
-	ParentId   schema.NullBigIntColumnI[CategoryColumnAlias]
+	Id        schema.BigSerialColumnI[CategoryColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[CategoryColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[CategoryColumnAlias]
+	Name      schema.TextColumnI[CategoryColumnAlias]
+	Slug      schema.TextColumnI[CategoryColumnAlias]
+	ParentId  schema.NullBigIntColumnI[CategoryColumnAlias]
 }
 
 // Categorys is the global categories table instance
 var Categorys = func() CategorysTable {
-	categoryIdCol := schema.BigSerialColumn(CategoryColumnCategoryId, ddl.WithPrimaryKey[CategoryColumnAlias]())
+	idCol := schema.BigSerialColumn(CategoryColumnId, ddl.WithPrimaryKey[CategoryColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(CategoryColumnCreatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(CategoryColumnUpdatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"))
 	nameCol := schema.TextColumn(CategoryColumnName)
 	slugCol := schema.TextColumn(CategoryColumnSlug, ddl.WithUnique[CategoryColumnAlias]())
 	parentIdCol := schema.NullBigIntColumn(CategoryColumnParentId)
@@ -316,16 +334,20 @@ var Categorys = func() CategorysTable {
 			CategoryAliasName,
 			func() *CategoryScanner { return &CategoryScanner{} },
 			[]*ddl.ColumnDDL[CategoryColumnAlias]{
-				categoryIdCol.DDL(),
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
 				nameCol.DDL(),
 				slugCol.DDL(),
 				parentIdCol.DDL(),
 			},
 		),
-		CategoryId: categoryIdCol,
-		Name:       nameCol,
-		Slug:       slugCol,
-		ParentId:   parentIdCol,
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+		Name:      nameCol,
+		Slug:      slugCol,
+		ParentId:  parentIdCol,
 	}
 }()
 
@@ -345,15 +367,21 @@ type TagColumnAlias string
 func (c TagColumnAlias) String() string { return string(c) }
 
 const (
-	TagColumnTagId TagColumnAlias = "tag_id"
-	TagColumnName  TagColumnAlias = "name"
-	TagColumnSlug  TagColumnAlias = "slug"
+	TagColumnId        TagColumnAlias = "id"
+	TagColumnCreatedAt TagColumnAlias = "created_at"
+	TagColumnUpdatedAt TagColumnAlias = "updated_at"
+	TagColumnName      TagColumnAlias = "name"
+	TagColumnSlug      TagColumnAlias = "slug"
 )
 
 func (s *TagScanner) GetTarget(col string) func() any {
 	switch TagColumnAlias(col) {
-	case TagColumnTagId:
-		return func() any { return &s.TagId }
+	case TagColumnId:
+		return func() any { return &s.Id }
+	case TagColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case TagColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
 	case TagColumnName:
 		return func() any { return &s.Name }
 	case TagColumnSlug:
@@ -365,8 +393,12 @@ func (s *TagScanner) GetTarget(col string) func() any {
 
 func (s *TagScanner) GetSetter(f TagColumnAlias) func() set.ValueSetter[TagColumnAlias] {
 	switch f {
-	case TagColumnTagId:
-		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.TagId) }
+	case TagColumnId:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case TagColumnCreatedAt:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case TagColumnUpdatedAt:
+		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	case TagColumnName:
 		return func() set.ValueSetter[TagColumnAlias] { return set.NewSetter(f, &s.Name) }
 	case TagColumnSlug:
@@ -378,8 +410,12 @@ func (s *TagScanner) GetSetter(f TagColumnAlias) func() set.ValueSetter[TagColum
 
 func (s *TagScanner) GetValue(f TagColumnAlias) func() any {
 	switch f {
-	case TagColumnTagId:
-		return func() any { return s.TagId }
+	case TagColumnId:
+		return func() any { return s.Id }
+	case TagColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case TagColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
 	case TagColumnName:
 		return func() any { return s.Name }
 	case TagColumnSlug:
@@ -397,14 +433,18 @@ func (s *TagScanner) Relations() []exec.RelationLoader[*TagScanner] {
 // TagsTable represents the tags table with its columns
 type TagsTable struct {
 	*schema.Table[TagAlias, TagColumnAlias, *TagScanner]
-	TagId schema.BigSerialColumnI[TagColumnAlias]
-	Name  schema.TextColumnI[TagColumnAlias]
-	Slug  schema.TextColumnI[TagColumnAlias]
+	Id        schema.BigSerialColumnI[TagColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[TagColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[TagColumnAlias]
+	Name      schema.TextColumnI[TagColumnAlias]
+	Slug      schema.TextColumnI[TagColumnAlias]
 }
 
 // Tags is the global tags table instance
 var Tags = func() TagsTable {
-	tagIdCol := schema.BigSerialColumn(TagColumnTagId, ddl.WithPrimaryKey[TagColumnAlias]())
+	idCol := schema.BigSerialColumn(TagColumnId, ddl.WithPrimaryKey[TagColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(TagColumnCreatedAt, ddl.WithDefault[TagColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(TagColumnUpdatedAt, ddl.WithDefault[TagColumnAlias]("now()"))
 	nameCol := schema.TextColumn(TagColumnName)
 	slugCol := schema.TextColumn(TagColumnSlug, ddl.WithUnique[TagColumnAlias]())
 
@@ -413,14 +453,18 @@ var Tags = func() TagsTable {
 			TagAliasName,
 			func() *TagScanner { return &TagScanner{} },
 			[]*ddl.ColumnDDL[TagColumnAlias]{
-				tagIdCol.DDL(),
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
 				nameCol.DDL(),
 				slugCol.DDL(),
 			},
 		),
-		TagId: tagIdCol,
-		Name:  nameCol,
-		Slug:  slugCol,
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+		Name:      nameCol,
+		Slug:      slugCol,
 	}
 }()
 
@@ -440,21 +484,25 @@ type ProductColumnAlias string
 func (c ProductColumnAlias) String() string { return string(c) }
 
 const (
-	ProductColumnProductId ProductColumnAlias = "product_id"
+	ProductColumnId        ProductColumnAlias = "id"
+	ProductColumnCreatedAt ProductColumnAlias = "created_at"
+	ProductColumnUpdatedAt ProductColumnAlias = "updated_at"
 	ProductColumnSku       ProductColumnAlias = "sku"
 	ProductColumnName      ProductColumnAlias = "name"
 	ProductColumnPrice     ProductColumnAlias = "price"
 	ProductColumnCurrency  ProductColumnAlias = "currency"
 	ProductColumnStockQty  ProductColumnAlias = "stock_qty"
 	ProductColumnIsDeleted ProductColumnAlias = "is_deleted"
-	ProductColumnCreatedAt ProductColumnAlias = "created_at"
-	ProductColumnUpdatedAt ProductColumnAlias = "updated_at"
 )
 
 func (s *ProductScanner) GetTarget(col string) func() any {
 	switch ProductColumnAlias(col) {
-	case ProductColumnProductId:
-		return func() any { return &s.ProductId }
+	case ProductColumnId:
+		return func() any { return &s.Id }
+	case ProductColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case ProductColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
 	case ProductColumnSku:
 		return func() any { return &s.Sku }
 	case ProductColumnName:
@@ -467,10 +515,6 @@ func (s *ProductScanner) GetTarget(col string) func() any {
 		return func() any { return &s.StockQty }
 	case ProductColumnIsDeleted:
 		return func() any { return &s.IsDeleted }
-	case ProductColumnCreatedAt:
-		return func() any { return &s.CreatedAt }
-	case ProductColumnUpdatedAt:
-		return func() any { return &s.UpdatedAt }
 	default:
 		panic("unknown field: " + col)
 	}
@@ -478,8 +522,12 @@ func (s *ProductScanner) GetTarget(col string) func() any {
 
 func (s *ProductScanner) GetSetter(f ProductColumnAlias) func() set.ValueSetter[ProductColumnAlias] {
 	switch f {
-	case ProductColumnProductId:
-		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.ProductId) }
+	case ProductColumnId:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case ProductColumnCreatedAt:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case ProductColumnUpdatedAt:
+		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	case ProductColumnSku:
 		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.Sku) }
 	case ProductColumnName:
@@ -492,10 +540,6 @@ func (s *ProductScanner) GetSetter(f ProductColumnAlias) func() set.ValueSetter[
 		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.StockQty) }
 	case ProductColumnIsDeleted:
 		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.IsDeleted) }
-	case ProductColumnCreatedAt:
-		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
-	case ProductColumnUpdatedAt:
-		return func() set.ValueSetter[ProductColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -503,8 +547,12 @@ func (s *ProductScanner) GetSetter(f ProductColumnAlias) func() set.ValueSetter[
 
 func (s *ProductScanner) GetValue(f ProductColumnAlias) func() any {
 	switch f {
-	case ProductColumnProductId:
-		return func() any { return s.ProductId }
+	case ProductColumnId:
+		return func() any { return s.Id }
+	case ProductColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case ProductColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
 	case ProductColumnSku:
 		return func() any { return s.Sku }
 	case ProductColumnName:
@@ -517,10 +565,6 @@ func (s *ProductScanner) GetValue(f ProductColumnAlias) func() any {
 		return func() any { return s.StockQty }
 	case ProductColumnIsDeleted:
 		return func() any { return s.IsDeleted }
-	case ProductColumnCreatedAt:
-		return func() any { return s.CreatedAt }
-	case ProductColumnUpdatedAt:
-		return func() any { return s.UpdatedAt }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -534,54 +578,54 @@ func (s *ProductScanner) Relations() []exec.RelationLoader[*ProductScanner] {
 // ProductsTable represents the products table with its columns
 type ProductsTable struct {
 	*schema.Table[ProductAlias, ProductColumnAlias, *ProductScanner]
-	ProductId schema.BigSerialColumnI[ProductColumnAlias]
+	Id        schema.BigSerialColumnI[ProductColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[ProductColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[ProductColumnAlias]
 	Sku       schema.TextColumnI[ProductColumnAlias]
 	Name      schema.TextColumnI[ProductColumnAlias]
 	Price     schema.DoublePrecisionColumnI[ProductColumnAlias]
 	Currency  schema.TextColumnI[ProductColumnAlias]
 	StockQty  schema.IntegerColumnI[ProductColumnAlias]
 	IsDeleted schema.BooleanColumnI[ProductColumnAlias]
-	CreatedAt schema.TimestamptzColumnI[ProductColumnAlias]
-	UpdatedAt schema.TimestamptzColumnI[ProductColumnAlias]
 }
 
 // Products is the global products table instance
 var Products = func() ProductsTable {
-	productIdCol := schema.BigSerialColumn(ProductColumnProductId, ddl.WithPrimaryKey[ProductColumnAlias]())
+	idCol := schema.BigSerialColumn(ProductColumnId, ddl.WithPrimaryKey[ProductColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(ProductColumnCreatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(ProductColumnUpdatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
 	skuCol := schema.TextColumn(ProductColumnSku, ddl.WithUnique[ProductColumnAlias]())
 	nameCol := schema.TextColumn(ProductColumnName)
 	priceCol := schema.DoublePrecisionColumn(ProductColumnPrice)
 	currencyCol := schema.TextColumn(ProductColumnCurrency)
 	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"))
 	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"))
-	createdAtCol := schema.TimestamptzColumn(ProductColumnCreatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(ProductColumnUpdatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
 
 	return ProductsTable{
 		Table: schema.NewTable[ProductAlias, ProductColumnAlias, *ProductScanner](
 			ProductAliasName,
 			func() *ProductScanner { return &ProductScanner{} },
 			[]*ddl.ColumnDDL[ProductColumnAlias]{
-				productIdCol.DDL(),
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
 				skuCol.DDL(),
 				nameCol.DDL(),
 				priceCol.DDL(),
 				currencyCol.DDL(),
 				stockQtyCol.DDL(),
 				isDeletedCol.DDL(),
-				createdAtCol.DDL(),
-				updatedAtCol.DDL(),
 			},
 		),
-		ProductId: productIdCol,
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
 		Sku:       skuCol,
 		Name:      nameCol,
 		Price:     priceCol,
 		Currency:  currencyCol,
 		StockQty:  stockQtyCol,
 		IsDeleted: isDeletedCol,
-		CreatedAt: createdAtCol,
-		UpdatedAt: updatedAtCol,
 	}
 }()
 
@@ -601,28 +645,28 @@ type OrderColumnAlias string
 func (c OrderColumnAlias) String() string { return string(c) }
 
 const (
-	OrderColumnOrderId   OrderColumnAlias = "order_id"
+	OrderColumnId        OrderColumnAlias = "id"
+	OrderColumnCreatedAt OrderColumnAlias = "created_at"
+	OrderColumnUpdatedAt OrderColumnAlias = "updated_at"
 	OrderColumnUserId    OrderColumnAlias = "user_id"
 	OrderColumnStatus    OrderColumnAlias = "status"
 	OrderColumnCurrency  OrderColumnAlias = "currency"
-	OrderColumnCreatedAt OrderColumnAlias = "created_at"
-	OrderColumnUpdatedAt OrderColumnAlias = "updated_at"
 )
 
 func (s *OrderScanner) GetTarget(col string) func() any {
 	switch OrderColumnAlias(col) {
-	case OrderColumnOrderId:
-		return func() any { return &s.OrderId }
+	case OrderColumnId:
+		return func() any { return &s.Id }
+	case OrderColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case OrderColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
 	case OrderColumnUserId:
 		return func() any { return &s.UserId }
 	case OrderColumnStatus:
 		return func() any { return &s.Status }
 	case OrderColumnCurrency:
 		return func() any { return &s.Currency }
-	case OrderColumnCreatedAt:
-		return func() any { return &s.CreatedAt }
-	case OrderColumnUpdatedAt:
-		return func() any { return &s.UpdatedAt }
 	default:
 		panic("unknown field: " + col)
 	}
@@ -630,18 +674,18 @@ func (s *OrderScanner) GetTarget(col string) func() any {
 
 func (s *OrderScanner) GetSetter(f OrderColumnAlias) func() set.ValueSetter[OrderColumnAlias] {
 	switch f {
-	case OrderColumnOrderId:
-		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.OrderId) }
+	case OrderColumnId:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case OrderColumnCreatedAt:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case OrderColumnUpdatedAt:
+		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	case OrderColumnUserId:
 		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.UserId) }
 	case OrderColumnStatus:
 		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.Status) }
 	case OrderColumnCurrency:
 		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.Currency) }
-	case OrderColumnCreatedAt:
-		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
-	case OrderColumnUpdatedAt:
-		return func() set.ValueSetter[OrderColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -649,18 +693,18 @@ func (s *OrderScanner) GetSetter(f OrderColumnAlias) func() set.ValueSetter[Orde
 
 func (s *OrderScanner) GetValue(f OrderColumnAlias) func() any {
 	switch f {
-	case OrderColumnOrderId:
-		return func() any { return s.OrderId }
+	case OrderColumnId:
+		return func() any { return s.Id }
+	case OrderColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case OrderColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
 	case OrderColumnUserId:
 		return func() any { return s.UserId }
 	case OrderColumnStatus:
 		return func() any { return s.Status }
 	case OrderColumnCurrency:
 		return func() any { return s.Currency }
-	case OrderColumnCreatedAt:
-		return func() any { return s.CreatedAt }
-	case OrderColumnUpdatedAt:
-		return func() any { return s.UpdatedAt }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -674,42 +718,42 @@ func (s *OrderScanner) Relations() []exec.RelationLoader[*OrderScanner] {
 // OrdersTable represents the orders table with its columns
 type OrdersTable struct {
 	*schema.Table[OrderAlias, OrderColumnAlias, *OrderScanner]
-	OrderId   schema.BigSerialColumnI[OrderColumnAlias]
+	Id        schema.BigSerialColumnI[OrderColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[OrderColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[OrderColumnAlias]
 	UserId    schema.BigIntColumnI[OrderColumnAlias]
 	Status    schema.TextColumnI[OrderColumnAlias]
 	Currency  schema.TextColumnI[OrderColumnAlias]
-	CreatedAt schema.TimestamptzColumnI[OrderColumnAlias]
-	UpdatedAt schema.TimestamptzColumnI[OrderColumnAlias]
 }
 
 // Orders is the global orders table instance
 var Orders = func() OrdersTable {
-	orderIdCol := schema.BigSerialColumn(OrderColumnOrderId, ddl.WithPrimaryKey[OrderColumnAlias]())
+	idCol := schema.BigSerialColumn(OrderColumnId, ddl.WithPrimaryKey[OrderColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(OrderColumnCreatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
 	userIdCol := schema.BigIntColumn(OrderColumnUserId)
 	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"))
 	currencyCol := schema.TextColumn(OrderColumnCurrency)
-	createdAtCol := schema.TimestamptzColumn(OrderColumnCreatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
 
 	return OrdersTable{
 		Table: schema.NewTable[OrderAlias, OrderColumnAlias, *OrderScanner](
 			OrderAliasName,
 			func() *OrderScanner { return &OrderScanner{} },
 			[]*ddl.ColumnDDL[OrderColumnAlias]{
-				orderIdCol.DDL(),
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
 				userIdCol.DDL(),
 				statusCol.DDL(),
 				currencyCol.DDL(),
-				createdAtCol.DDL(),
-				updatedAtCol.DDL(),
 			},
 		),
-		OrderId:   orderIdCol,
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
 		UserId:    userIdCol,
 		Status:    statusCol,
 		Currency:  currencyCol,
-		CreatedAt: createdAtCol,
-		UpdatedAt: updatedAtCol,
 	}
 }()
 

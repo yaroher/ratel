@@ -13,44 +13,8 @@ import "examples/proto/goplain/goplain.proto";
 // Type Aliases для ID
 // ============================================================================
 
-// UserID - type alias для ID пользователя
-message UserID {
-  option (goplain.message) = {
-    generate: true
-    type_alias: true
-  };
-  int64 value = 1;
-}
-
-// ProductID - type alias для ID товара
-message ProductID {
-  option (goplain.message) = {
-    generate: true
-    type_alias: true
-  };
-  int64 value = 1;
-}
-
-// OrderID - type alias для ID заказа
-message OrderID {
-  option (goplain.message) = {
-    generate: true
-    type_alias: true
-  };
-  int64 value = 1;
-}
-
-// CategoryID - type alias для ID категории
-message CategoryID {
-  option (goplain.message) = {
-    generate: true
-    type_alias: true
-  };
-  int64 value = 1;
-}
-
-// TagID - type alias для ID тега
-message TagID {
+// EntityID - базовый type alias для ID сущностей
+message EntityID {
   option (goplain.message) = {
     generate: true
     type_alias: true
@@ -59,7 +23,35 @@ message TagID {
 }
 
 // ============================================================================
-// Currency - справочник валют
+// Timestamps - embedded message для created_at/updated_at
+// ============================================================================
+message Timestamps {
+  option (goplain.message).generate = true;
+  
+  google.protobuf.Timestamp created_at = 1 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+  
+  google.protobuf.Timestamp updated_at = 2 [(ratel.column) = {
+    constraints: { default_value: "now()" }
+  }];
+}
+
+// ============================================================================
+// BaseEntity - базовая сущность с ID и timestamps (nested embed)
+// ============================================================================
+message BaseEntity {
+  option (goplain.message).generate = true;
+  
+  EntityID id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+  
+  Timestamps timestamps = 2 [(goplain.field).embed = true];
+}
+
+// ============================================================================
+// Currency - справочник валют (не использует BaseEntity)
 // ============================================================================
 message Currency {
   option (goplain.message).generate = true;
@@ -76,7 +68,7 @@ message Currency {
 }
 
 // ============================================================================
-// User - пользователь системы
+// User - пользователь системы (с BaseEntity)
 // ============================================================================
 message User {
   option (goplain.message).generate = true;
@@ -89,9 +81,8 @@ message User {
     ]
   };
   
-  UserID user_id = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
-  }];
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
   
   string email = 2 [(ratel.column) = {
     constraints: { unique: true }
@@ -101,14 +92,6 @@ message User {
   
   bool is_active = 4 [(ratel.column) = {
     constraints: { default_value: "true" }
-  }];
-  
-  google.protobuf.Timestamp created_at = 5 [(ratel.column) = {
-    constraints: { default_value: "now()" }
-  }];
-  
-  google.protobuf.Timestamp updated_at = 6 [(ratel.column) = {
-    constraints: { default_value: "now()" }
   }];
   
   // OneToMany: User has many Orders
@@ -121,7 +104,7 @@ message User {
 }
 
 // ============================================================================
-// Category - категория товаров (с иерархией)
+// Category - категория товаров (с BaseEntity)
 // ============================================================================
 message Category {
   option (goplain.message).generate = true;
@@ -130,9 +113,8 @@ message Category {
     table_name: "categories"
   };
   
-  CategoryID category_id = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
-  }];
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
   
   string name = 2;
   
@@ -144,7 +126,7 @@ message Category {
 }
 
 // ============================================================================
-// Tag - тег для товаров
+// Tag - тег для товаров (с BaseEntity)
 // ============================================================================
 message Tag {
   option (goplain.message).generate = true;
@@ -153,9 +135,8 @@ message Tag {
     table_name: "tags"
   };
   
-  TagID tag_id = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
-  }];
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
   
   string name = 2;
   
@@ -165,7 +146,7 @@ message Tag {
 }
 
 // ============================================================================
-// Product - товар
+// Product - товар (с BaseEntity)
 // ============================================================================
 message Product {
   option (goplain.message).generate = true;
@@ -180,9 +161,8 @@ message Product {
     ]
   };
   
-  ProductID product_id = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
-  }];
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
   
   string sku = 2 [(ratel.column) = {
     constraints: { unique: true }
@@ -200,14 +180,6 @@ message Product {
   
   bool is_deleted = 7 [(ratel.column) = {
     constraints: { default_value: "false" }
-  }];
-  
-  google.protobuf.Timestamp created_at = 8 [(ratel.column) = {
-    constraints: { default_value: "now()" }
-  }];
-  
-  google.protobuf.Timestamp updated_at = 9 [(ratel.column) = {
-    constraints: { default_value: "now()" }
   }];
   
   // ManyToMany: Product has many Categories
@@ -228,7 +200,7 @@ message Product {
 }
 
 // ============================================================================
-// Order - заказ
+// Order - заказ (с BaseEntity)
 // ============================================================================
 message Order {
   option (goplain.message).generate = true;
@@ -243,25 +215,16 @@ message Order {
     ]
   };
   
-  OrderID order_id = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
-  }];
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
   
-  UserID user_id = 2;  // FK to users.user_id
+  EntityID user_id = 2;  // FK to users.id
   
   string status = 3 [(ratel.column) = {
     constraints: { default_value: "'NEW'" }
   }];
   
   string currency = 4;  // FK to currency.code
-  
-  google.protobuf.Timestamp created_at = 5 [(ratel.column) = {
-    constraints: { default_value: "now()" }
-  }];
-  
-  google.protobuf.Timestamp updated_at = 6 [(ratel.column) = {
-    constraints: { default_value: "now()" }
-  }];
   
   // OneToMany: Order has many OrderItems
   repeated OrderItem items = 10 [(ratel.relation) = {
@@ -273,7 +236,7 @@ message Order {
 }
 
 // ============================================================================
-// OrderItem - позиция заказа
+// OrderItem - позиция заказа (без BaseEntity - композитный PK)
 // ============================================================================
 message OrderItem {
   option (goplain.message).generate = true;
@@ -288,9 +251,9 @@ message OrderItem {
     ]
   };
   
-  OrderID order_id = 1;   // FK to orders.order_id
+  EntityID order_id = 1;   // FK to orders.id
   int32 line_no = 2;
-  ProductID product_id = 3; // FK to products.product_id
+  EntityID product_id = 3; // FK to products.id
   int32 qty = 4;
   double unit_price = 5;
 }
