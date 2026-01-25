@@ -76,7 +76,7 @@ message User {
     generate: true
     table_name: "users"
     indexes: [
-      { columns: ["email"] },
+      { columns: ["email"], unique: true },
       { columns: ["is_active", "created_at"] }
     ]
   };
@@ -244,11 +244,13 @@ message OrderItem {
     generate: true
     table_name: "order_items"
     constraints: [
-      "PRIMARY KEY (order_id, line_no)",
-      "UNIQUE (order_id, product_id)",
       "CHECK (line_no > 0)",
       "CHECK (qty > 0)"
     ]
+    // Composite primary key
+    primary_key: { columns: ["order_id", "line_no"] }
+    // Composite unique constraint
+    unique: [{ columns: ["order_id", "product_id"] }]
   };
   
   EntityID order_id = 1;   // FK to orders.id

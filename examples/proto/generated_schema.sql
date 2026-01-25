@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   full_name TEXT,
   is_active BOOLEAN DEFAULT true
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users (email);
+CREATE INDEX IF NOT EXISTS idx_users_is_active_created_at ON users (is_active, created_at);
 CREATE TABLE IF NOT EXISTS categories (
   id BIGSERIAL PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -39,6 +41,9 @@ CREATE TABLE IF NOT EXISTS products (
   stock_qty INTEGER DEFAULT 0,
   is_deleted BOOLEAN DEFAULT false
 );
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products (sku);
+CREATE INDEX IF NOT EXISTS idx_products_currency ON products (currency);
+CREATE INDEX IF NOT EXISTS idx_products_is_deleted_created_at ON products (is_deleted, created_at) WHERE is_deleted = false;
 CREATE TABLE IF NOT EXISTS orders (
   id BIGSERIAL PRIMARY KEY,
   created_at TIMESTAMPTZ DEFAULT now(),
@@ -47,10 +52,15 @@ CREATE TABLE IF NOT EXISTS orders (
   status TEXT DEFAULT 'NEW',
   currency TEXT
 );
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders (user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at);
 CREATE TABLE IF NOT EXISTS order_items (
   order_id BIGINT,
   line_no INTEGER,
   product_id BIGINT,
   qty INTEGER,
-  unit_price DOUBLE PRECISION
+  unit_price DOUBLE PRECISION,
+  PRIMARY KEY (order_id, line_no),
+  UNIQUE (order_id, product_id)
 );

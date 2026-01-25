@@ -747,7 +747,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"timestamps:\x06\x82\xa6\x1d\x02\b\x01\"T\n" +
 	"\bCurrency\x12\x1c\n" +
 	"\x04code\x18\x01 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x04code\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\x8d\x02\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\x8f\x02\n" +
 	"\x04User\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x1e\n" +
 	"\x05email\x18\x02 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x05email\x12\x1b\n" +
@@ -756,7 +756,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\x06orders\x18\n" +
 	" \x03(\v2\f.store.OrderB\x11\xa2\xb5\x18\r\n" +
 	"\v\n" +
-	"\auser_id\x18\x01R\x06orders:5\x92\xb5\x18+\b\x01\x12\x05users*\a\x12\x05email*\x17\x12\tis_active\x12\n" +
+	"\auser_id\x18\x01R\x06orders:7\x92\xb5\x18-\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
 	"created_at\x82\xa6\x1d\x02\b\x01\"\xbf\x01\n" +
 	"\bCategory\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x12\n" +
@@ -797,7 +797,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	" \x03(\v2\x10.store.OrderItemB\x12\xa2\xb5\x18\x0e\n" +
 	"\f\n" +
 	"\border_id\x18\x01R\x05items:r\x92\xb5\x18h\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
-	"created_at\x82\xa6\x1d\x02\b\x01\"\xb2\x02\n" +
+	"created_at\x82\xa6\x1d\x02\b\x01\"\x9f\x02\n" +
 	"\tOrderItem\x12*\n" +
 	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDR\aorderId\x12\x17\n" +
 	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12.\n" +
@@ -805,7 +805,10 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"product_id\x18\x03 \x01(\v2\x0f.store.EntityIDR\tproductId\x12\x10\n" +
 	"\x03qty\x18\x04 \x01(\x05R\x03qty\x12\x1d\n" +
 	"\n" +
-	"unit_price\x18\x05 \x01(\x01R\tunitPrice:\x7f\x92\xb5\x18u\b\x01\x12\vorder_items\"\x1fPRIMARY KEY (order_id, line_no)\"\x1dUNIQUE (order_id, product_id)\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)\x82\xa6\x1d\x02\b\x01B1Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
+	"unit_price\x18\x05 \x01(\x01R\tunitPrice:l\x92\xb5\x18b\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
+	"product_id:\x13\n" +
+	"\border_id\n" +
+	"\aline_no\x82\xa6\x1d\x02\b\x01B1Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
 
 var (
 	file_examples_proto_store_proto_rawDescOnce sync.Once

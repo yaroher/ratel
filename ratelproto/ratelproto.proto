@@ -97,11 +97,34 @@ message Table {
   // Virtual fields (columns not in proto message)
   repeated VirtualColumn virtual_columns = 3;
   
-  // Table-level constraints (e.g., "UNIQUE (a, b)", "CHECK (x > 0)")
+  // Table-level constraints (e.g., "CHECK (x > 0)")
   repeated string constraints = 4;
   
   // Indexes
   repeated Index indexes = 5;
+  
+  // Composite unique constraints
+  // Example: unique: [{ columns: ["order_id", "product_id"] }]
+  repeated UniqueConstraint unique = 6;
+  
+  // Composite primary key (overrides column-level primary_key)
+  // Example: primary_key: { columns: ["order_id", "line_no"] }
+  PrimaryKey primary_key = 7;
+}
+
+// Composite unique constraint
+message UniqueConstraint {
+  // Constraint name (auto-generated if empty: uq_<table>_<columns>)
+  string name = 1;
+  
+  // Columns in the unique constraint
+  repeated string columns = 2;
+}
+
+// Composite primary key
+message PrimaryKey {
+  // Columns in the primary key
+  repeated string columns = 1;
 }
 
 // ============================================================================

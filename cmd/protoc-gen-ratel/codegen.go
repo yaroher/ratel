@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/iancoleman/strcase"
 	"google.golang.org/protobuf/compiler/protogen"
 )
@@ -157,6 +160,43 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	}
 	gf.P()
 
+	// Generate indexes if any
+	hasIndexes := table.Options != nil && len(table.Options.Indexes) > 0
+	if hasIndexes {
+		for i, idx := range table.Options.Indexes {
+			idxName := idx.Name
+			if idxName == "" {
+				// Auto-generate index name: idx_<table>_<columns>
+				idxName = "idx_" + tableName + "_" + strings.Join(idx.Columns, "_")
+			}
+			idxVarName := fmt.Sprintf("idx%d", i)
+
+			// Build column constants list
+			var colConsts []string
+			for _, colName := range idx.Columns {
+				colConsts = append(colConsts, msgName+"Column"+strcase.ToCamel(colName))
+			}
+
+			gf.P("\t", idxVarName, " := ddl.NewIndex[", aliasTypeName, ", ", colAliasTypeName, "](\"", idxName, "\", ", aliasTypeName, "Name).OnColumns(", strings.Join(colConsts, ", "), ")")
+
+			// Add unique if needed
+			if idx.Unique {
+				gf.P("\t", idxVarName, " = ", idxVarName, ".Unique()")
+			}
+
+			// Add WHERE clause if needed
+			if idx.Where != "" {
+				gf.P("\t", idxVarName, " = ", idxVarName, ".Where(\"", idx.Where, "\")")
+			}
+
+			// Add USING method if specified
+			if idx.Using != "" {
+				gf.P("\t", idxVarName, " = ", idxVarName, ".Using(\"", idx.Using, "\")")
+			}
+		}
+		gf.P()
+	}
+
 	// Return table struct
 	gf.P("\treturn ", tableStructName, "{")
 	gf.P("\t\tTable: schema.NewTable[", aliasTypeName, ", ", colAliasTypeName, ", *", scannerTypeName, "](")
@@ -168,6 +208,41 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 		gf.P("\t\t\t\t", fieldName, ".DDL(),")
 	}
 	gf.P("\t\t\t},")
+
+	// Add indexes option if any
+	if hasIndexes {
+		gf.P("\t\t\tddl.WithIndexes[", aliasTypeName, ", ", colAliasTypeName, "](")
+		for i := range table.Options.Indexes {
+			idxVarName := fmt.Sprintf("idx%d", i)
+			gf.P("\t\t\t\t", idxVarName, ",")
+		}
+		gf.P("\t\t\t),")
+	}
+
+	// Add unique constraints if any
+	hasUnique := table.Options != nil && len(table.Options.Unique) > 0
+	if hasUnique {
+		gf.P("\t\t\tddl.WithUniqueColumns[", aliasTypeName, ", ", colAliasTypeName, "](")
+		for _, uq := range table.Options.Unique {
+			var colConsts []string
+			for _, colName := range uq.Columns {
+				colConsts = append(colConsts, msgName+"Column"+strcase.ToCamel(colName))
+			}
+			gf.P("\t\t\t\t[]", colAliasTypeName, "{", strings.Join(colConsts, ", "), "},")
+		}
+		gf.P("\t\t\t),")
+	}
+
+	// Add composite primary key if any
+	hasPK := table.Options != nil && table.Options.PrimaryKey != nil && len(table.Options.PrimaryKey.Columns) > 0
+	if hasPK {
+		var pkColConsts []string
+		for _, colName := range table.Options.PrimaryKey.Columns {
+			pkColConsts = append(pkColConsts, msgName+"Column"+strcase.ToCamel(colName))
+		}
+		gf.P("\t\t\tddl.WithPrimaryKeyColumns[", aliasTypeName, ", ", colAliasTypeName, "]([]", colAliasTypeName, "{", strings.Join(pkColConsts, ", "), "}),")
+	}
+
 	gf.P("\t\t),")
 
 	// Column fields

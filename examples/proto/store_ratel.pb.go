@@ -201,6 +201,10 @@ var Users = func() UsersTable {
 	fullNameCol := schema.TextColumn(UserColumnFullName)
 	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"))
 
+	idx0 := ddl.NewIndex[UserAlias, UserColumnAlias]("idx_users_email", UserAliasName).OnColumns(UserColumnEmail)
+	idx0 = idx0.Unique()
+	idx1 := ddl.NewIndex[UserAlias, UserColumnAlias]("idx_users_is_active_created_at", UserAliasName).OnColumns(UserColumnIsActive, UserColumnCreatedAt)
+
 	return UsersTable{
 		Table: schema.NewTable[UserAlias, UserColumnAlias, *UserScanner](
 			UserAliasName,
@@ -213,6 +217,10 @@ var Users = func() UsersTable {
 				fullNameCol.DDL(),
 				isActiveCol.DDL(),
 			},
+			ddl.WithIndexes[UserAlias, UserColumnAlias](
+				idx0,
+				idx1,
+			),
 		),
 		Id:        idCol,
 		CreatedAt: createdAtCol,
@@ -601,6 +609,11 @@ var Products = func() ProductsTable {
 	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"))
 	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"))
 
+	idx0 := ddl.NewIndex[ProductAlias, ProductColumnAlias]("idx_products_sku", ProductAliasName).OnColumns(ProductColumnSku)
+	idx1 := ddl.NewIndex[ProductAlias, ProductColumnAlias]("idx_products_currency", ProductAliasName).OnColumns(ProductColumnCurrency)
+	idx2 := ddl.NewIndex[ProductAlias, ProductColumnAlias]("idx_products_is_deleted_created_at", ProductAliasName).OnColumns(ProductColumnIsDeleted, ProductColumnCreatedAt)
+	idx2 = idx2.Where("is_deleted = false")
+
 	return ProductsTable{
 		Table: schema.NewTable[ProductAlias, ProductColumnAlias, *ProductScanner](
 			ProductAliasName,
@@ -616,6 +629,11 @@ var Products = func() ProductsTable {
 				stockQtyCol.DDL(),
 				isDeletedCol.DDL(),
 			},
+			ddl.WithIndexes[ProductAlias, ProductColumnAlias](
+				idx0,
+				idx1,
+				idx2,
+			),
 		),
 		Id:        idCol,
 		CreatedAt: createdAtCol,
@@ -735,6 +753,10 @@ var Orders = func() OrdersTable {
 	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"))
 	currencyCol := schema.TextColumn(OrderColumnCurrency)
 
+	idx0 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_user_id", OrderAliasName).OnColumns(OrderColumnUserId)
+	idx1 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_status", OrderAliasName).OnColumns(OrderColumnStatus)
+	idx2 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_created_at", OrderAliasName).OnColumns(OrderColumnCreatedAt)
+
 	return OrdersTable{
 		Table: schema.NewTable[OrderAlias, OrderColumnAlias, *OrderScanner](
 			OrderAliasName,
@@ -747,6 +769,11 @@ var Orders = func() OrdersTable {
 				statusCol.DDL(),
 				currencyCol.DDL(),
 			},
+			ddl.WithIndexes[OrderAlias, OrderColumnAlias](
+				idx0,
+				idx1,
+				idx2,
+			),
 		),
 		Id:        idCol,
 		CreatedAt: createdAtCol,
@@ -865,6 +892,10 @@ var OrderItems = func() OrderItemsTable {
 				qtyCol.DDL(),
 				unitPriceCol.DDL(),
 			},
+			ddl.WithUniqueColumns[OrderItemAlias, OrderItemColumnAlias](
+				[]OrderItemColumnAlias{OrderItemColumnOrderId, OrderItemColumnProductId},
+			),
+			ddl.WithPrimaryKeyColumns[OrderItemAlias, OrderItemColumnAlias]([]OrderItemColumnAlias{OrderItemColumnOrderId, OrderItemColumnLineNo}),
 		),
 		OrderId:   orderIdCol,
 		LineNo:    lineNoCol,
