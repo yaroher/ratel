@@ -8,6 +8,7 @@ import (
 	"github.com/yaroher/ratel/ddl"
 	"github.com/yaroher/ratel/dml"
 	"github.com/yaroher/ratel/dml/set"
+	"github.com/yaroher/ratel/exec"
 	"github.com/yaroher/ratel/schema"
 )
 
@@ -113,6 +114,7 @@ type UsersScanner struct {
 	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Orders    []*OrdersScanner
 }
 
 func (u *UsersScanner) GetTarget(s string) func() any {
@@ -444,6 +446,8 @@ type OrdersScanner struct {
 	Currency  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	User      *UsersScanner
+	Money     *CurrencyScanner
 }
 
 func (o *OrdersScanner) GetTarget(s string) func() any {
@@ -735,6 +739,39 @@ var ordersCurrency = schema.BelongsTo[OrdersAlias, OrdersColumnAlias, *OrdersSca
 	OrdersColumnAliasCurrency,
 	CurrencyColumnAliasCode,
 )
+
+func (u *UsersScanner) Relations() []exec.RelationLoader[*UsersScanner] {
+	return []exec.RelationLoader[*UsersScanner]{
+		schema.HasManyLoad(
+			usersOrders,
+			orders.Table,
+			UsersColumnAliasUserID,
+			func(user *UsersScanner, rows []*OrdersScanner) {
+				for _, row := range rows {
+					row.User = user
+				}
+				user.Orders = rows
+			},
+		),
+	}
+}
+
+func (o *OrdersScanner) Relations() []exec.RelationLoader[*OrdersScanner] {
+	return []exec.RelationLoader[*OrdersScanner]{
+		schema.BelongsToLoad(
+			ordersUser,
+			users.Table,
+			OrdersColumnAliasUserID,
+			func(order *OrdersScanner, user *UsersScanner) { order.User = user },
+		),
+		schema.BelongsToLoad(
+			ordersCurrency,
+			currency.Table,
+			OrdersColumnAliasCurrency,
+			func(order *OrdersScanner, money *CurrencyScanner) { order.Money = money },
+		),
+	}
+}
 
 const OrdersIndexUserCreated OrdersAlias = "ix_orders_user_created"
 const OrderItemsIndexProduct OrderItemsAlias = "ix_order_items_product"

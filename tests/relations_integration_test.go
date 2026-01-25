@@ -10,6 +10,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/yaroher/ratel/ddl"
+	"github.com/yaroher/ratel/exec"
 )
 
 func TestRelationsLoadWithTestcontainers(t *testing.T) {
@@ -175,5 +176,30 @@ func TestRelationsLoadWithTestcontainers(t *testing.T) {
 	}
 	if currencyRow.Code != "USD" {
 		t.Fatalf("expected currency USD, got %s", currencyRow.Code)
+	}
+
+	usersLoaded, err := users.Query(exec.WithRelations(ctx), pool, users.SelectAll())
+	if err != nil {
+		t.Fatalf("select users: %v", err)
+	}
+	if len(usersLoaded) != 1 {
+		t.Fatalf("expected 1 user, got %d", len(usersLoaded))
+	}
+	if len(usersLoaded[0].Orders) != 2 {
+		t.Fatalf("expected 2 orders on user relation, got %d", len(usersLoaded[0].Orders))
+	}
+
+	ordersLoaded, err := orders.Query(exec.WithRelations(ctx), pool, orders.SelectAll())
+	if err != nil {
+		t.Fatalf("select orders: %v", err)
+	}
+	if len(ordersLoaded) == 0 {
+		t.Fatalf("expected orders, got 0")
+	}
+	if ordersLoaded[0].User == nil || ordersLoaded[0].User.UserID != userID {
+		t.Fatalf("expected order user to be loaded")
+	}
+	if ordersLoaded[0].Money == nil || ordersLoaded[0].Money.Code != "USD" {
+		t.Fatalf("expected order currency to be loaded")
 	}
 }

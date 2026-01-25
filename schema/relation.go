@@ -171,3 +171,97 @@ func (r *BackwardRelation[T, C, S, RT, RC, RS]) WithJoin(
 
 	return query.Join(joinType, r.relatedName.String(), r.relatedName.String(), onClause)
 }
+
+type HasManyLoader[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec.Scanner[RC],
+] struct {
+	relation *ForwardRelation[T, C, S, RT, RC, RS]
+	related  RelationTableQuery[RT, RC, RS]
+	localKey C
+	assign   func(S, []RS)
+}
+
+func (l HasManyLoader[T, C, S, RT, RC, RS]) Load(ctx context.Context, db exec.DB, base S) error {
+	localValue := base.GetValue(l.localKey)()
+	rows, err := l.relation.LoadMany(exec.WithSkipRelations(ctx), db, l.related, localValue)
+	if err != nil {
+		return err
+	}
+	if l.assign != nil {
+		l.assign(base, rows)
+	}
+	return nil
+}
+
+func HasManyLoad[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec.Scanner[RC],
+](
+	relation *ForwardRelation[T, C, S, RT, RC, RS],
+	related RelationTableQuery[RT, RC, RS],
+	localKey C,
+	assign func(S, []RS),
+) exec.RelationLoader[S] {
+	return HasManyLoader[T, C, S, RT, RC, RS]{
+		relation: relation,
+		related:  related,
+		localKey: localKey,
+		assign:   assign,
+	}
+}
+
+type BelongsToLoader[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec.Scanner[RC],
+] struct {
+	relation   *BackwardRelation[T, C, S, RT, RC, RS]
+	related    RelationTableQuery[RT, RC, RS]
+	foreignKey C
+	assign     func(S, RS)
+}
+
+func (l BelongsToLoader[T, C, S, RT, RC, RS]) Load(ctx context.Context, db exec.DB, base S) error {
+	foreignValue := base.GetValue(l.foreignKey)()
+	row, err := l.relation.LoadOne(exec.WithSkipRelations(ctx), db, l.related, foreignValue)
+	if err != nil {
+		return err
+	}
+	if l.assign != nil {
+		l.assign(base, row)
+	}
+	return nil
+}
+
+func BelongsToLoad[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec.Scanner[RC],
+](
+	relation *BackwardRelation[T, C, S, RT, RC, RS],
+	related RelationTableQuery[RT, RC, RS],
+	foreignKey C,
+	assign func(S, RS),
+) exec.RelationLoader[S] {
+	return BelongsToLoader[T, C, S, RT, RC, RS]{
+		relation:   relation,
+		related:    related,
+		foreignKey: foreignKey,
+		assign:     assign,
+	}
+}

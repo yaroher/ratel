@@ -47,6 +47,18 @@ func (t *TableExecutor[T, C, S]) QueryRow(ctx context.Context, db DB, query type
 	if err != nil {
 		return trg, err
 	}
+	if LoadRelations(ctx) && !SkipRelations(ctx) {
+		if loader, ok := any(trg).(RelationProvider[S]); ok {
+			for _, relation := range loader.Relations() {
+				if relation == nil {
+					continue
+				}
+				if err := relation.Load(ctx, db, trg); err != nil {
+					return trg, err
+				}
+			}
+		}
+	}
 	return trg, nil
 }
 
@@ -68,6 +80,18 @@ func (t *TableExecutor[T, C, S]) Query(ctx context.Context, db DB, query types.S
 		err = rows.Scan(targets...)
 		if err != nil {
 			return nil, err
+		}
+		if LoadRelations(ctx) && !SkipRelations(ctx) {
+			if loader, ok := any(trg).(RelationProvider[S]); ok {
+				for _, relation := range loader.Relations() {
+					if relation == nil {
+						continue
+					}
+					if err := relation.Load(ctx, db, trg); err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
 		trgs = append(trgs, trg)
 	}
