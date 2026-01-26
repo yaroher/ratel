@@ -13,6 +13,7 @@ import (
 	"github.com/yaroher/ratel/pkg/ddl"
 	"github.com/yaroher/ratel/pkg/exec"
 	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
+	"github.com/yaroher/ratel/pkg/repository"
 )
 
 // setupTestDB creates a PostgreSQL testcontainer and returns a connection pool
@@ -825,6 +826,99 @@ func TestGeneratedModels(t *testing.T) {
 	// Suppress unused variables
 	_ = categoryIDs
 	_ = tagIDs
+
+	// ========================================================================
+	// Repository Tests
+	// ========================================================================
+	t.Run("Repository: ScannerRepository Query", func(t *testing.T) {
+		userScannerRepo := repository.NewScannerRepository(Users.Table, db)
+
+		query := Users.SelectAll().Where(Users.IsActive.Eq(true))
+		users, err := userScannerRepo.Query(ctx, query)
+		if err != nil {
+			t.Fatalf("failed to query users: %v", err)
+		}
+
+		if len(users) == 0 {
+			t.Error("expected at least one user")
+		}
+		t.Logf("Found %d active users via ScannerRepository", len(users))
+	})
+
+	t.Run("Repository: ScannerRepository QueryRow with relations", func(t *testing.T) {
+		userScannerRepo := repository.NewScannerRepository(Users.Table, db)
+
+		query := Users.SelectAll().Where(Users.Id.Eq(userIDs[0]))
+		user, err := userScannerRepo.QueryRow(ctx, query, UsersWithOrders())
+		if err != nil {
+			t.Fatalf("failed to query user: %v", err)
+		}
+
+		if len(user.Orders) == 0 {
+			t.Error("expected user to have orders loaded")
+		}
+		t.Logf("User %s has %d orders via ScannerRepository", user.FullName, len(user.Orders))
+	})
+
+	t.Run("Repository: ProtoRepository Query", func(t *testing.T) {
+		userScannerRepo := repository.NewScannerRepository(Users.Table, db)
+		userProtoRepo := repository.NewProtoRepository(userScannerRepo, UserConverter)
+
+		query := Users.SelectAll().Where(Users.IsActive.Eq(true))
+		users, err := userProtoRepo.Query(ctx, query)
+		if err != nil {
+			t.Fatalf("failed to query users: %v", err)
+		}
+
+		if len(users) == 0 {
+			t.Error("expected at least one user")
+		}
+
+		// Verify we got proto types back
+		for _, u := range users {
+			if u.GetEmail() == "" {
+				t.Error("expected proto user to have email")
+			}
+		}
+		t.Logf("Found %d active users via ProtoRepository (proto types)", len(users))
+	})
+
+	t.Run("Repository: ProtoRepository QueryRow with relations", func(t *testing.T) {
+		userScannerRepo := repository.NewScannerRepository(Users.Table, db)
+		userProtoRepo := repository.NewProtoRepository(userScannerRepo, UserConverter)
+
+		query := Users.SelectAll().Where(Users.Id.Eq(userIDs[0]))
+		user, err := userProtoRepo.QueryRow(ctx, query, UsersWithAllRelations())
+		if err != nil {
+			t.Fatalf("failed to query user: %v", err)
+		}
+
+		// Verify proto type
+		if user.GetEmail() == "" {
+			t.Error("expected proto user to have email")
+		}
+
+		t.Logf("User %s (proto) queried via ProtoRepository", user.GetFullName())
+	})
+
+	t.Run("Repository: WithDB for transactions", func(t *testing.T) {
+		userScannerRepo := repository.NewScannerRepository(Users.Table, db)
+		userProtoRepo := repository.NewProtoRepository(userScannerRepo, UserConverter)
+
+		// Verify WithDB returns a new instance
+		newRepo := userProtoRepo.WithDB(db)
+		if newRepo == userProtoRepo {
+			t.Error("expected WithDB to return a new instance")
+		}
+
+		// Test that the new repo works
+		query := Users.SelectAll().Where(Users.Id.Eq(userIDs[0]))
+		user, err := newRepo.QueryRow(ctx, query)
+		if err != nil {
+			t.Fatalf("failed to query with new repo: %v", err)
+		}
+		t.Logf("WithDB test passed, user: %s", user.GetFullName())
+	})
 
 	t.Log("All generated model tests passed!")
 }

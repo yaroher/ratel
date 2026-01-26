@@ -11,6 +11,7 @@ import (
 	"github.com/yaroher/ratel/pkg/dml/set"
 	"github.com/yaroher/ratel/pkg/exec"
 	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
+	"github.com/yaroher/ratel/pkg/repository"
 	"github.com/yaroher/ratel/pkg/schema"
 )
 
@@ -103,6 +104,12 @@ var Currencys = func() CurrencysTable {
 
 // CurrencysRef is a reference to the currency table for relations
 var CurrencysRef schema.RelationTableAlias[CurrencyAlias] = Currencys.Table
+
+// CurrencyConverter provides conversion between Currency and CurrencyScanner
+var CurrencyConverter = repository.Converter[*CurrencyScanner, *Currency]{
+	ToScanner: (*Currency).IntoPlain,
+	ToProto:   (*CurrencyScanner).IntoPb,
+}
 
 // UserAlias is the table alias type for the users table
 type UserAlias string
@@ -326,6 +333,12 @@ var Users = func() UsersTable {
 // UsersRef is a reference to the users table for relations
 var UsersRef schema.RelationTableAlias[UserAlias] = Users.Table
 
+// UserConverter provides conversion between User and UserScanner
+var UserConverter = repository.Converter[*UserScanner, *User]{
+	ToScanner: (*User).IntoPlain,
+	ToProto:   (*UserScanner).IntoPb,
+}
+
 // ProfileAlias is the table alias type for the profiles table
 type ProfileAlias string
 
@@ -501,6 +514,12 @@ var Profiles = func() ProfilesTable {
 // ProfilesRef is a reference to the profiles table for relations
 var ProfilesRef schema.RelationTableAlias[ProfileAlias] = Profiles.Table
 
+// ProfileConverter provides conversion between Profile and ProfileScanner
+var ProfileConverter = repository.Converter[*ProfileScanner, *Profile]{
+	ToScanner: (*Profile).IntoPlain,
+	ToProto:   (*ProfileScanner).IntoPb,
+}
+
 // CategoryAlias is the table alias type for the categories table
 type CategoryAlias string
 
@@ -629,6 +648,12 @@ var Categorys = func() CategorysTable {
 // CategorysRef is a reference to the categories table for relations
 var CategorysRef schema.RelationTableAlias[CategoryAlias] = Categorys.Table
 
+// CategoryConverter provides conversion between Category and CategoryScanner
+var CategoryConverter = repository.Converter[*CategoryScanner, *Category]{
+	ToScanner: (*Category).IntoPlain,
+	ToProto:   (*CategoryScanner).IntoPb,
+}
+
 // TagAlias is the table alias type for the tags table
 type TagAlias string
 
@@ -745,6 +770,12 @@ var Tags = func() TagsTable {
 
 // TagsRef is a reference to the tags table for relations
 var TagsRef schema.RelationTableAlias[TagAlias] = Tags.Table
+
+// TagConverter provides conversion between Tag and TagScanner
+var TagConverter = repository.Converter[*TagScanner, *Tag]{
+	ToScanner: (*Tag).IntoPlain,
+	ToProto:   (*TagScanner).IntoPb,
+}
 
 // ProductAlias is the table alias type for the products table
 type ProductAlias string
@@ -916,6 +947,12 @@ var Products = func() ProductsTable {
 
 // ProductsRef is a reference to the products table for relations
 var ProductsRef schema.RelationTableAlias[ProductAlias] = Products.Table
+
+// ProductConverter provides conversion between Product and ProductScanner
+var ProductConverter = repository.Converter[*ProductScanner, *Product]{
+	ToScanner: (*Product).IntoPlain,
+	ToProto:   (*ProductScanner).IntoPb,
+}
 
 // OrderAlias is the table alias type for the orders table
 type OrderAlias string
@@ -1170,6 +1207,12 @@ var Orders = func() OrdersTable {
 // OrdersRef is a reference to the orders table for relations
 var OrdersRef schema.RelationTableAlias[OrderAlias] = Orders.Table
 
+// OrderConverter provides conversion between Order and OrderScanner
+var OrderConverter = repository.Converter[*OrderScanner, *Order]{
+	ToScanner: (*Order).IntoPlain,
+	ToProto:   (*OrderScanner).IntoPb,
+}
+
 // OrderItemAlias is the table alias type for the order_items table
 type OrderItemAlias string
 
@@ -1361,6 +1404,12 @@ var OrderItems = func() OrderItemsTable {
 
 // OrderItemsRef is a reference to the order_items table for relations
 var OrderItemsRef schema.RelationTableAlias[OrderItemAlias] = OrderItems.Table
+
+// OrderItemConverter provides conversion between OrderItem and OrderItemScanner
+var OrderItemConverter = repository.Converter[*OrderItemScanner, *OrderItem]{
+	ToScanner: (*OrderItem).IntoPlain,
+	ToProto:   (*OrderItemScanner).IntoPb,
+}
 
 // ============================================================================
 // User Relations

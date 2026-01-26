@@ -29,6 +29,7 @@ func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTabl
 	gf.P("\t\"github.com/yaroher/ratel/pkg/dml/set\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/exec\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr\"")
+	gf.P("\t\"github.com/yaroher/ratel/pkg/repository\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/schema\"")
 	gf.P(")")
 	gf.P()
@@ -342,5 +343,21 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("var ", tableVarName, "Ref schema.RelationTableAlias[", aliasTypeName, "] = ", tableVarName, ".Table")
 	gf.P()
 
+	// 12. Generate Converter for repository
+	generateConverter(gf, table)
+
 	return nil
+}
+
+// generateConverter generates the Converter struct for proto <-> scanner conversion
+func generateConverter(gf *protogen.GeneratedFile, table *RatelTable) {
+	msgName := table.Message.GoIdent.GoName
+	scannerTypeName := msgName + "Scanner"
+
+	gf.P("// ", msgName, "Converter provides conversion between ", msgName, " and ", scannerTypeName)
+	gf.P("var ", msgName, "Converter = repository.Converter[*", scannerTypeName, ", *", msgName, "]{")
+	gf.P("\tToScanner: (*", msgName, ").IntoPlain,")
+	gf.P("\tToProto:   (*", scannerTypeName, ").IntoPb,")
+	gf.P("}")
+	gf.P()
 }
