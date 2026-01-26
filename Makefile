@@ -97,3 +97,16 @@ demo-schema: install
 	ratel schema -i examples/store/models -o /tmp/ratel-demo/schema.sql
 	@echo "Generated schema:"
 	@cat /tmp/ratel-demo/schema.sql
+
+
+branch=main
+.PHONY: revision
+revision: # Создание тега
+	@if [ -e $(tag) ]; then \
+		echo "error: Specify version 'tag='"; \
+		exit 1; \
+	fi
+	git tag -d ${tag} || true
+	git push --delete origin ${tag} || true
+	git tag $(tag)
+	git push origin $(tag)
