@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"ariga.io/atlas/sql/migrate"
+	pbMigrate "ariga.io/atlas/sql/postgres"
 	"ariga.io/atlas/sql/schema"
-	"ariga.io/atlas/sql/sqlclient"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/spf13/cobra"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -29,7 +30,7 @@ var diffCmd = &cobra.Command{
 	Long: `Generate a SQL migration diff between the current database schema and the schema defined in Go models.
 
 Example:
-  ratel diff -p github.com/myproject/models -o migrations/001_initial.sql
+  ratel diff -s schema.sql -d migrations -n 001_initial
 
 This will create a SQL migration file that can be applied to the database to bring it up to date with the schema defined in your Go models.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -110,12 +111,16 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 		return errors.New("migration directory is required")
 	}
 
-	// Открываем соединение с dev-базой
-	dev, err := sqlclient.Open(ctx, devURL)
+	pool, err := pgxpool.New(ctx, devURL)
+	if err != nil {
+		return fmt.Errorf("failed to create pgx pool: %w", err)
+	}
+	defer pool.Close()
+
+	dev, err := pbMigrate.Open(stdlib.OpenDBFromPool(pool))
 	if err != nil {
 		return fmt.Errorf("failed to open dev database: %w", err)
 	}
-	defer dev.Close()
 
 	// Получаем блокировку на 10 секунд
 	unlock, err := dev.Lock(ctx, "atlas_migrate_diff", 10*time.Second)
@@ -134,11 +139,10 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 		return fmt.Errorf("failed to read SQL file: %w", err)
 	}
 
-	// Создаем временную директорию для SQL файла
-	sqlFile := migrate.NewLocalFile(filepath.Base(sqlFilePath), sqlContent)
-	sqlDir := migrate.MemDir{}
-	if err := sqlDir.WriteFile(sqlFile.Name(), sqlFile.Bytes()); err != nil {
-		return fmt.Errorf("failed to create in-memory SQL directory: %w", err)
+	if _, err := os.Stat(migrationDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(migrationDir, 0755); err != nil {
+			return fmt.Errorf("failed to create migration directory: %w", err)
+		}
 	}
 
 	// Открываем директорию миграций
@@ -147,50 +151,69 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 		return fmt.Errorf("failed to open migration directory: %w", err)
 	}
 
-	executor, err := migrate.NewExecutor(dev.Driver, &sqlDir, migrate.NopRevisionReadWriter{})
+	if _, err := dir.Checksum(); errors.Is(err, migrate.ErrChecksumNotFound) {
+		// Создаем пустой файл контрольных сумм для новой директории
+		if err := migrate.WriteSumFile(dir, migrate.HashFile{}); err != nil {
+			return fmt.Errorf("failed to create checksum file: %w", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("failed to read checksum file: %w", err)
+	}
+
+	// Применяем существующие миграции к dev базе
+	executor, err := migrate.NewExecutor(dev, dir, migrate.NopRevisionReadWriter{})
 	if err != nil {
 		return fmt.Errorf("failed to create executor: %w", err)
 	}
 
-	var stateReader migrate.StateReader
-	if dev.URL.Schema != "" {
-		stateReader = migrate.SchemaConn(dev, "", nil)
-	} else {
-		stateReader = migrate.RealmConn(dev, &schema.InspectRealmOption{})
-	}
-
-	desiredState, err := executor.Replay(ctx, stateReader)
+	// Получаем текущее состояние после применения существующих миграций
+	currentState := migrate.RealmConn(dev, &schema.InspectRealmOption{})
+	currentRealm, err := executor.Replay(ctx, currentState)
 	if err != nil && !errors.Is(err, migrate.ErrNoPendingFiles) {
-		return fmt.Errorf("failed to replay SQL file: %w", err)
+		return fmt.Errorf("failed to replay existing migrations: %w", err)
 	}
 
-	diffOpts := []schema.DiffOption{schema.DiffNormalized()}
+	// Применяем SQL схему к базе данных
+	if _, err := dev.ExecContext(ctx, string(sqlContent)); err != nil {
+		return fmt.Errorf("failed to apply SQL schema: %w", err)
+	}
 
+	// Инспектируем состояние базы данных после применения схемы
+	desiredState, err := dev.InspectRealm(ctx, &schema.InspectRealmOption{})
+	if err != nil {
+		return fmt.Errorf("failed to inspect database state: %w", err)
+	}
+
+	// Создаем новый файл миграции с изменениями
+	diffOpts := []schema.DiffOption{schema.DiffNormalized()}
+	changes, err := dev.RealmDiff(currentRealm, desiredState, diffOpts...)
+	if err != nil {
+		return fmt.Errorf("failed to calculate diff: %w", err)
+	}
+
+	if len(changes) == 0 {
+		fmt.Println("No schema changes detected")
+		return nil
+	}
+
+	// Используем PlanChanges для генерации плана миграции
+	plan, err := dev.PlanChanges(ctx, migrationName, changes)
+	if err != nil {
+		return fmt.Errorf("failed to plan changes: %w", err)
+	}
+
+	// Используем Planner для записи плана
 	plannerOpts := []migrate.PlannerOption{
 		migrate.PlanWithDiffOptions(diffOpts...),
 	}
 
-	planner := migrate.NewPlanner(dev.Driver, dir, plannerOpts...)
-	plan, err := func() (*migrate.Plan, error) {
-		if dev.URL.Schema != "" {
-			return planner.PlanSchema(ctx, migrationName, migrate.Realm(desiredState))
-		}
-		return planner.Plan(ctx, migrationName, migrate.Realm(desiredState))
-	}()
+	planner := migrate.NewPlanner(dev, dir, plannerOpts...)
 
-	var cerr *migrate.NotCleanError
-	switch {
-	case errors.As(err, &cerr):
-		return fmt.Errorf("dev database is not clean (%s)", cerr.Reason)
-	case errors.Is(err, migrate.ErrNoPlan):
-		// Нет изменений - это не ошибка
-		return nil
-	case err != nil:
-		return fmt.Errorf("failed to plan migration: %w", err)
-	default:
-		if err := planner.WritePlan(plan); err != nil {
-			return fmt.Errorf("failed to write migration plan: %w", err)
-		}
-		return nil
+	// Записываем план
+	if err := planner.WritePlan(plan); err != nil {
+		return fmt.Errorf("failed to write migration plan: %w", err)
 	}
+
+	fmt.Printf("Migration '%s' created successfully\n", migrationName)
+	return nil
 }
