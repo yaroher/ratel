@@ -15,8 +15,6 @@ import (
 type TimestampsScanner struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -28,11 +26,9 @@ func (pb *Timestamps) IntoPlain() *TimestampsScanner {
 
 	if pb.CreatedAt != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.CreatedAt)
-		p.Src_ = append(p.Src_, 0)
 	}
 	if pb.UpdatedAt != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.UpdatedAt)
-		p.Src_ = append(p.Src_, 1)
 	}
 	return p
 }
@@ -57,8 +53,6 @@ type BaseEntityScanner struct {
 	Id        int64     `json:"id"` // origin: type_alias, empath: id
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -71,17 +65,14 @@ func (pb *BaseEntity) IntoPlain() *BaseEntityScanner {
 	// Id type alias from id
 	if pb.GetId() != nil {
 		p.Id = pb.GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetTimestamps() != nil && pb.GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetTimestamps() != nil && pb.GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	return p
 }
@@ -117,8 +108,6 @@ func (p *BaseEntityScanner) IntoPb() *BaseEntity {
 type CurrencyScanner struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -129,9 +118,7 @@ func (pb *Currency) IntoPlain() *CurrencyScanner {
 	p := &CurrencyScanner{}
 
 	p.Code = pb.Code
-	p.Src_ = append(p.Src_, 0)
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 1)
 	return p
 }
 
@@ -159,8 +146,6 @@ type UserScanner struct {
 	FullName  string         `json:"fullName"`
 	IsActive  bool           `json:"isActive"`
 	Orders    []OrderScanner `json:"orders"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -173,24 +158,18 @@ func (pb *User) IntoPlain() *UserScanner {
 	// Id from id
 	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
 		p.Id = pb.GetBase().GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	p.Email = pb.Email
-	p.Src_ = append(p.Src_, 3)
 	p.FullName = pb.FullName
-	p.Src_ = append(p.Src_, 4)
 	p.IsActive = pb.IsActive
-	p.Src_ = append(p.Src_, 5)
 	if len(pb.Orders) > 0 {
 		p.Orders = make([]OrderScanner, len(pb.Orders))
 		for i, v := range pb.Orders {
@@ -198,7 +177,6 @@ func (pb *User) IntoPlain() *UserScanner {
 				p.Orders[i] = *v.IntoPlain()
 			}
 		}
-		p.Src_ = append(p.Src_, 6)
 	}
 	return p
 }
@@ -257,8 +235,6 @@ type CategoryScanner struct {
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	ParentId  int64     `json:"parentId"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -271,25 +247,19 @@ func (pb *Category) IntoPlain() *CategoryScanner {
 	// Id from id
 	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
 		p.Id = pb.GetBase().GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 3)
 	p.Slug = pb.Slug
-	p.Src_ = append(p.Src_, 4)
 	if pb.ParentId != nil {
 		p.ParentId = ratelcast.Int64ValueToInt64(pb.ParentId)
-		p.Src_ = append(p.Src_, 5)
 	}
 	return p
 }
@@ -341,8 +311,6 @@ type TagScanner struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -355,22 +323,17 @@ func (pb *Tag) IntoPlain() *TagScanner {
 	// Id from id
 	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
 		p.Id = pb.GetBase().GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 3)
 	p.Slug = pb.Slug
-	p.Src_ = append(p.Src_, 4)
 	return p
 }
 
@@ -426,8 +389,6 @@ type ProductScanner struct {
 	IsDeleted  bool              `json:"isDeleted"`
 	Categories []CategoryScanner `json:"categories"`
 	Tags       []TagScanner      `json:"tags"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -440,30 +401,21 @@ func (pb *Product) IntoPlain() *ProductScanner {
 	// Id from id
 	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
 		p.Id = pb.GetBase().GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	p.Sku = pb.Sku
-	p.Src_ = append(p.Src_, 3)
 	p.Name = pb.Name
-	p.Src_ = append(p.Src_, 4)
 	p.Price = pb.Price
-	p.Src_ = append(p.Src_, 5)
 	p.Currency = pb.Currency
-	p.Src_ = append(p.Src_, 6)
 	p.StockQty = pb.StockQty
-	p.Src_ = append(p.Src_, 7)
 	p.IsDeleted = pb.IsDeleted
-	p.Src_ = append(p.Src_, 8)
 	if len(pb.Categories) > 0 {
 		p.Categories = make([]CategoryScanner, len(pb.Categories))
 		for i, v := range pb.Categories {
@@ -471,7 +423,6 @@ func (pb *Product) IntoPlain() *ProductScanner {
 				p.Categories[i] = *v.IntoPlain()
 			}
 		}
-		p.Src_ = append(p.Src_, 9)
 	}
 	if len(pb.Tags) > 0 {
 		p.Tags = make([]TagScanner, len(pb.Tags))
@@ -480,7 +431,6 @@ func (pb *Product) IntoPlain() *ProductScanner {
 				p.Tags[i] = *v.IntoPlain()
 			}
 		}
-		p.Src_ = append(p.Src_, 10)
 	}
 	return p
 }
@@ -549,8 +499,6 @@ type OrderScanner struct {
 	Status    string             `json:"status"`
 	Currency  string             `json:"currency"`
 	Items     []OrderItemScanner `json:"items"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -563,27 +511,21 @@ func (pb *Order) IntoPlain() *OrderScanner {
 	// Id from id
 	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
 		p.Id = pb.GetBase().GetId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	// CreatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
 		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
-		p.Src_ = append(p.Src_, 1)
 	}
 	// UpdatedAt from
 	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
 		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
-		p.Src_ = append(p.Src_, 2)
 	}
 	// UserId type alias from user_id
 	if pb.GetUserId() != nil {
 		p.UserId = pb.GetUserId().GetValue()
-		p.Src_ = append(p.Src_, 3)
 	}
 	p.Status = pb.Status
-	p.Src_ = append(p.Src_, 4)
 	p.Currency = pb.Currency
-	p.Src_ = append(p.Src_, 5)
 	if len(pb.Items) > 0 {
 		p.Items = make([]OrderItemScanner, len(pb.Items))
 		for i, v := range pb.Items {
@@ -591,7 +533,6 @@ func (pb *Order) IntoPlain() *OrderScanner {
 				p.Items[i] = *v.IntoPlain()
 			}
 		}
-		p.Src_ = append(p.Src_, 6)
 	}
 	return p
 }
@@ -652,8 +593,6 @@ type OrderItemScanner struct {
 	ProductId int64   `json:"productId"` // origin: type_alias, empath: product_id
 	Qty       int32   `json:"qty"`
 	UnitPrice float64 `json:"unitPrice"`
-	// Src_ contains indices of populated fields for sparse serialization
-	Src_ []uint16 `json:"_src,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -666,19 +605,14 @@ func (pb *OrderItem) IntoPlain() *OrderItemScanner {
 	// OrderId type alias from order_id
 	if pb.GetOrderId() != nil {
 		p.OrderId = pb.GetOrderId().GetValue()
-		p.Src_ = append(p.Src_, 0)
 	}
 	p.LineNo = pb.LineNo
-	p.Src_ = append(p.Src_, 1)
 	// ProductId type alias from product_id
 	if pb.GetProductId() != nil {
 		p.ProductId = pb.GetProductId().GetValue()
-		p.Src_ = append(p.Src_, 2)
 	}
 	p.Qty = pb.Qty
-	p.Src_ = append(p.Src_, 3)
 	p.UnitPrice = pb.UnitPrice
-	p.Src_ = append(p.Src_, 4)
 	return p
 }
 
