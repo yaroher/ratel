@@ -73,7 +73,7 @@ jobs:
           go build -v -o bin/protoc-gen-ratel ./cmd/protoc-gen-ratel
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: bin/
