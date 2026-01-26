@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/yaroher/ratel/commands"
+	"github.com/yaroher/ratel/cmd/ratel/commands"
 )
 
 func main() {

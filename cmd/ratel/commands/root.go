@@ -19,10 +19,6 @@ var rootCmd = &cobra.Command{
 ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚══════╝╚══════╝
 
 Ratel is a type-safe PostgreSQL ORM for Go.
-
-Commands:
-  generate  - Generate Go models from SQL schema file
-  schema    - Generate SQL schema from Go models directory
 `,
 	Version: "0.1.0",
 }
