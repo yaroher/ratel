@@ -23,8 +23,8 @@ type RelationTableJoin[T types.TableAlias, C types.ColumnAlias] interface {
 type RelationTableQuery[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C]] interface {
 	RelationTableJoin[T, C]
 	SelectAll() *dml.SelectQuery[T, C]
-	Query(ctx context.Context, db exec2.DB, query types.Scannable) ([]S, error)
-	QueryRow(ctx context.Context, db exec2.DB, query types.Scannable) (S, error)
+	Query(ctx context.Context, db exec2.DB, query types.Scannable, opts ...exec2.QueryOption[C, S]) ([]S, error)
+	QueryRow(ctx context.Context, db exec2.DB, query types.Scannable, opts ...exec2.QueryOption[C, S]) (S, error)
 }
 
 // ForwardRelation represents a "has many" or "has one" relationship

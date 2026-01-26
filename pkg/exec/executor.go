@@ -35,7 +35,7 @@ func NewTableExecutor[T types.TableAlias, C types.ColumnAlias, S Scanner[C]](
 	}
 }
 
-func (t *TableExecutor[T, C, S]) QueryRow(ctx context.Context, db DB, query types.Scannable) (trg S, err error) {
+func (t *TableExecutor[T, C, S]) QueryRow(ctx context.Context, db DB, query types.Scannable, opts ...QueryOption[C, S]) (trg S, err error) {
 	trg = t.scanFactory()
 	scanAbleFields := query.ScanAbleFields()
 	sql, args := query.Build()
@@ -48,22 +48,15 @@ func (t *TableExecutor[T, C, S]) QueryRow(ctx context.Context, db DB, query type
 	if err != nil {
 		return trg, err
 	}
-	if LoadRelations(ctx) && !SkipRelations(ctx) {
-		if loader, ok := any(trg).(RelationProvider[S]); ok {
-			for _, relation := range loader.Relations() {
-				if relation == nil {
-					continue
-				}
-				if err := relation.Load(ctx, db, trg); err != nil {
-					return trg, err
-				}
-			}
-		}
+
+	// Load relations based on options or context (for backward compatibility)
+	if err := t.loadRelations(ctx, db, trg, opts); err != nil {
+		return trg, err
 	}
 	return trg, nil
 }
 
-func (t *TableExecutor[T, C, S]) Query(ctx context.Context, db DB, query types.Scannable) (trgs []S, err error) {
+func (t *TableExecutor[T, C, S]) Query(ctx context.Context, db DB, query types.Scannable, opts ...QueryOption[C, S]) (trgs []S, err error) {
 	ScanAbleFields := query.ScanAbleFields()
 	sql, args := query.Build()
 	rows, err := db.Query(ctx, sql, args...)
@@ -73,8 +66,7 @@ func (t *TableExecutor[T, C, S]) Query(ctx context.Context, db DB, query types.S
 	defer rows.Close()
 	for rows.Next() {
 		trg := t.scanFactory()
-		var targets []any
-		targets = make([]any, len(ScanAbleFields))
+		targets := make([]any, len(ScanAbleFields))
 		for i, f := range ScanAbleFields {
 			targets[i] = trg.GetTarget(f)()
 		}
@@ -82,21 +74,50 @@ func (t *TableExecutor[T, C, S]) Query(ctx context.Context, db DB, query types.S
 		if err != nil {
 			return nil, err
 		}
-		if LoadRelations(ctx) && !SkipRelations(ctx) {
-			if loader, ok := any(trg).(RelationProvider[S]); ok {
-				for _, relation := range loader.Relations() {
-					if relation == nil {
-						continue
-					}
-					if err := relation.Load(ctx, db, trg); err != nil {
-						return nil, err
-					}
-				}
-			}
+
+		// Load relations based on options or context (for backward compatibility)
+		if err := t.loadRelations(ctx, db, trg, opts); err != nil {
+			return nil, err
 		}
 		trgs = append(trgs, trg)
 	}
 	return trgs, nil
+}
+
+// loadRelations loads relations based on options or context (backward compatibility)
+func (t *TableExecutor[T, C, S]) loadRelations(ctx context.Context, db DB, trg S, opts []QueryOption[C, S]) error {
+	// If options are provided, use them
+	if len(opts) > 0 {
+		cfg := &QueryConfig[C, S]{}
+		for _, opt := range opts {
+			opt.ApplyQuery(cfg)
+		}
+		// Load only specified relations
+		for _, loader := range cfg.Loaders {
+			if loader == nil {
+				continue
+			}
+			if err := loader.Load(WithSkipRelations(ctx), db, trg); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Backward compatibility: use context-based loading
+	if LoadRelations(ctx) && !SkipRelations(ctx) {
+		if provider, ok := any(trg).(RelationProvider[S]); ok {
+			for _, relation := range provider.Relations() {
+				if relation == nil {
+					continue
+				}
+				if err := relation.Load(ctx, db, trg); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (t *TableExecutor[T, C, S]) Execute(ctx context.Context, db DB, query types.Buildable) (int64, error) {

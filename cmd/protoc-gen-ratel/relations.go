@@ -266,3 +266,146 @@ func generateRelationsMethod(gf *protogen.GeneratedFile, table *RatelTable, rela
 	// Generate type check
 	_ = colAliasTypeName // Used in constants above
 }
+
+// generateRelationOptions generates typed QueryOption functions for each relation
+func generateRelationOptions(gf *protogen.GeneratedFile, table *RatelTable, relations []*RelationInfo) {
+	if len(relations) == 0 {
+		return
+	}
+
+	msgName := table.Message.GoIdent.GoName
+	colAliasTypeName := msgName + "ColumnAlias"
+	scannerTypeName := msgName + "Scanner"
+	tableName := msgName + "s" // e.g., "Users"
+
+	gf.P("// ============================================================================")
+	gf.P("// ", msgName, " Relation Query Options")
+	gf.P("// ============================================================================")
+	gf.P()
+
+	// Generate individual relation options
+	for _, rel := range relations {
+		relatedScannerTypeName := rel.RelatedMsg + "Scanner"
+		relatedTableVar := rel.RelatedMsg + "s"
+		optionFuncName := tableName + "With" + rel.FieldName // e.g., "UsersWithOrders"
+
+		switch rel.RelationType {
+		case "HasMany":
+			localColConst := msgName + "Column" + strcase.ToCamel(rel.LocalKey)
+
+			gf.P("// ", optionFuncName, " returns a QueryOption to load ", rel.FieldName, " relation")
+			gf.P("func ", optionFuncName, "() exec.QueryOption[", colAliasTypeName, ", *", scannerTypeName, "] {")
+			gf.P("\treturn exec.WithRelationLoaders[", colAliasTypeName, ", *", scannerTypeName, "](")
+			gf.P("\t\tschema.HasManyLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", localColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related []*", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = make([]", relatedScannerTypeName, ", len(related))")
+			gf.P("\t\t\t\tfor i, r := range related {")
+			gf.P("\t\t\t\t\tif r != nil {")
+			gf.P("\t\t\t\t\t\tbase.", rel.FieldName, "[i] = *r")
+			gf.P("\t\t\t\t\t}")
+			gf.P("\t\t\t\t}")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+			gf.P("\t)")
+			gf.P("}")
+			gf.P()
+
+		case "HasOne":
+			localColConst := msgName + "Column" + strcase.ToCamel(rel.LocalKey)
+
+			gf.P("// ", optionFuncName, " returns a QueryOption to load ", rel.FieldName, " relation")
+			gf.P("func ", optionFuncName, "() exec.QueryOption[", colAliasTypeName, ", *", scannerTypeName, "] {")
+			gf.P("\treturn exec.WithRelationLoaders[", colAliasTypeName, ", *", scannerTypeName, "](")
+			gf.P("\t\tschema.HasOneLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", localColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related *", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = related")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+			gf.P("\t)")
+			gf.P("}")
+			gf.P()
+
+		case "BelongsTo":
+			fkColConst := msgName + "Column" + strcase.ToCamel(rel.ForeignKey)
+
+			gf.P("// ", optionFuncName, " returns a QueryOption to load ", rel.FieldName, " relation")
+			gf.P("func ", optionFuncName, "() exec.QueryOption[", colAliasTypeName, ", *", scannerTypeName, "] {")
+			gf.P("\treturn exec.WithRelationLoaders[", colAliasTypeName, ", *", scannerTypeName, "](")
+			gf.P("\t\tschema.BelongsToLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", fkColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related *", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = related")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+			gf.P("\t)")
+			gf.P("}")
+			gf.P()
+		}
+	}
+
+	// Generate WithAllRelations option
+	allRelationsFuncName := tableName + "WithAllRelations"
+	gf.P("// ", allRelationsFuncName, " returns a QueryOption to load all relations")
+	gf.P("func ", allRelationsFuncName, "() exec.QueryOption[", colAliasTypeName, ", *", scannerTypeName, "] {")
+	gf.P("\treturn exec.WithRelationLoaders[", colAliasTypeName, ", *", scannerTypeName, "](")
+
+	for _, rel := range relations {
+		relatedScannerTypeName := rel.RelatedMsg + "Scanner"
+		relatedTableVar := rel.RelatedMsg + "s"
+
+		switch rel.RelationType {
+		case "HasMany":
+			localColConst := msgName + "Column" + strcase.ToCamel(rel.LocalKey)
+
+			gf.P("\t\tschema.HasManyLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", localColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related []*", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = make([]", relatedScannerTypeName, ", len(related))")
+			gf.P("\t\t\t\tfor i, r := range related {")
+			gf.P("\t\t\t\t\tif r != nil {")
+			gf.P("\t\t\t\t\t\tbase.", rel.FieldName, "[i] = *r")
+			gf.P("\t\t\t\t\t}")
+			gf.P("\t\t\t\t}")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+
+		case "HasOne":
+			localColConst := msgName + "Column" + strcase.ToCamel(rel.LocalKey)
+
+			gf.P("\t\tschema.HasOneLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", localColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related *", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = related")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+
+		case "BelongsTo":
+			fkColConst := msgName + "Column" + strcase.ToCamel(rel.ForeignKey)
+
+			gf.P("\t\tschema.BelongsToLoad(")
+			gf.P("\t\t\t", rel.VarName, ",")
+			gf.P("\t\t\t", relatedTableVar, ".Table,")
+			gf.P("\t\t\t", fkColConst, ",")
+			gf.P("\t\t\tfunc(base *", scannerTypeName, ", related *", relatedScannerTypeName, ") {")
+			gf.P("\t\t\t\tbase.", rel.FieldName, " = related")
+			gf.P("\t\t\t},")
+			gf.P("\t\t),")
+		}
+	}
+
+	gf.P("\t)")
+	gf.P("}")
+	gf.P()
+}

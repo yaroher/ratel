@@ -213,6 +213,9 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	relations := parseRelations(table)
 	generateRelationsMethod(gf, table, relations)
 
+	// 7.1 Generate relation query options (UsersWithOrders, etc.)
+	generateRelationOptions(gf, table, relations)
+
 	// 8. Generate table struct type
 	tableStructName := msgName + "sTable"
 	gf.P("// ", tableStructName, " represents the ", tableName, " table with its columns")

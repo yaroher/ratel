@@ -209,6 +209,70 @@ func (s *UserScanner) Relations() []exec.RelationLoader[*UserScanner] {
 	}
 }
 
+// ============================================================================
+// User Relation Query Options
+// ============================================================================
+
+// UsersWithOrders returns a QueryOption to load Orders relation
+func UsersWithOrders() exec.QueryOption[UserColumnAlias, *UserScanner] {
+	return exec.WithRelationLoaders[UserColumnAlias, *UserScanner](
+		schema.HasManyLoad(
+			UserOrders,
+			Orders.Table,
+			UserColumnId,
+			func(base *UserScanner, related []*OrderScanner) {
+				base.Orders = make([]OrderScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Orders[i] = *r
+					}
+				}
+			},
+		),
+	)
+}
+
+// UsersWithProfile returns a QueryOption to load Profile relation
+func UsersWithProfile() exec.QueryOption[UserColumnAlias, *UserScanner] {
+	return exec.WithRelationLoaders[UserColumnAlias, *UserScanner](
+		schema.HasOneLoad(
+			UserProfile,
+			Profiles.Table,
+			UserColumnId,
+			func(base *UserScanner, related *ProfileScanner) {
+				base.Profile = related
+			},
+		),
+	)
+}
+
+// UsersWithAllRelations returns a QueryOption to load all relations
+func UsersWithAllRelations() exec.QueryOption[UserColumnAlias, *UserScanner] {
+	return exec.WithRelationLoaders[UserColumnAlias, *UserScanner](
+		schema.HasManyLoad(
+			UserOrders,
+			Orders.Table,
+			UserColumnId,
+			func(base *UserScanner, related []*OrderScanner) {
+				base.Orders = make([]OrderScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Orders[i] = *r
+					}
+				}
+			},
+		),
+		schema.HasOneLoad(
+			UserProfile,
+			Profiles.Table,
+			UserColumnId,
+			func(base *UserScanner, related *ProfileScanner) {
+				base.Profile = related
+			},
+		),
+	)
+}
+
 // UsersTable represents the users table with its columns
 type UsersTable struct {
 	*schema.Table[UserAlias, UserColumnAlias, *UserScanner]
@@ -352,6 +416,38 @@ func (s *ProfileScanner) Relations() []exec.RelationLoader[*ProfileScanner] {
 			},
 		),
 	}
+}
+
+// ============================================================================
+// Profile Relation Query Options
+// ============================================================================
+
+// ProfilesWithUser returns a QueryOption to load User relation
+func ProfilesWithUser() exec.QueryOption[ProfileColumnAlias, *ProfileScanner] {
+	return exec.WithRelationLoaders[ProfileColumnAlias, *ProfileScanner](
+		schema.BelongsToLoad(
+			ProfileUser,
+			Users.Table,
+			ProfileColumnUserId,
+			func(base *ProfileScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+	)
+}
+
+// ProfilesWithAllRelations returns a QueryOption to load all relations
+func ProfilesWithAllRelations() exec.QueryOption[ProfileColumnAlias, *ProfileScanner] {
+	return exec.WithRelationLoaders[ProfileColumnAlias, *ProfileScanner](
+		schema.BelongsToLoad(
+			ProfileUser,
+			Users.Table,
+			ProfileColumnUserId,
+			func(base *ProfileScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+	)
 }
 
 // ProfilesTable represents the profiles table with its columns
@@ -934,6 +1030,92 @@ func (s *OrderScanner) Relations() []exec.RelationLoader[*OrderScanner] {
 	}
 }
 
+// ============================================================================
+// Order Relation Query Options
+// ============================================================================
+
+// OrdersWithItems returns a QueryOption to load Items relation
+func OrdersWithItems() exec.QueryOption[OrderColumnAlias, *OrderScanner] {
+	return exec.WithRelationLoaders[OrderColumnAlias, *OrderScanner](
+		schema.HasManyLoad(
+			OrderOrderItems,
+			OrderItems.Table,
+			OrderColumnId,
+			func(base *OrderScanner, related []*OrderItemScanner) {
+				base.Items = make([]OrderItemScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Items[i] = *r
+					}
+				}
+			},
+		),
+	)
+}
+
+// OrdersWithUser returns a QueryOption to load User relation
+func OrdersWithUser() exec.QueryOption[OrderColumnAlias, *OrderScanner] {
+	return exec.WithRelationLoaders[OrderColumnAlias, *OrderScanner](
+		schema.BelongsToLoad(
+			OrderUser,
+			Users.Table,
+			OrderColumnUserId,
+			func(base *OrderScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+	)
+}
+
+// OrdersWithMoney returns a QueryOption to load Money relation
+func OrdersWithMoney() exec.QueryOption[OrderColumnAlias, *OrderScanner] {
+	return exec.WithRelationLoaders[OrderColumnAlias, *OrderScanner](
+		schema.BelongsToLoad(
+			OrderCurrency,
+			Currencys.Table,
+			OrderColumnCurrency,
+			func(base *OrderScanner, related *CurrencyScanner) {
+				base.Money = related
+			},
+		),
+	)
+}
+
+// OrdersWithAllRelations returns a QueryOption to load all relations
+func OrdersWithAllRelations() exec.QueryOption[OrderColumnAlias, *OrderScanner] {
+	return exec.WithRelationLoaders[OrderColumnAlias, *OrderScanner](
+		schema.HasManyLoad(
+			OrderOrderItems,
+			OrderItems.Table,
+			OrderColumnId,
+			func(base *OrderScanner, related []*OrderItemScanner) {
+				base.Items = make([]OrderItemScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Items[i] = *r
+					}
+				}
+			},
+		),
+		schema.BelongsToLoad(
+			OrderUser,
+			Users.Table,
+			OrderColumnUserId,
+			func(base *OrderScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+		schema.BelongsToLoad(
+			OrderCurrency,
+			Currencys.Table,
+			OrderColumnCurrency,
+			func(base *OrderScanner, related *CurrencyScanner) {
+				base.Money = related
+			},
+		),
+	)
+}
+
 // OrdersTable represents the orders table with its columns
 type OrdersTable struct {
 	*schema.Table[OrderAlias, OrderColumnAlias, *OrderScanner]
@@ -1079,6 +1261,60 @@ func (s *OrderItemScanner) Relations() []exec.RelationLoader[*OrderItemScanner] 
 			},
 		),
 	}
+}
+
+// ============================================================================
+// OrderItem Relation Query Options
+// ============================================================================
+
+// OrderItemsWithOrder returns a QueryOption to load Order relation
+func OrderItemsWithOrder() exec.QueryOption[OrderItemColumnAlias, *OrderItemScanner] {
+	return exec.WithRelationLoaders[OrderItemColumnAlias, *OrderItemScanner](
+		schema.BelongsToLoad(
+			OrderItemOrder,
+			Orders.Table,
+			OrderItemColumnOrderId,
+			func(base *OrderItemScanner, related *OrderScanner) {
+				base.Order = related
+			},
+		),
+	)
+}
+
+// OrderItemsWithProduct returns a QueryOption to load Product relation
+func OrderItemsWithProduct() exec.QueryOption[OrderItemColumnAlias, *OrderItemScanner] {
+	return exec.WithRelationLoaders[OrderItemColumnAlias, *OrderItemScanner](
+		schema.BelongsToLoad(
+			OrderItemProduct,
+			Products.Table,
+			OrderItemColumnProductId,
+			func(base *OrderItemScanner, related *ProductScanner) {
+				base.Product = related
+			},
+		),
+	)
+}
+
+// OrderItemsWithAllRelations returns a QueryOption to load all relations
+func OrderItemsWithAllRelations() exec.QueryOption[OrderItemColumnAlias, *OrderItemScanner] {
+	return exec.WithRelationLoaders[OrderItemColumnAlias, *OrderItemScanner](
+		schema.BelongsToLoad(
+			OrderItemOrder,
+			Orders.Table,
+			OrderItemColumnOrderId,
+			func(base *OrderItemScanner, related *OrderScanner) {
+				base.Order = related
+			},
+		),
+		schema.BelongsToLoad(
+			OrderItemProduct,
+			Products.Table,
+			OrderItemColumnProductId,
+			func(base *OrderItemScanner, related *ProductScanner) {
+				base.Product = related
+			},
+		),
+	)
 }
 
 // OrderItemsTable represents the order_items table with its columns

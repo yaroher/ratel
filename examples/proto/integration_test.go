@@ -11,6 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/yaroher/ratel/pkg/ddl"
+	"github.com/yaroher/ratel/pkg/exec"
 	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
 )
 
@@ -520,15 +521,14 @@ func TestGeneratedModels(t *testing.T) {
 	})
 
 	// ========================================================================
-	// SELECT: With Relations Auto-Loading
+	// SELECT: With Relations using new typed Query Options API
 	// ========================================================================
-	t.Run("Select Users with Relations (HasMany)", func(t *testing.T) {
-		ctxWithRelations := exec.WithRelations(ctx)
-
+	t.Run("Select Users with Relations (HasMany Orders)", func(t *testing.T) {
 		query := Users.SelectAll().
 			Where(Users.Id.Eq(userIDs[0]))
 
-		user, err := Users.QueryRow(ctxWithRelations, db, query)
+		// New API: use typed options instead of context wrapping
+		user, err := Users.QueryRow(ctx, db, query, UsersWithOrders())
 		if err != nil {
 			t.Fatalf("failed to select user with relations: %v", err)
 		}
@@ -542,16 +542,19 @@ func TestGeneratedModels(t *testing.T) {
 		if len(user.Orders) != 2 {
 			t.Errorf("expected 2 orders for user %s, got %d", user.FullName, len(user.Orders))
 		}
+
+		// Profile should NOT be loaded (we only requested Orders)
+		if user.Profile != nil {
+			t.Errorf("expected user.Profile to be nil when only loading Orders")
+		}
 	})
 
 	t.Run("Select Users with Relations (HasOne Profile)", func(t *testing.T) {
-		ctxWithRelations := exec.WithRelations(ctx)
-
-		// User with profile
+		// User with profile - load only Profile
 		query := Users.SelectAll().
 			Where(Users.Id.Eq(userIDs[0]))
 
-		user, err := Users.QueryRow(ctxWithRelations, db, query)
+		user, err := Users.QueryRow(ctx, db, query, UsersWithProfile())
 		if err != nil {
 			t.Fatalf("failed to select user with relations: %v", err)
 		}
@@ -563,11 +566,16 @@ func TestGeneratedModels(t *testing.T) {
 		t.Logf("User: %s has profile: bio=%s, avatar=%s",
 			user.FullName, user.Profile.Bio, user.Profile.AvatarUrl)
 
+		// Orders should NOT be loaded (we only requested Profile)
+		if len(user.Orders) != 0 {
+			t.Errorf("expected user.Orders to be empty when only loading Profile, got %d", len(user.Orders))
+		}
+
 		// User without profile (Bob)
 		queryBob := Users.SelectAll().
 			Where(Users.Id.Eq(userIDs[2]))
 
-		bob, err := Users.QueryRow(ctxWithRelations, db, queryBob)
+		bob, err := Users.QueryRow(ctx, db, queryBob, UsersWithProfile())
 		if err != nil {
 			t.Fatalf("failed to select Bob: %v", err)
 		}
@@ -580,13 +588,51 @@ func TestGeneratedModels(t *testing.T) {
 		}
 	})
 
-	t.Run("Select Profile with Relations (BelongsTo User)", func(t *testing.T) {
-		ctxWithRelations := exec.WithRelations(ctx)
+	t.Run("Select Users with All Relations", func(t *testing.T) {
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
 
+		// Load ALL relations using WithAllRelations
+		user, err := Users.QueryRow(ctx, db, query, UsersWithAllRelations())
+		if err != nil {
+			t.Fatalf("failed to select user with all relations: %v", err)
+		}
+
+		// Both Orders and Profile should be loaded
+		if len(user.Orders) != 2 {
+			t.Errorf("expected 2 orders, got %d", len(user.Orders))
+		}
+		if user.Profile == nil {
+			t.Error("expected user.Profile to be loaded")
+		}
+		t.Logf("User %s: %d orders, profile=%v", user.FullName, len(user.Orders), user.Profile != nil)
+	})
+
+	t.Run("Select Users with Multiple Specific Relations", func(t *testing.T) {
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
+
+		// Load both Orders AND Profile by passing multiple options
+		user, err := Users.QueryRow(ctx, db, query, UsersWithOrders(), UsersWithProfile())
+		if err != nil {
+			t.Fatalf("failed to select user with multiple relations: %v", err)
+		}
+
+		// Both should be loaded
+		if len(user.Orders) != 2 {
+			t.Errorf("expected 2 orders, got %d", len(user.Orders))
+		}
+		if user.Profile == nil {
+			t.Error("expected user.Profile to be loaded")
+		}
+		t.Logf("User %s: %d orders, has profile", user.FullName, len(user.Orders))
+	})
+
+	t.Run("Select Profile with Relations (BelongsTo User)", func(t *testing.T) {
 		query := Profiles.SelectAll().
 			Where(Profiles.UserId.Eq(userIDs[0]))
 
-		profile, err := Profiles.QueryRow(ctxWithRelations, db, query)
+		profile, err := Profiles.QueryRow(ctx, db, query, ProfilesWithUser())
 		if err != nil {
 			t.Fatalf("failed to select profile with relations: %v", err)
 		}
@@ -600,12 +646,10 @@ func TestGeneratedModels(t *testing.T) {
 	})
 
 	t.Run("Select Orders with Relations (BelongsTo)", func(t *testing.T) {
-		ctxWithRelations := exec.WithRelations(ctx)
-
 		query := Orders.SelectAll().
 			Where(Orders.Id.Eq(orderIDs[0]))
 
-		order, err := Orders.QueryRow(ctxWithRelations, db, query)
+		order, err := Orders.QueryRow(ctx, db, query, OrdersWithAllRelations())
 		if err != nil {
 			t.Fatalf("failed to select order with relations: %v", err)
 		}
@@ -624,12 +668,10 @@ func TestGeneratedModels(t *testing.T) {
 	})
 
 	t.Run("Select OrderItems with Relations (BelongsTo)", func(t *testing.T) {
-		ctxWithRelations := exec.WithRelations(ctx)
-
 		query := OrderItems.SelectAll().
 			Where(OrderItems.OrderId.Eq(orderIDs[1]))
 
-		item, err := OrderItems.QueryRow(ctxWithRelations, db, query)
+		item, err := OrderItems.QueryRow(ctx, db, query, OrderItemsWithAllRelations())
 		if err != nil {
 			t.Fatalf("failed to select order item with relations: %v", err)
 		}
@@ -647,6 +689,29 @@ func TestGeneratedModels(t *testing.T) {
 		}
 		t.Logf("OrderItem product: %s (SKU: %s, price: %.2f)",
 			item.Product.Name, item.Product.Sku, item.Product.Price)
+	})
+
+	// Test backward compatibility with context-based loading (deprecated)
+	t.Run("Select Users with Relations (deprecated context API)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
+
+		// Old API still works for backward compatibility
+		user, err := Users.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select user with relations: %v", err)
+		}
+
+		// Should load all relations
+		if len(user.Orders) != 2 {
+			t.Errorf("expected 2 orders, got %d", len(user.Orders))
+		}
+		if user.Profile == nil {
+			t.Error("expected user.Profile to be loaded")
+		}
+		t.Logf("(deprecated API) User %s: %d orders, profile=%v", user.FullName, len(user.Orders), user.Profile != nil)
 	})
 
 	// ========================================================================
