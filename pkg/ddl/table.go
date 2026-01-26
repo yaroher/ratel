@@ -1,16 +1,32 @@
 package ddl
 
 import (
-	"github.com/yaroher/ratel/pkg/types"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/types"
 )
 
+// NamedConstraint holds a constraint with optional explicit name
+type NamedConstraint[C types.ColumnAlias] struct {
+	Name    string // explicit constraint name (empty for auto-generated)
+	Columns []C
+}
+
+// CheckConstraint holds a CHECK constraint
+type CheckConstraint struct {
+	Name string // explicit constraint name
+	Expr string // CHECK expression
+}
+
 type TableDDL[T types.TableAlias, C types.ColumnAlias] struct {
-	alias      T
-	columns    []*ColumnDDL[C]
-	indexes    []*Index[T, C]
-	unique     [][]C
-	primaryKey []C
+	alias           T
+	columns         []*ColumnDDL[C]
+	indexes         []*Index[T, C]
+	unique          [][]C                // legacy unnamed unique
+	namedUnique     []NamedConstraint[C] // named unique constraints
+	primaryKey      []C                  // legacy unnamed pk
+	namedPrimaryKey *NamedConstraint[C]  // named primary key
+	checks          []CheckConstraint    // table-level check constraints
 }
 
 type TableOptions[T types.TableAlias, C types.ColumnAlias] func(*TableDDL[T, C])
@@ -31,6 +47,36 @@ func WithUniqueColumns[T types.TableAlias, C types.ColumnAlias](columns ...[]C) 
 func WithPrimaryKeyColumns[T types.TableAlias, C types.ColumnAlias](columns []C) TableOptions[T, C] {
 	return func(ddl *TableDDL[T, C]) {
 		ddl.primaryKey = columns
+	}
+}
+
+// WithTableUniqueNamed adds a named unique constraint to the table
+func WithTableUniqueNamed[T types.TableAlias, C types.ColumnAlias](name string, columns []C) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.namedUnique = append(ddl.namedUnique, NamedConstraint[C]{
+			Name:    name,
+			Columns: columns,
+		})
+	}
+}
+
+// WithTablePrimaryKeyNamed sets a named composite primary key for the table
+func WithTablePrimaryKeyNamed[T types.TableAlias, C types.ColumnAlias](name string, columns []C) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.namedPrimaryKey = &NamedConstraint[C]{
+			Name:    name,
+			Columns: columns,
+		}
+	}
+}
+
+// WithTableCheckConstraint adds a named CHECK constraint to the table
+func WithTableCheckConstraint[T types.TableAlias, C types.ColumnAlias](name, expr string) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.checks = append(ddl.checks, CheckConstraint{
+			Name: name,
+			Expr: expr,
+		})
 	}
 }
 
@@ -104,8 +150,20 @@ func (c *TableDDL[T, C]) SchemaSql() []string {
 		sql.WriteString(col.SchemaSql())
 	}
 
-	// Add composite primary key if defined
-	if len(c.primaryKey) > 0 {
+	// Add named composite primary key if defined
+	if c.namedPrimaryKey != nil && len(c.namedPrimaryKey.Columns) > 0 {
+		sql.WriteString(",\n  CONSTRAINT ")
+		sql.WriteString(c.namedPrimaryKey.Name)
+		sql.WriteString(" PRIMARY KEY (")
+		for i, col := range c.namedPrimaryKey.Columns {
+			if i > 0 {
+				sql.WriteString(", ")
+			}
+			sql.WriteString(col.String())
+		}
+		sql.WriteString(")")
+	} else if len(c.primaryKey) > 0 {
+		// Legacy unnamed composite primary key
 		sql.WriteString(",\n  PRIMARY KEY (")
 		for i, col := range c.primaryKey {
 			if i > 0 {
@@ -116,7 +174,21 @@ func (c *TableDDL[T, C]) SchemaSql() []string {
 		sql.WriteString(")")
 	}
 
-	// Add table-level unique constraints
+	// Add named unique constraints
+	for _, nc := range c.namedUnique {
+		sql.WriteString(",\n  CONSTRAINT ")
+		sql.WriteString(nc.Name)
+		sql.WriteString(" UNIQUE (")
+		for i, col := range nc.Columns {
+			if i > 0 {
+				sql.WriteString(", ")
+			}
+			sql.WriteString(col.String())
+		}
+		sql.WriteString(")")
+	}
+
+	// Add legacy unnamed unique constraints
 	for _, uniqueCols := range c.unique {
 		sql.WriteString(",\n  UNIQUE (")
 		for i, col := range uniqueCols {
@@ -125,6 +197,15 @@ func (c *TableDDL[T, C]) SchemaSql() []string {
 			}
 			sql.WriteString(col.String())
 		}
+		sql.WriteString(")")
+	}
+
+	// Add CHECK constraints
+	for _, check := range c.checks {
+		sql.WriteString(",\n  CONSTRAINT ")
+		sql.WriteString(check.Name)
+		sql.WriteString(" CHECK (")
+		sql.WriteString(check.Expr)
 		sql.WriteString(")")
 	}
 

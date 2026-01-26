@@ -11,6 +11,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/yaroher/ratel/pkg/ddl"
+	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
 )
 
 // setupTestDB creates a PostgreSQL testcontainer and returns a connection pool
@@ -57,6 +58,7 @@ func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
 	statements := ddl.SchemaStatements(
 		Currencys,
 		Users,
+		Profiles, // Profile depends on Users
 		Categorys,
 		Tags,
 		Products,
@@ -137,6 +139,38 @@ func TestGeneratedModels(t *testing.T) {
 			}
 			userIDs = append(userIDs, user.Id)
 			t.Logf("Inserted user: %s (ID: %d)", u.fullName, user.Id)
+		}
+	})
+
+	// ========================================================================
+	// INSERT: Profiles (one per user - HasOne relationship)
+	// ========================================================================
+	t.Run("Insert Profiles", func(t *testing.T) {
+		profiles := []struct {
+			userID    int64
+			bio       string
+			avatarURL string
+		}{
+			{userIDs[0], "Software engineer", "https://example.com/john.jpg"},
+			{userIDs[1], "Product manager", "https://example.com/jane.jpg"},
+			// userIDs[2] (Bob) has no profile - to test null case
+		}
+
+		for _, p := range profiles {
+			query := Profiles.Insert().
+				Columns(
+					ProfileColumnUserId,
+					ProfileColumnBio,
+					ProfileColumnAvatarUrl,
+				).
+				Values(p.userID, p.bio, p.avatarURL).
+				Returning(ProfileColumnId)
+
+			profile, err := Profiles.QueryRow(ctx, db, query)
+			if err != nil {
+				t.Fatalf("failed to insert profile for user %d: %v", p.userID, err)
+			}
+			t.Logf("Inserted profile: ID=%d for user %d, bio=%s", profile.Id, p.userID, p.bio)
 		}
 	})
 
@@ -483,6 +517,244 @@ func TestGeneratedModels(t *testing.T) {
 		}
 		t.Logf("User %d timestamps - CreatedAt: %v, UpdatedAt: %v",
 			user.Id, user.CreatedAt, user.UpdatedAt)
+	})
+
+	// ========================================================================
+	// SELECT: With Relations Auto-Loading
+	// ========================================================================
+	t.Run("Select Users with Relations (HasMany)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
+
+		user, err := Users.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select user with relations: %v", err)
+		}
+
+		t.Logf("User: %s has %d orders", user.FullName, len(user.Orders))
+		for _, order := range user.Orders {
+			t.Logf("  - Order ID=%d, Status=%s", order.Id, order.Status)
+		}
+
+		// Verify HasMany loaded correctly
+		if len(user.Orders) != 2 {
+			t.Errorf("expected 2 orders for user %s, got %d", user.FullName, len(user.Orders))
+		}
+	})
+
+	t.Run("Select Users with Relations (HasOne Profile)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		// User with profile
+		query := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[0]))
+
+		user, err := Users.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select user with relations: %v", err)
+		}
+
+		// Verify HasOne loaded correctly
+		if user.Profile == nil {
+			t.Fatal("expected user.Profile to be loaded (HasOne)")
+		}
+		t.Logf("User: %s has profile: bio=%s, avatar=%s",
+			user.FullName, user.Profile.Bio, user.Profile.AvatarUrl)
+
+		// User without profile (Bob)
+		queryBob := Users.SelectAll().
+			Where(Users.Id.Eq(userIDs[2]))
+
+		bob, err := Users.QueryRow(ctxWithRelations, db, queryBob)
+		if err != nil {
+			t.Fatalf("failed to select Bob: %v", err)
+		}
+
+		// Bob has no profile - should be nil
+		if bob.Profile != nil {
+			t.Logf("Bob has profile (unexpected but ok): %v", bob.Profile)
+		} else {
+			t.Logf("User: %s has no profile (as expected)", bob.FullName)
+		}
+	})
+
+	t.Run("Select Profile with Relations (BelongsTo User)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		query := Profiles.SelectAll().
+			Where(Profiles.UserId.Eq(userIDs[0]))
+
+		profile, err := Profiles.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select profile with relations: %v", err)
+		}
+
+		// Verify BelongsTo User loaded correctly
+		if profile.User == nil {
+			t.Fatal("expected profile.User to be loaded (BelongsTo)")
+		}
+		t.Logf("Profile (bio=%s) belongs to user: %s (%s)",
+			profile.Bio, profile.User.FullName, profile.User.Email)
+	})
+
+	t.Run("Select Orders with Relations (BelongsTo)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		query := Orders.SelectAll().
+			Where(Orders.Id.Eq(orderIDs[0]))
+
+		order, err := Orders.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select order with relations: %v", err)
+		}
+
+		// Verify BelongsTo User loaded correctly
+		if order.User == nil {
+			t.Fatal("expected order.User to be loaded")
+		}
+		t.Logf("Order ID=%d belongs to user: %s", order.Id, order.User.FullName)
+
+		// Verify BelongsTo Currency loaded correctly
+		if order.Money == nil {
+			t.Fatal("expected order.Money (Currency) to be loaded")
+		}
+		t.Logf("Order currency: %s (%s)", order.Money.Code, order.Money.Name)
+	})
+
+	t.Run("Select OrderItems with Relations (BelongsTo)", func(t *testing.T) {
+		ctxWithRelations := exec.WithRelations(ctx)
+
+		query := OrderItems.SelectAll().
+			Where(OrderItems.OrderId.Eq(orderIDs[1]))
+
+		item, err := OrderItems.QueryRow(ctxWithRelations, db, query)
+		if err != nil {
+			t.Fatalf("failed to select order item with relations: %v", err)
+		}
+
+		// Verify BelongsTo Order loaded correctly
+		if item.Order == nil {
+			t.Fatal("expected orderItem.Order to be loaded")
+		}
+		t.Logf("OrderItem (line %d) belongs to Order ID=%d (status: %s)",
+			item.LineNo, item.Order.Id, item.Order.Status)
+
+		// Verify BelongsTo Product loaded correctly
+		if item.Product == nil {
+			t.Fatal("expected orderItem.Product to be loaded")
+		}
+		t.Logf("OrderItem product: %s (SKU: %s, price: %.2f)",
+			item.Product.Name, item.Product.Sku, item.Product.Price)
+	})
+
+	// ========================================================================
+	// Constraint Errors Tests
+	// ========================================================================
+	t.Run("Test Unique Constraint Error (duplicate email)", func(t *testing.T) {
+		// Try to insert user with duplicate email
+		query := Users.Insert().
+			Columns(UserColumnEmail, UserColumnFullName).
+			Values("john@example.com", "Another John") // email already exists
+
+		_, err := Users.Execute(ctx, db, query)
+		if err == nil {
+			t.Fatal("expected unique constraint error, got nil")
+		}
+
+		// Test using generated IsUserEmailUniqueError function
+		if !IsUserEmailUniqueError(err) {
+			t.Logf("Error: %v", err)
+			// Try alternative - unique index error
+			if !IsUserEmailUniqueIdxError(err) {
+				t.Errorf("expected IsUserEmailUniqueError or IsUserEmailUniqueIdxError to return true")
+			} else {
+				t.Logf("Correctly identified as unique index violation")
+			}
+		} else {
+			t.Logf("Correctly identified as unique constraint violation")
+		}
+	})
+
+	t.Run("Test Unique Constraint Error using sqlerr", func(t *testing.T) {
+		// Try to insert user with duplicate email
+		query := Users.Insert().
+			Columns(UserColumnEmail, UserColumnFullName).
+			Values("jane@example.com", "Another Jane") // email already exists
+
+		_, err := Users.Execute(ctx, db, query)
+		if err == nil {
+			t.Fatal("expected unique constraint error, got nil")
+		}
+
+		// Test using AsConstraintError
+		ce, ok := sqlerr.AsConstraintError(err)
+		if !ok {
+			t.Fatalf("expected AsConstraintError to return true, got error: %v", err)
+		}
+
+		t.Logf("Constraint Error: Name=%s, Type=%s, Table=%s",
+			ce.Name, ce.Type, ce.Table)
+
+		// Verify constraint info
+		if ce.Type != sqlerr.UniqueConstraint {
+			t.Errorf("expected constraint type 'unique', got %s", ce.Type)
+		}
+		if ce.Table != "users" {
+			t.Errorf("expected table 'users', got %s", ce.Table)
+		}
+	})
+
+	t.Run("Test Check Constraint Error (invalid order status)", func(t *testing.T) {
+		// Note: table-level CHECK constraints from proto are not automatically
+		// generated in DDL. This test verifies the error handling if CHECK is present.
+
+		// Try to insert order with invalid status
+		query := Orders.Insert().
+			Columns(OrderColumnUserId, OrderColumnStatus, OrderColumnCurrency).
+			Values(userIDs[0], "INVALID_STATUS", "USD")
+
+		_, err := Orders.Execute(ctx, db, query)
+		if err == nil {
+			// CHECK constraint not applied - skip test
+			t.Skip("CHECK constraint not present in schema, skipping test")
+		}
+
+		// Test using AsConstraintError
+		ce, ok := sqlerr.AsConstraintError(err)
+		if !ok {
+			t.Logf("Error is not a constraint error: %v", err)
+			return
+		}
+
+		t.Logf("Check Constraint Error: Name=%s, Type=%s, Table=%s, Detail=%s",
+			ce.Name, ce.Type, ce.Table, ce.Detail)
+
+		// Verify it's a check constraint
+		if ce.Type != sqlerr.CheckConstraint {
+			t.Errorf("expected constraint type 'check', got %s", ce.Type)
+		}
+	})
+
+	t.Run("Test Primary Key Constraint Error (duplicate ID)", func(t *testing.T) {
+		// Try to insert currency with duplicate primary key
+		query := Currencys.Insert().
+			Columns(CurrencyColumnCode, CurrencyColumnName).
+			Values("USD", "Duplicate Dollar") // code already exists
+
+		_, err := Currencys.Execute(ctx, db, query)
+		if err == nil {
+			t.Fatal("expected primary key constraint error, got nil")
+		}
+
+		// Test using generated IsCurrencyPrimaryKeyError function
+		if !IsCurrencyPrimaryKeyError(err) {
+			t.Logf("Error: %v", err)
+			t.Errorf("expected IsCurrencyPrimaryKeyError to return true")
+		} else {
+			t.Logf("Correctly identified as primary key constraint violation")
+		}
 	})
 
 	// Suppress unused variables

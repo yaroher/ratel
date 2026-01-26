@@ -3,9 +3,11 @@ package schema
 import (
 	"context"
 	"fmt"
+
 	"github.com/yaroher/ratel/pkg/dml"
 	"github.com/yaroher/ratel/pkg/dml/clause"
 	exec2 "github.com/yaroher/ratel/pkg/exec"
+	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
 	"github.com/yaroher/ratel/pkg/types"
 )
 
@@ -70,6 +72,21 @@ func HasMany[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT typ
 	}
 }
 
+// HasOne creates a forward relation (one-to-one)
+// Example: User has one Profile
+func HasOne[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT types.TableAlias, RC types.ColumnAlias, RS exec2.Scanner[RC]](
+	currentTableAlias T,
+	relatedTable RelationTableAlias[RT],
+	foreignKey RC, // foreign key in related table
+	localKey C, // primary key in current table
+) *ForwardRelation[T, C, S, RT, RC, RS] {
+	return &ForwardRelation[T, C, S, RT, RC, RS]{
+		foreignKeyName: foreignKey.String(),
+		localKeyName:   localKey.String(),
+		relatedName:    relatedTable.Alias(),
+	}
+}
+
 // BelongsTo creates a backward relation (many-to-one)
 // Example: Post belongs to User
 func BelongsTo[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT types.TableAlias, RC types.ColumnAlias, RS exec2.Scanner[RC]](
@@ -108,6 +125,31 @@ func (r *ForwardRelation[T, C, S, RT, RC, RS]) LoadMany(
 	}
 
 	return results, nil
+}
+
+// LoadOne loads a single related record for a forward relation (HasOne)
+func (r *ForwardRelation[T, C, S, RT, RC, RS]) LoadOne(
+	ctx context.Context,
+	db exec2.DB,
+	relatedTable RelationTableQuery[RT, RC, RS],
+	localValue any, // value of the local key (e.g., user.ID)
+) (RS, error) {
+	// Build query using raw SQL for WHERE clause
+	rawWhere := relatedTable.Raw(
+		fmt.Sprintf("%s.%s = $1", r.relatedName.String(), r.foreignKeyName),
+		localValue,
+	)
+
+	// Build query: SELECT * FROM related_table WHERE foreign_key = localValue LIMIT 1
+	query := relatedTable.SelectAll().Where(rawWhere)
+
+	// Execute query - returns single row
+	result, err := relatedTable.QueryRow(ctx, db, query)
+	if err != nil {
+		return result, fmt.Errorf("failed to load related record: %w", err)
+	}
+
+	return result, nil
 }
 
 // LoadOne loads a related record for a backward relation (BelongsTo)
@@ -218,6 +260,59 @@ func HasManyLoad[
 	}
 }
 
+// HasOneLoader implements RelationLoader for one-to-one forward relations
+type HasOneLoader[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec2.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec2.Scanner[RC],
+] struct {
+	relation *ForwardRelation[T, C, S, RT, RC, RS]
+	related  RelationTableQuery[RT, RC, RS]
+	localKey C
+	assign   func(S, RS)
+}
+
+func (l HasOneLoader[T, C, S, RT, RC, RS]) Load(ctx context.Context, db exec2.DB, base S) error {
+	localValue := base.GetValue(l.localKey)()
+	row, err := l.relation.LoadOne(exec2.WithSkipRelations(ctx), db, l.related, localValue)
+	if err != nil {
+		// HasOne relation may not exist - that's OK, just leave the field nil
+		if sqlerr.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if l.assign != nil {
+		l.assign(base, row)
+	}
+	return nil
+}
+
+// HasOneLoad creates a loader for one-to-one forward relations
+func HasOneLoad[
+	T types.TableAlias,
+	C types.ColumnAlias,
+	S exec2.Scanner[C],
+	RT types.TableAlias,
+	RC types.ColumnAlias,
+	RS exec2.Scanner[RC],
+](
+	relation *ForwardRelation[T, C, S, RT, RC, RS],
+	related RelationTableQuery[RT, RC, RS],
+	localKey C,
+	assign func(S, RS),
+) exec2.RelationLoader[S] {
+	return HasOneLoader[T, C, S, RT, RC, RS]{
+		relation: relation,
+		related:  related,
+		localKey: localKey,
+		assign:   assign,
+	}
+}
+
 type BelongsToLoader[
 	T types.TableAlias,
 	C types.ColumnAlias,
@@ -236,6 +331,10 @@ func (l BelongsToLoader[T, C, S, RT, RC, RS]) Load(ctx context.Context, db exec2
 	foreignValue := base.GetValue(l.foreignKey)()
 	row, err := l.relation.LoadOne(exec2.WithSkipRelations(ctx), db, l.related, foreignValue)
 	if err != nil {
+		// BelongsTo relation may not exist (e.g. NULL foreign key) - that's OK
+		if sqlerr.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	if l.assign != nil {

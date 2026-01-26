@@ -14,8 +14,24 @@ import "google/protobuf/descriptor.proto";
   Types and struct generation handled by protoc-gen-go-plain.
   Ratel focuses only on:
     - Table schema generation
-    - Relations (OneToMany, ManyToMany)
+    - Relations (HasOne, HasMany/OneToMany, BelongsTo, ManyToMany)
     - SQL constraints & indexes
+  
+  ============================================================================
+  Relations Overview
+  ============================================================================
+  
+  HasOne:     Parent has one Child (User has one Profile)
+              FK is in child table, returns single record
+  
+  OneToMany:  Parent has many Children (User has many Orders)
+              FK is in child table, returns slice
+  
+  BelongsTo:  Child belongs to Parent (Order belongs to User)
+              FK is in current table, returns single record
+  
+  ManyToMany: Both sides have many (Product <-> Categories)
+              FK in pivot table, returns slice
   
   ============================================================================
   Usage Example
@@ -26,20 +42,7 @@ import "google/protobuf/descriptor.proto";
       generate: true
       table_name: "users"
       indexes: [
-        // Simple index
-        { columns: ["email"] },
-        // Unique index with custom name
-        { name: "idx_users_email_unique", columns: ["email"], unique: true },
-        // Composite index
-        { columns: ["last_name", "first_name"] },
-        // Partial index
-        { columns: ["email"], where: "is_active = true" },
-        // Expression index
-        { expressions: ["lower(email)"], unique: true },
-        // GIN index for array/jsonb
-        { columns: ["tags"], using: "gin" },
-        // Covering index
-        { columns: ["user_id"], include: ["email", "full_name"] }
+        { columns: ["email"], unique: true }
       ]
     };
     
@@ -47,12 +50,15 @@ import "google/protobuf/descriptor.proto";
       constraints: { primary_key: true }
     }];
     
-    string email = 2 [(ratel.column) = {
-      constraints: { unique: true }
+    string email = 2;
+    
+    // HasOne: User has one Profile
+    Profile profile = 10 [(ratel.relation) = {
+      has_one: { ref_name: "user_id" }
     }];
     
     // OneToMany: User has many Orders
-    repeated Order orders = 10 [(ratel.relation) = {
+    repeated Order orders = 11 [(ratel.relation) = {
       one_to_many: {
         ref_name: "user_id"
         on_delete_cascade: true
@@ -60,20 +66,32 @@ import "google/protobuf/descriptor.proto";
     }];
   }
   
-  message Order {
-    option (ratel.table) = {
-      generate: true
-      indexes: [
-        { columns: ["user_id"] },
-        { columns: ["status", "created_at"] }
-      ]
-    };
+  message Profile {
+    option (ratel.table) = { generate: true };
     
     int64 id = 1 [(ratel.column) = { constraints: { primary_key: true } }];
-    int64 user_id = 2;
+    int64 user_id = 2;  // FK to users.id
+    string bio = 3;
+    
+    // BelongsTo: Profile belongs to User
+    User user = 10 [(ratel.relation) = {
+      belongs_to: { foreign_key: "user_id" }
+    }];
+  }
+  
+  message Order {
+    option (ratel.table) = { generate: true };
+    
+    int64 id = 1 [(ratel.column) = { constraints: { primary_key: true } }];
+    int64 user_id = 2;  // FK to users.id
+    
+    // BelongsTo: Order belongs to User
+    User user = 10 [(ratel.relation) = {
+      belongs_to: { foreign_key: "user_id" }
+    }];
     
     // ManyToMany: Order has many Products through order_products
-    repeated Product products = 10 [(ratel.relation) = {
+    repeated Product products = 11 [(ratel.relation) = {
       many_to_many: {
         ref_on_delete_cascade: true
         back_ref_on_delete_cascade: true
@@ -199,6 +217,8 @@ message Column {
 // Relations
 // ============================================================================
 
+// OneToMany: Parent has many Children (e.g., User has many Orders)
+// The FK column is in the related (child) table
 message OneToMany {
   // FK column name in related table (default: <table>_id)
   string ref_name = 1;
@@ -213,6 +233,37 @@ message OneToMany {
   bool existed_field = 4;
 }
 
+// HasOne: Parent has one Child (e.g., User has one Profile)
+// Similar to OneToMany but returns single record instead of slice
+message HasOne {
+  // FK column name in related table (default: <table>_id)
+  string ref_name = 1;
+  
+  // Raw constraint for FK (overrides default REFERENCES)
+  string constraint = 2;
+  
+  // Add ON DELETE CASCADE
+  bool on_delete_cascade = 3;
+  
+  // Add ON DELETE SET NULL
+  bool on_delete_set_null = 4;
+  
+  // FK column already exists in related table (don't create virtual)
+  bool existed_field = 5;
+}
+
+// BelongsTo: Child belongs to Parent (e.g., Order belongs to User)
+// The FK column is in the current (child) table
+message BelongsTo {
+  // FK column name in current table (default: <related_table>_id)
+  string foreign_key = 1;
+  
+  // PK column name in related table (default: id)
+  string owner_key = 2;
+}
+
+// ManyToMany: Both sides have many of each other through pivot table
+// (e.g., Product has many Categories through product_categories)
 message ManyToMany {
   // Optional pivot table configuration
   optional Table pivot_table = 1;
@@ -228,6 +279,8 @@ message Relation {
   oneof relation {
     OneToMany one_to_many = 1;
     ManyToMany many_to_many = 2;
+    HasOne has_one = 3;
+    BelongsTo belongs_to = 4;
   }
 }
 

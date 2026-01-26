@@ -22,27 +22,110 @@ func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTabl
 
 	// Imports
 	gf.P("import (")
+	gf.P("\t\"errors\"")
 	gf.P("\t\"time\"")
 	gf.P()
 	gf.P("\t\"github.com/yaroher/ratel/pkg/ddl\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/dml/set\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/exec\"")
+	gf.P("\t\"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr\"")
 	gf.P("\t\"github.com/yaroher/ratel/pkg/schema\"")
 	gf.P(")")
 	gf.P()
 
-	// Suppress unused import warning
-	gf.P("var _ = time.Time{}")
+	// Suppress unused import warnings
+	gf.P("var (")
+	gf.P("\t_ = time.Time{}")
+	gf.P("\t_ = errors.New")
+	gf.P("\t_ = sqlerr.IsConstraintNamed")
+	gf.P(")")
 	gf.P()
 
-	// Generate code for each table
+	// First pass: generate table code
 	for _, table := range tables {
 		if err := generateTableCode(gf, table); err != nil {
 			return err
 		}
 	}
 
+	// Second pass: generate relations (after all tables are defined)
+	for _, table := range tables {
+		relations := parseRelations(table)
+		generateRelationVariables(gf, table, relations)
+	}
+
+	// Third pass: generate constraint errors
+	generateConstraintErrors(gf, tables)
+
 	return nil
+}
+
+// generateConstraintErrors generates constraint-related code for all tables
+func generateConstraintErrors(gf *protogen.GeneratedFile, tables []*RatelTable) {
+	// Collect all constraints from all tables
+	var allConstraints []*ConstraintInfo
+	for _, table := range tables {
+		constraints := collectConstraints(table)
+		allConstraints = append(allConstraints, constraints...)
+	}
+
+	if len(allConstraints) == 0 {
+		return
+	}
+
+	// Generate constraint names section
+	gf.P("// ============================================================================")
+	gf.P("// Constraint Names")
+	gf.P("// ============================================================================")
+	gf.P()
+	gf.P("const (")
+	for _, c := range allConstraints {
+		gf.P("\t", c.GoConstName, " = \"", c.Name, "\"")
+	}
+	gf.P(")")
+	gf.P()
+
+	// Generate sentinel errors section
+	gf.P("// ============================================================================")
+	gf.P("// Constraint Errors")
+	gf.P("// ============================================================================")
+	gf.P()
+	gf.P("var (")
+	for _, c := range allConstraints {
+		errMsg := constraintErrorMessage(c)
+		gf.P("\t", c.GoErrorName, " = errors.New(\"", errMsg, "\")")
+	}
+	gf.P(")")
+	gf.P()
+
+	// Generate error check functions section
+	gf.P("// ============================================================================")
+	gf.P("// Constraint Error Check Functions")
+	gf.P("// ============================================================================")
+	gf.P()
+	for _, c := range allConstraints {
+		gf.P("// ", c.GoCheckFunc, " checks if the error is a ", c.Type, " constraint violation on ", c.Table)
+		gf.P("func ", c.GoCheckFunc, "(err error) bool {")
+		gf.P("\treturn sqlerr.IsConstraintNamed(err, ", c.GoConstName, ")")
+		gf.P("}")
+		gf.P()
+	}
+}
+
+// constraintErrorMessage generates a human-readable error message for a constraint
+func constraintErrorMessage(c *ConstraintInfo) string {
+	switch c.Type {
+	case ConstraintTypeUnique:
+		return fmt.Sprintf("unique constraint violated: %s", c.Name)
+	case ConstraintTypePrimaryKey:
+		return fmt.Sprintf("primary key constraint violated: %s", c.Name)
+	case ConstraintTypeForeignKey:
+		return fmt.Sprintf("foreign key constraint violated: %s", c.Name)
+	case ConstraintTypeCheck:
+		return fmt.Sprintf("check constraint violated: %s", c.Name)
+	default:
+		return fmt.Sprintf("constraint violated: %s", c.Name)
+	}
 }
 
 // generateTableCode generates code for a single table
@@ -126,12 +209,9 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P("}")
 	gf.P()
 
-	// 7. Generate Relations method stub
-	gf.P("// Relations returns the relation loaders for the ", tableName, " table")
-	gf.P("func (s *", scannerTypeName, ") Relations() []exec.RelationLoader[*", scannerTypeName, "] {")
-	gf.P("\treturn nil // TODO: generate relations")
-	gf.P("}")
-	gf.P()
+	// 7. Generate Relations method
+	relations := parseRelations(table)
+	generateRelationsMethod(gf, table, relations)
 
 	// 8. Generate table struct type
 	tableStructName := msgName + "sTable"

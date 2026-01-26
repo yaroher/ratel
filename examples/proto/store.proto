@@ -101,6 +101,39 @@ message User {
       on_delete_cascade: true
     }
   }];
+  
+  // HasOne: User has one Profile
+  Profile profile = 11 [(ratel.relation) = {
+    has_one: { ref_name: "user_id" }
+  }];
+}
+
+// ============================================================================
+// Profile - профиль пользователя (один к одному с User)
+// ============================================================================
+message Profile {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "profiles"
+    indexes: [
+      { columns: ["user_id"], unique: true }
+    ]
+  };
+  
+  // Embedded BaseEntity (id + timestamps)
+  BaseEntity base = 1 [(goplain.field).embed = true];
+  
+  EntityID user_id = 2;  // FK to users.id (unique - one profile per user)
+  
+  string bio = 3;
+  
+  string avatar_url = 4;
+  
+  // BelongsTo: Profile belongs to User
+  User user = 10 [(ratel.relation) = {
+    belongs_to: { foreign_key: "user_id" }
+  }];
 }
 
 // ============================================================================
@@ -233,6 +266,19 @@ message Order {
       on_delete_cascade: true
     }
   }];
+  
+  // BelongsTo: Order belongs to User
+  User user = 11 [(ratel.relation) = {
+    belongs_to: { foreign_key: "user_id" }
+  }];
+  
+  // BelongsTo: Order belongs to Currency
+  Currency money = 12 [(ratel.relation) = {
+    belongs_to: { 
+      foreign_key: "currency"
+      owner_key: "code"
+    }
+  }];
 }
 
 // ============================================================================
@@ -258,4 +304,14 @@ message OrderItem {
   EntityID product_id = 3; // FK to products.id
   int32 qty = 4;
   double unit_price = 5;
+  
+  // BelongsTo: OrderItem belongs to Order
+  Order order = 10 [(ratel.relation) = {
+    belongs_to: { foreign_key: "order_id" }
+  }];
+  
+  // BelongsTo: OrderItem belongs to Product
+  Product product = 11 [(ratel.relation) = {
+    belongs_to: { foreign_key: "product_id" }
+  }];
 }

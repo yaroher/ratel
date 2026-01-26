@@ -4,15 +4,21 @@
 package storepb
 
 import (
+	"errors"
 	"time"
 
 	"github.com/yaroher/ratel/pkg/ddl"
 	"github.com/yaroher/ratel/pkg/dml/set"
 	"github.com/yaroher/ratel/pkg/exec"
+	"github.com/yaroher/ratel/pkg/pgx-ext/sqlerr"
 	"github.com/yaroher/ratel/pkg/schema"
 )
 
-var _ = time.Time{}
+var (
+	_ = time.Time{}
+	_ = errors.New
+	_ = sqlerr.IsConstraintNamed
+)
 
 // CurrencyAlias is the table alias type for the currency table
 type CurrencyAlias string
@@ -66,7 +72,7 @@ func (s *CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
 
 // Relations returns the relation loaders for the currency table
 func (s *CurrencyScanner) Relations() []exec.RelationLoader[*CurrencyScanner] {
-	return nil // TODO: generate relations
+	return nil
 }
 
 // CurrencysTable represents the currency table with its columns
@@ -178,7 +184,29 @@ func (s *UserScanner) GetValue(f UserColumnAlias) func() any {
 
 // Relations returns the relation loaders for the users table
 func (s *UserScanner) Relations() []exec.RelationLoader[*UserScanner] {
-	return nil // TODO: generate relations
+	return []exec.RelationLoader[*UserScanner]{
+		schema.HasManyLoad(
+			UserOrders,
+			Orders.Table,
+			UserColumnId,
+			func(base *UserScanner, related []*OrderScanner) {
+				base.Orders = make([]OrderScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Orders[i] = *r
+					}
+				}
+			},
+		),
+		schema.HasOneLoad(
+			UserProfile,
+			Profiles.Table,
+			UserColumnId,
+			func(base *UserScanner, related *ProfileScanner) {
+				base.Profile = related
+			},
+		),
+	}
 }
 
 // UsersTable represents the users table with its columns
@@ -233,6 +261,149 @@ var Users = func() UsersTable {
 
 // UsersRef is a reference to the users table for relations
 var UsersRef schema.RelationTableAlias[UserAlias] = Users.Table
+
+// ProfileAlias is the table alias type for the profiles table
+type ProfileAlias string
+
+func (a ProfileAlias) String() string { return string(a) }
+
+const ProfileAliasName ProfileAlias = "profiles"
+
+// ProfileColumnAlias represents column names for the profiles table
+type ProfileColumnAlias string
+
+func (c ProfileColumnAlias) String() string { return string(c) }
+
+const (
+	ProfileColumnId        ProfileColumnAlias = "id"
+	ProfileColumnCreatedAt ProfileColumnAlias = "created_at"
+	ProfileColumnUpdatedAt ProfileColumnAlias = "updated_at"
+	ProfileColumnUserId    ProfileColumnAlias = "user_id"
+	ProfileColumnBio       ProfileColumnAlias = "bio"
+	ProfileColumnAvatarUrl ProfileColumnAlias = "avatar_url"
+)
+
+func (s *ProfileScanner) GetTarget(col string) func() any {
+	switch ProfileColumnAlias(col) {
+	case ProfileColumnId:
+		return func() any { return &s.Id }
+	case ProfileColumnCreatedAt:
+		return func() any { return &s.CreatedAt }
+	case ProfileColumnUpdatedAt:
+		return func() any { return &s.UpdatedAt }
+	case ProfileColumnUserId:
+		return func() any { return &s.UserId }
+	case ProfileColumnBio:
+		return func() any { return &s.Bio }
+	case ProfileColumnAvatarUrl:
+		return func() any { return &s.AvatarUrl }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *ProfileScanner) GetSetter(f ProfileColumnAlias) func() set.ValueSetter[ProfileColumnAlias] {
+	switch f {
+	case ProfileColumnId:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case ProfileColumnCreatedAt:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.CreatedAt) }
+	case ProfileColumnUpdatedAt:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.UpdatedAt) }
+	case ProfileColumnUserId:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case ProfileColumnBio:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.Bio) }
+	case ProfileColumnAvatarUrl:
+		return func() set.ValueSetter[ProfileColumnAlias] { return set.NewSetter(f, &s.AvatarUrl) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *ProfileScanner) GetValue(f ProfileColumnAlias) func() any {
+	switch f {
+	case ProfileColumnId:
+		return func() any { return s.Id }
+	case ProfileColumnCreatedAt:
+		return func() any { return s.CreatedAt }
+	case ProfileColumnUpdatedAt:
+		return func() any { return s.UpdatedAt }
+	case ProfileColumnUserId:
+		return func() any { return s.UserId }
+	case ProfileColumnBio:
+		return func() any { return s.Bio }
+	case ProfileColumnAvatarUrl:
+		return func() any { return s.AvatarUrl }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the profiles table
+func (s *ProfileScanner) Relations() []exec.RelationLoader[*ProfileScanner] {
+	return []exec.RelationLoader[*ProfileScanner]{
+		schema.BelongsToLoad(
+			ProfileUser,
+			Users.Table,
+			ProfileColumnUserId,
+			func(base *ProfileScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+	}
+}
+
+// ProfilesTable represents the profiles table with its columns
+type ProfilesTable struct {
+	*schema.Table[ProfileAlias, ProfileColumnAlias, *ProfileScanner]
+	Id        schema.BigSerialColumnI[ProfileColumnAlias]
+	CreatedAt schema.TimestamptzColumnI[ProfileColumnAlias]
+	UpdatedAt schema.TimestamptzColumnI[ProfileColumnAlias]
+	UserId    schema.BigIntColumnI[ProfileColumnAlias]
+	Bio       schema.TextColumnI[ProfileColumnAlias]
+	AvatarUrl schema.TextColumnI[ProfileColumnAlias]
+}
+
+// Profiles is the global profiles table instance
+var Profiles = func() ProfilesTable {
+	idCol := schema.BigSerialColumn(ProfileColumnId, ddl.WithPrimaryKey[ProfileColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(ProfileColumnCreatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"))
+	updatedAtCol := schema.TimestamptzColumn(ProfileColumnUpdatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"))
+	userIdCol := schema.BigIntColumn(ProfileColumnUserId)
+	bioCol := schema.TextColumn(ProfileColumnBio)
+	avatarUrlCol := schema.TextColumn(ProfileColumnAvatarUrl)
+
+	idx0 := ddl.NewIndex[ProfileAlias, ProfileColumnAlias]("idx_profiles_user_id", ProfileAliasName).OnColumns(ProfileColumnUserId)
+	idx0 = idx0.Unique()
+
+	return ProfilesTable{
+		Table: schema.NewTable[ProfileAlias, ProfileColumnAlias, *ProfileScanner](
+			ProfileAliasName,
+			func() *ProfileScanner { return &ProfileScanner{} },
+			[]*ddl.ColumnDDL[ProfileColumnAlias]{
+				idCol.DDL(),
+				createdAtCol.DDL(),
+				updatedAtCol.DDL(),
+				userIdCol.DDL(),
+				bioCol.DDL(),
+				avatarUrlCol.DDL(),
+			},
+			ddl.WithIndexes[ProfileAlias, ProfileColumnAlias](
+				idx0,
+			),
+		),
+		Id:        idCol,
+		CreatedAt: createdAtCol,
+		UpdatedAt: updatedAtCol,
+		UserId:    userIdCol,
+		Bio:       bioCol,
+		AvatarUrl: avatarUrlCol,
+	}
+}()
+
+// ProfilesRef is a reference to the profiles table for relations
+var ProfilesRef schema.RelationTableAlias[ProfileAlias] = Profiles.Table
 
 // CategoryAlias is the table alias type for the categories table
 type CategoryAlias string
@@ -314,7 +485,7 @@ func (s *CategoryScanner) GetValue(f CategoryColumnAlias) func() any {
 
 // Relations returns the relation loaders for the categories table
 func (s *CategoryScanner) Relations() []exec.RelationLoader[*CategoryScanner] {
-	return nil // TODO: generate relations
+	return nil
 }
 
 // CategorysTable represents the categories table with its columns
@@ -435,7 +606,7 @@ func (s *TagScanner) GetValue(f TagColumnAlias) func() any {
 
 // Relations returns the relation loaders for the tags table
 func (s *TagScanner) Relations() []exec.RelationLoader[*TagScanner] {
-	return nil // TODO: generate relations
+	return nil
 }
 
 // TagsTable represents the tags table with its columns
@@ -580,7 +751,7 @@ func (s *ProductScanner) GetValue(f ProductColumnAlias) func() any {
 
 // Relations returns the relation loaders for the products table
 func (s *ProductScanner) Relations() []exec.RelationLoader[*ProductScanner] {
-	return nil // TODO: generate relations
+	return nil
 }
 
 // ProductsTable represents the products table with its columns
@@ -730,7 +901,37 @@ func (s *OrderScanner) GetValue(f OrderColumnAlias) func() any {
 
 // Relations returns the relation loaders for the orders table
 func (s *OrderScanner) Relations() []exec.RelationLoader[*OrderScanner] {
-	return nil // TODO: generate relations
+	return []exec.RelationLoader[*OrderScanner]{
+		schema.HasManyLoad(
+			OrderOrderItems,
+			OrderItems.Table,
+			OrderColumnId,
+			func(base *OrderScanner, related []*OrderItemScanner) {
+				base.Items = make([]OrderItemScanner, len(related))
+				for i, r := range related {
+					if r != nil {
+						base.Items[i] = *r
+					}
+				}
+			},
+		),
+		schema.BelongsToLoad(
+			OrderUser,
+			Users.Table,
+			OrderColumnUserId,
+			func(base *OrderScanner, related *UserScanner) {
+				base.User = related
+			},
+		),
+		schema.BelongsToLoad(
+			OrderCurrency,
+			Currencys.Table,
+			OrderColumnCurrency,
+			func(base *OrderScanner, related *CurrencyScanner) {
+				base.Money = related
+			},
+		),
+	}
 }
 
 // OrdersTable represents the orders table with its columns
@@ -860,7 +1061,24 @@ func (s *OrderItemScanner) GetValue(f OrderItemColumnAlias) func() any {
 
 // Relations returns the relation loaders for the order_items table
 func (s *OrderItemScanner) Relations() []exec.RelationLoader[*OrderItemScanner] {
-	return nil // TODO: generate relations
+	return []exec.RelationLoader[*OrderItemScanner]{
+		schema.BelongsToLoad(
+			OrderItemOrder,
+			Orders.Table,
+			OrderItemColumnOrderId,
+			func(base *OrderItemScanner, related *OrderScanner) {
+				base.Order = related
+			},
+		),
+		schema.BelongsToLoad(
+			OrderItemProduct,
+			Products.Table,
+			OrderItemColumnProductId,
+			func(base *OrderItemScanner, related *ProductScanner) {
+				base.Product = related
+			},
+		),
+	}
 }
 
 // OrderItemsTable represents the order_items table with its columns
@@ -907,3 +1125,258 @@ var OrderItems = func() OrderItemsTable {
 
 // OrderItemsRef is a reference to the order_items table for relations
 var OrderItemsRef schema.RelationTableAlias[OrderItemAlias] = OrderItems.Table
+
+// ============================================================================
+// User Relations
+// ============================================================================
+
+// UserOrders defines the one-to-many relationship: User has many Order
+var UserOrders = schema.HasMany[
+	UserAlias, UserColumnAlias, *UserScanner,
+	OrderAlias, OrderColumnAlias, *OrderScanner,
+](
+	UserAliasName,
+	OrdersRef,
+	OrderColumnUserId,
+	UserColumnId,
+)
+
+// UserProfile defines the one-to-one relationship: User has one Profile
+var UserProfile = schema.HasOne[
+	UserAlias, UserColumnAlias, *UserScanner,
+	ProfileAlias, ProfileColumnAlias, *ProfileScanner,
+](
+	UserAliasName,
+	ProfilesRef,
+	ProfileColumnUserId,
+	UserColumnId,
+)
+
+// ============================================================================
+// Profile Relations
+// ============================================================================
+
+// ProfileUser defines the belongs-to relationship: Profile belongs to User
+var ProfileUser = schema.BelongsTo[
+	ProfileAlias, ProfileColumnAlias, *ProfileScanner,
+	UserAlias, UserColumnAlias, *UserScanner,
+](
+	ProfileAliasName,
+	UsersRef,
+	ProfileColumnUserId,
+	UserColumnId,
+)
+
+// ============================================================================
+// Order Relations
+// ============================================================================
+
+// OrderOrderItems defines the one-to-many relationship: Order has many OrderItem
+var OrderOrderItems = schema.HasMany[
+	OrderAlias, OrderColumnAlias, *OrderScanner,
+	OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner,
+](
+	OrderAliasName,
+	OrderItemsRef,
+	OrderItemColumnOrderId,
+	OrderColumnId,
+)
+
+// OrderUser defines the belongs-to relationship: Order belongs to User
+var OrderUser = schema.BelongsTo[
+	OrderAlias, OrderColumnAlias, *OrderScanner,
+	UserAlias, UserColumnAlias, *UserScanner,
+](
+	OrderAliasName,
+	UsersRef,
+	OrderColumnUserId,
+	UserColumnId,
+)
+
+// OrderCurrency defines the belongs-to relationship: Order belongs to Currency
+var OrderCurrency = schema.BelongsTo[
+	OrderAlias, OrderColumnAlias, *OrderScanner,
+	CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner,
+](
+	OrderAliasName,
+	CurrencysRef,
+	OrderColumnCurrency,
+	CurrencyColumnCode,
+)
+
+// ============================================================================
+// OrderItem Relations
+// ============================================================================
+
+// OrderItemOrder defines the belongs-to relationship: OrderItem belongs to Order
+var OrderItemOrder = schema.BelongsTo[
+	OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner,
+	OrderAlias, OrderColumnAlias, *OrderScanner,
+](
+	OrderItemAliasName,
+	OrdersRef,
+	OrderItemColumnOrderId,
+	OrderColumnId,
+)
+
+// OrderItemProduct defines the belongs-to relationship: OrderItem belongs to Product
+var OrderItemProduct = schema.BelongsTo[
+	OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner,
+	ProductAlias, ProductColumnAlias, *ProductScanner,
+](
+	OrderItemAliasName,
+	ProductsRef,
+	OrderItemColumnProductId,
+	ProductColumnId,
+)
+
+// ============================================================================
+// Constraint Names
+// ============================================================================
+
+const (
+	CurrencyConstraintPkey                 = "currency_pkey"
+	UserConstraintPkey                     = "users_pkey"
+	UserConstraintEmailKey                 = "users_email_key"
+	UserConstraintEmailIdx                 = "idx_users_email"
+	ProfileConstraintPkey                  = "profiles_pkey"
+	ProfileConstraintUserIdIdx             = "idx_profiles_user_id"
+	CategoryConstraintPkey                 = "categories_pkey"
+	CategoryConstraintSlugKey              = "categories_slug_key"
+	TagConstraintPkey                      = "tags_pkey"
+	TagConstraintSlugKey                   = "tags_slug_key"
+	ProductConstraintPkey                  = "products_pkey"
+	ProductConstraintSkuKey                = "products_sku_key"
+	ProductConstraintCheck                 = "products_check"
+	OrderConstraintPkey                    = "orders_pkey"
+	OrderConstraintCheck                   = "orders_check"
+	OrderItemConstraintOrderIdProductIdKey = "order_items_order_id_product_id_key"
+	OrderItemConstraintPkey                = "order_items_pkey"
+	OrderItemConstraintCheck               = "order_items_check"
+	OrderItemConstraintCheck1              = "order_items_check1"
+)
+
+// ============================================================================
+// Constraint Errors
+// ============================================================================
+
+var (
+	ErrCurrencyPrimaryKey              = errors.New("primary key constraint violated: currency_pkey")
+	ErrUserPrimaryKey                  = errors.New("primary key constraint violated: users_pkey")
+	ErrUserEmailUnique                 = errors.New("unique constraint violated: users_email_key")
+	ErrUserEmailUniqueIdx              = errors.New("unique constraint violated: idx_users_email")
+	ErrProfilePrimaryKey               = errors.New("primary key constraint violated: profiles_pkey")
+	ErrProfileUserIdUniqueIdx          = errors.New("unique constraint violated: idx_profiles_user_id")
+	ErrCategoryPrimaryKey              = errors.New("primary key constraint violated: categories_pkey")
+	ErrCategorySlugUnique              = errors.New("unique constraint violated: categories_slug_key")
+	ErrTagPrimaryKey                   = errors.New("primary key constraint violated: tags_pkey")
+	ErrTagSlugUnique                   = errors.New("unique constraint violated: tags_slug_key")
+	ErrProductPrimaryKey               = errors.New("primary key constraint violated: products_pkey")
+	ErrProductSkuUnique                = errors.New("unique constraint violated: products_sku_key")
+	ErrProductCheck                    = errors.New("check constraint violated: products_check")
+	ErrOrderPrimaryKey                 = errors.New("primary key constraint violated: orders_pkey")
+	ErrOrderCheck                      = errors.New("check constraint violated: orders_check")
+	ErrOrderItemOrderIdProductIdUnique = errors.New("unique constraint violated: order_items_order_id_product_id_key")
+	ErrOrderItemPrimaryKey             = errors.New("primary key constraint violated: order_items_pkey")
+	ErrOrderItemCheck                  = errors.New("check constraint violated: order_items_check")
+	ErrOrderItemCheck1                 = errors.New("check constraint violated: order_items_check1")
+)
+
+// ============================================================================
+// Constraint Error Check Functions
+// ============================================================================
+
+// IsCurrencyPrimaryKeyError checks if the error is a primary_key constraint violation on currency
+func IsCurrencyPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, CurrencyConstraintPkey)
+}
+
+// IsUserPrimaryKeyError checks if the error is a primary_key constraint violation on users
+func IsUserPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, UserConstraintPkey)
+}
+
+// IsUserEmailUniqueError checks if the error is a unique constraint violation on users
+func IsUserEmailUniqueError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, UserConstraintEmailKey)
+}
+
+// IsUserEmailUniqueIdxError checks if the error is a unique constraint violation on users
+func IsUserEmailUniqueIdxError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, UserConstraintEmailIdx)
+}
+
+// IsProfilePrimaryKeyError checks if the error is a primary_key constraint violation on profiles
+func IsProfilePrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, ProfileConstraintPkey)
+}
+
+// IsProfileUserIdUniqueIdxError checks if the error is a unique constraint violation on profiles
+func IsProfileUserIdUniqueIdxError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, ProfileConstraintUserIdIdx)
+}
+
+// IsCategoryPrimaryKeyError checks if the error is a primary_key constraint violation on categories
+func IsCategoryPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, CategoryConstraintPkey)
+}
+
+// IsCategorySlugUniqueError checks if the error is a unique constraint violation on categories
+func IsCategorySlugUniqueError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, CategoryConstraintSlugKey)
+}
+
+// IsTagPrimaryKeyError checks if the error is a primary_key constraint violation on tags
+func IsTagPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, TagConstraintPkey)
+}
+
+// IsTagSlugUniqueError checks if the error is a unique constraint violation on tags
+func IsTagSlugUniqueError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, TagConstraintSlugKey)
+}
+
+// IsProductPrimaryKeyError checks if the error is a primary_key constraint violation on products
+func IsProductPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, ProductConstraintPkey)
+}
+
+// IsProductSkuUniqueError checks if the error is a unique constraint violation on products
+func IsProductSkuUniqueError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, ProductConstraintSkuKey)
+}
+
+// IsProductCheckError checks if the error is a check constraint violation on products
+func IsProductCheckError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, ProductConstraintCheck)
+}
+
+// IsOrderPrimaryKeyError checks if the error is a primary_key constraint violation on orders
+func IsOrderPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderConstraintPkey)
+}
+
+// IsOrderCheckError checks if the error is a check constraint violation on orders
+func IsOrderCheckError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderConstraintCheck)
+}
+
+// IsOrderItemOrderIdProductIdUniqueError checks if the error is a unique constraint violation on order_items
+func IsOrderItemOrderIdProductIdUniqueError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderItemConstraintOrderIdProductIdKey)
+}
+
+// IsOrderItemPrimaryKeyError checks if the error is a primary_key constraint violation on order_items
+func IsOrderItemPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderItemConstraintPkey)
+}
+
+// IsOrderItemCheckError checks if the error is a check constraint violation on order_items
+func IsOrderItemCheckError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderItemConstraintCheck)
+}
+
+// IsOrderItemCheck1Error checks if the error is a check constraint violation on order_items
+func IsOrderItemCheck1Error(err error) bool {
+	return sqlerr.IsConstraintNamed(err, OrderItemConstraintCheck1)
+}

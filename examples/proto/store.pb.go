@@ -246,7 +246,9 @@ type User struct {
 	FullName string      `protobuf:"bytes,3,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
 	IsActive bool        `protobuf:"varint,4,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
 	// OneToMany: User has many Orders
-	Orders        []*Order `protobuf:"bytes,10,rep,name=orders,proto3" json:"orders,omitempty"`
+	Orders []*Order `protobuf:"bytes,10,rep,name=orders,proto3" json:"orders,omitempty"`
+	// HasOne: User has one Profile
+	Profile       *Profile `protobuf:"bytes,11,opt,name=profile,proto3" json:"profile,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -316,6 +318,94 @@ func (x *User) GetOrders() []*Order {
 	return nil
 }
 
+func (x *User) GetProfile() *Profile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+// ============================================================================
+// Profile - профиль пользователя (один к одному с User)
+// ============================================================================
+type Profile struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Embedded BaseEntity (id + timestamps)
+	Base      *BaseEntity `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
+	UserId    *EntityID   `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // FK to users.id (unique - one profile per user)
+	Bio       string      `protobuf:"bytes,3,opt,name=bio,proto3" json:"bio,omitempty"`
+	AvatarUrl string      `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	// BelongsTo: Profile belongs to User
+	User          *User `protobuf:"bytes,10,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Profile) Reset() {
+	*x = Profile{}
+	mi := &file_examples_proto_store_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Profile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Profile) ProtoMessage() {}
+
+func (x *Profile) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Profile.ProtoReflect.Descriptor instead.
+func (*Profile) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *Profile) GetBase() *BaseEntity {
+	if x != nil {
+		return x.Base
+	}
+	return nil
+}
+
+func (x *Profile) GetUserId() *EntityID {
+	if x != nil {
+		return x.UserId
+	}
+	return nil
+}
+
+func (x *Profile) GetBio() string {
+	if x != nil {
+		return x.Bio
+	}
+	return ""
+}
+
+func (x *Profile) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
+func (x *Profile) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
 // ============================================================================
 // Category - категория товаров (с BaseEntity)
 // ============================================================================
@@ -332,7 +422,7 @@ type Category struct {
 
 func (x *Category) Reset() {
 	*x = Category{}
-	mi := &file_examples_proto_store_proto_msgTypes[5]
+	mi := &file_examples_proto_store_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -344,7 +434,7 @@ func (x *Category) String() string {
 func (*Category) ProtoMessage() {}
 
 func (x *Category) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[5]
+	mi := &file_examples_proto_store_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -357,7 +447,7 @@ func (x *Category) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Category.ProtoReflect.Descriptor instead.
 func (*Category) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{5}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Category) GetBase() *BaseEntity {
@@ -403,7 +493,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_examples_proto_store_proto_msgTypes[6]
+	mi := &file_examples_proto_store_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -415,7 +505,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[6]
+	mi := &file_examples_proto_store_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -428,7 +518,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{6}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Tag) GetBase() *BaseEntity {
@@ -475,7 +565,7 @@ type Product struct {
 
 func (x *Product) Reset() {
 	*x = Product{}
-	mi := &file_examples_proto_store_proto_msgTypes[7]
+	mi := &file_examples_proto_store_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -487,7 +577,7 @@ func (x *Product) String() string {
 func (*Product) ProtoMessage() {}
 
 func (x *Product) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[7]
+	mi := &file_examples_proto_store_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -500,7 +590,7 @@ func (x *Product) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Product.ProtoReflect.Descriptor instead.
 func (*Product) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{7}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Product) GetBase() *BaseEntity {
@@ -577,14 +667,18 @@ type Order struct {
 	Status   string      `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
 	Currency string      `protobuf:"bytes,4,opt,name=currency,proto3" json:"currency,omitempty"` // FK to currency.code
 	// OneToMany: Order has many OrderItems
-	Items         []*OrderItem `protobuf:"bytes,10,rep,name=items,proto3" json:"items,omitempty"`
+	Items []*OrderItem `protobuf:"bytes,10,rep,name=items,proto3" json:"items,omitempty"`
+	// BelongsTo: Order belongs to User
+	User *User `protobuf:"bytes,11,opt,name=user,proto3" json:"user,omitempty"`
+	// BelongsTo: Order belongs to Currency
+	Money         *Currency `protobuf:"bytes,12,opt,name=money,proto3" json:"money,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Order) Reset() {
 	*x = Order{}
-	mi := &file_examples_proto_store_proto_msgTypes[8]
+	mi := &file_examples_proto_store_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -596,7 +690,7 @@ func (x *Order) String() string {
 func (*Order) ProtoMessage() {}
 
 func (x *Order) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[8]
+	mi := &file_examples_proto_store_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -609,7 +703,7 @@ func (x *Order) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Order.ProtoReflect.Descriptor instead.
 func (*Order) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{8}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *Order) GetBase() *BaseEntity {
@@ -647,23 +741,41 @@ func (x *Order) GetItems() []*OrderItem {
 	return nil
 }
 
+func (x *Order) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+func (x *Order) GetMoney() *Currency {
+	if x != nil {
+		return x.Money
+	}
+	return nil
+}
+
 // ============================================================================
 // OrderItem - позиция заказа (без BaseEntity - композитный PK)
 // ============================================================================
 type OrderItem struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	OrderId       *EntityID              `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"` // FK to orders.id
-	LineNo        int32                  `protobuf:"varint,2,opt,name=line_no,json=lineNo,proto3" json:"line_no,omitempty"`
-	ProductId     *EntityID              `protobuf:"bytes,3,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"` // FK to products.id
-	Qty           int32                  `protobuf:"varint,4,opt,name=qty,proto3" json:"qty,omitempty"`
-	UnitPrice     float64                `protobuf:"fixed64,5,opt,name=unit_price,json=unitPrice,proto3" json:"unit_price,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	OrderId   *EntityID              `protobuf:"bytes,1,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"` // FK to orders.id
+	LineNo    int32                  `protobuf:"varint,2,opt,name=line_no,json=lineNo,proto3" json:"line_no,omitempty"`
+	ProductId *EntityID              `protobuf:"bytes,3,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"` // FK to products.id
+	Qty       int32                  `protobuf:"varint,4,opt,name=qty,proto3" json:"qty,omitempty"`
+	UnitPrice float64                `protobuf:"fixed64,5,opt,name=unit_price,json=unitPrice,proto3" json:"unit_price,omitempty"`
+	// BelongsTo: OrderItem belongs to Order
+	Order *Order `protobuf:"bytes,10,opt,name=order,proto3" json:"order,omitempty"`
+	// BelongsTo: OrderItem belongs to Product
+	Product       *Product `protobuf:"bytes,11,opt,name=product,proto3" json:"product,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OrderItem) Reset() {
 	*x = OrderItem{}
-	mi := &file_examples_proto_store_proto_msgTypes[9]
+	mi := &file_examples_proto_store_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -675,7 +787,7 @@ func (x *OrderItem) String() string {
 func (*OrderItem) ProtoMessage() {}
 
 func (x *OrderItem) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[9]
+	mi := &file_examples_proto_store_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -688,7 +800,7 @@ func (x *OrderItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderItem.ProtoReflect.Descriptor instead.
 func (*OrderItem) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{9}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *OrderItem) GetOrderId() *EntityID {
@@ -726,6 +838,20 @@ func (x *OrderItem) GetUnitPrice() float64 {
 	return 0
 }
 
+func (x *OrderItem) GetOrder() *Order {
+	if x != nil {
+		return x.Order
+	}
+	return nil
+}
+
+func (x *OrderItem) GetProduct() *Product {
+	if x != nil {
+		return x.Product
+	}
+	return nil
+}
+
 var File_examples_proto_store_proto protoreflect.FileDescriptor
 
 const file_examples_proto_store_proto_rawDesc = "" +
@@ -747,7 +873,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"timestamps:\x06\x82\xa6\x1d\x02\b\x01\"T\n" +
 	"\bCurrency\x12\x1c\n" +
 	"\x04code\x18\x01 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x04code\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\x8f\x02\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\xca\x02\n" +
 	"\x04User\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x1e\n" +
 	"\x05email\x18\x02 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x05email\x12\x1b\n" +
@@ -756,8 +882,19 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\x06orders\x18\n" +
 	" \x03(\v2\f.store.OrderB\x11\xa2\xb5\x18\r\n" +
 	"\v\n" +
-	"\auser_id\x18\x01R\x06orders:7\x92\xb5\x18-\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
-	"created_at\x82\xa6\x1d\x02\b\x01\"\xbf\x01\n" +
+	"\auser_id\x18\x01R\x06orders\x129\n" +
+	"\aprofile\x18\v \x01(\v2\x0e.store.ProfileB\x0f\xa2\xb5\x18\v\x1a\t\n" +
+	"\auser_idR\aprofile:7\x92\xb5\x18-\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
+	"created_at\x82\xa6\x1d\x02\b\x01\"\xea\x01\n" +
+	"\aProfile\x12-\n" +
+	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12(\n" +
+	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDR\x06userId\x12\x10\n" +
+	"\x03bio\x18\x03 \x01(\tR\x03bio\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x120\n" +
+	"\x04user\x18\n" +
+	" \x01(\v2\v.store.UserB\x0f\xa2\xb5\x18\v\"\t\n" +
+	"\auser_idR\x04user:#\x92\xb5\x18\x19\b\x01\x12\bprofiles*\v\x12\auser_id\x18\x01\x82\xa6\x1d\x02\b\x01\"\xbf\x01\n" +
 	"\bCategory\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -787,7 +924,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\xa2\xb5\x18\x06\x12\x04\x10\x01 \x01R\x04tags:o\x92\xb5\x18e\b\x01\x12\bproducts\"\x16CHECK (stock_qty >= 0)*\x05\x12\x03sku*\n" +
 	"\x12\bcurrency*,\x12\n" +
 	"is_deleted\x12\n" +
-	"created_at\"\x12is_deleted = false\x82\xa6\x1d\x02\b\x01\"\xd3\x02\n" +
+	"created_at\"\x12is_deleted = false\x82\xa6\x1d\x02\b\x01\"\xc4\x03\n" +
 	"\x05Order\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12(\n" +
 	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDR\x06userId\x12%\n" +
@@ -796,8 +933,12 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\x05items\x18\n" +
 	" \x03(\v2\x10.store.OrderItemB\x12\xa2\xb5\x18\x0e\n" +
 	"\f\n" +
-	"\border_id\x18\x01R\x05items:r\x92\xb5\x18h\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
-	"created_at\x82\xa6\x1d\x02\b\x01\"\x9f\x02\n" +
+	"\border_id\x18\x01R\x05items\x120\n" +
+	"\x04user\x18\v \x01(\v2\v.store.UserB\x0f\xa2\xb5\x18\v\"\t\n" +
+	"\auser_idR\x04user\x12=\n" +
+	"\x05money\x18\f \x01(\v2\x0f.store.CurrencyB\x16\xa2\xb5\x18\x12\"\x10\n" +
+	"\bcurrency\x12\x04codeR\x05money:r\x92\xb5\x18h\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
+	"created_at\x82\xa6\x1d\x02\b\x01\"\x93\x03\n" +
 	"\tOrderItem\x12*\n" +
 	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDR\aorderId\x12\x17\n" +
 	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12.\n" +
@@ -805,7 +946,14 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"product_id\x18\x03 \x01(\v2\x0f.store.EntityIDR\tproductId\x12\x10\n" +
 	"\x03qty\x18\x04 \x01(\x05R\x03qty\x12\x1d\n" +
 	"\n" +
-	"unit_price\x18\x05 \x01(\x01R\tunitPrice:l\x92\xb5\x18b\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
+	"unit_price\x18\x05 \x01(\x01R\tunitPrice\x124\n" +
+	"\x05order\x18\n" +
+	" \x01(\v2\f.store.OrderB\x10\xa2\xb5\x18\f\"\n" +
+	"\n" +
+	"\border_idR\x05order\x12<\n" +
+	"\aproduct\x18\v \x01(\v2\x0e.store.ProductB\x12\xa2\xb5\x18\x0e\"\f\n" +
+	"\n" +
+	"product_idR\aproduct:l\x92\xb5\x18b\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
 	"product_id:\x13\n" +
 	"\border_id\n" +
 	"\aline_no\x82\xa6\x1d\x02\b\x01B1Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
@@ -822,44 +970,53 @@ func file_examples_proto_store_proto_rawDescGZIP() []byte {
 	return file_examples_proto_store_proto_rawDescData
 }
 
-var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_examples_proto_store_proto_goTypes = []any{
 	(*EntityID)(nil),              // 0: store.EntityID
 	(*Timestamps)(nil),            // 1: store.Timestamps
 	(*BaseEntity)(nil),            // 2: store.BaseEntity
 	(*Currency)(nil),              // 3: store.Currency
 	(*User)(nil),                  // 4: store.User
-	(*Category)(nil),              // 5: store.Category
-	(*Tag)(nil),                   // 6: store.Tag
-	(*Product)(nil),               // 7: store.Product
-	(*Order)(nil),                 // 8: store.Order
-	(*OrderItem)(nil),             // 9: store.OrderItem
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(*wrapperspb.Int64Value)(nil), // 11: google.protobuf.Int64Value
+	(*Profile)(nil),               // 5: store.Profile
+	(*Category)(nil),              // 6: store.Category
+	(*Tag)(nil),                   // 7: store.Tag
+	(*Product)(nil),               // 8: store.Product
+	(*Order)(nil),                 // 9: store.Order
+	(*OrderItem)(nil),             // 10: store.OrderItem
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil), // 12: google.protobuf.Int64Value
 }
 var file_examples_proto_store_proto_depIdxs = []int32{
-	10, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
-	10, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
+	11, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
+	11, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: store.BaseEntity.id:type_name -> store.EntityID
 	1,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
 	2,  // 4: store.User.base:type_name -> store.BaseEntity
-	8,  // 5: store.User.orders:type_name -> store.Order
-	2,  // 6: store.Category.base:type_name -> store.BaseEntity
-	11, // 7: store.Category.parent_id:type_name -> google.protobuf.Int64Value
-	2,  // 8: store.Tag.base:type_name -> store.BaseEntity
-	2,  // 9: store.Product.base:type_name -> store.BaseEntity
-	5,  // 10: store.Product.categories:type_name -> store.Category
-	6,  // 11: store.Product.tags:type_name -> store.Tag
-	2,  // 12: store.Order.base:type_name -> store.BaseEntity
-	0,  // 13: store.Order.user_id:type_name -> store.EntityID
-	9,  // 14: store.Order.items:type_name -> store.OrderItem
-	0,  // 15: store.OrderItem.order_id:type_name -> store.EntityID
-	0,  // 16: store.OrderItem.product_id:type_name -> store.EntityID
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	9,  // 5: store.User.orders:type_name -> store.Order
+	5,  // 6: store.User.profile:type_name -> store.Profile
+	2,  // 7: store.Profile.base:type_name -> store.BaseEntity
+	0,  // 8: store.Profile.user_id:type_name -> store.EntityID
+	4,  // 9: store.Profile.user:type_name -> store.User
+	2,  // 10: store.Category.base:type_name -> store.BaseEntity
+	12, // 11: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	2,  // 12: store.Tag.base:type_name -> store.BaseEntity
+	2,  // 13: store.Product.base:type_name -> store.BaseEntity
+	6,  // 14: store.Product.categories:type_name -> store.Category
+	7,  // 15: store.Product.tags:type_name -> store.Tag
+	2,  // 16: store.Order.base:type_name -> store.BaseEntity
+	0,  // 17: store.Order.user_id:type_name -> store.EntityID
+	10, // 18: store.Order.items:type_name -> store.OrderItem
+	4,  // 19: store.Order.user:type_name -> store.User
+	3,  // 20: store.Order.money:type_name -> store.Currency
+	0,  // 21: store.OrderItem.order_id:type_name -> store.EntityID
+	0,  // 22: store.OrderItem.product_id:type_name -> store.EntityID
+	9,  // 23: store.OrderItem.order:type_name -> store.Order
+	8,  // 24: store.OrderItem.product:type_name -> store.Product
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
@@ -873,7 +1030,7 @@ func file_examples_proto_store_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_examples_proto_store_proto_rawDesc), len(file_examples_proto_store_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

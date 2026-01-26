@@ -1,13 +1,14 @@
 package schema
 
 import (
+	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
+
 	ddl2 "github.com/yaroher/ratel/pkg/ddl"
 	clause2 "github.com/yaroher/ratel/pkg/dml/clause"
 	set2 "github.com/yaroher/ratel/pkg/dml/set"
 	"github.com/yaroher/ratel/pkg/types"
-	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Column[V any, C types.ColumnAlias] struct {

@@ -1,8 +1,9 @@
 package ddl
 
 import (
-	"github.com/yaroher/ratel/pkg/types"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 // ColumnDDL describes a column for CREATE/ALTER TABLE.
@@ -16,6 +17,11 @@ type ColumnDDL[C types.ColumnAlias] struct {
 	defaultValue *string
 	reference    *Reference
 	checkExpr    *string
+	// Constraint names for generating named constraints
+	uniqueConstraintName *string
+	pkConstraintName     *string
+	fkConstraintName     *string
+	checkConstraintName  *string
 }
 
 func NewColumnDDL[C types.ColumnAlias](
@@ -115,6 +121,38 @@ func WithCheck[C types.ColumnAlias](expr string) ColumnOption[C] {
 	}
 }
 
+// WithUniqueNamed sets UNIQUE constraint with explicit name.
+func WithUniqueNamed[C types.ColumnAlias](constraintName string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.unique = true
+		c.uniqueConstraintName = &constraintName
+	}
+}
+
+// WithPrimaryKeyNamed sets PRIMARY KEY constraint with explicit name.
+func WithPrimaryKeyNamed[C types.ColumnAlias](constraintName string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.primaryKey = true
+		c.pkConstraintName = &constraintName
+	}
+}
+
+// WithReferencesNamed sets REFERENCES clause with explicit constraint name.
+func WithReferencesNamed[C types.ColumnAlias](constraintName, table, column string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.reference = &Reference{table: table, column: column}
+		c.fkConstraintName = &constraintName
+	}
+}
+
+// WithCheckNamed sets CHECK constraint with explicit name.
+func WithCheckNamed[C types.ColumnAlias](constraintName, expr string) ColumnOption[C] {
+	return func(c *ColumnDDL[C]) {
+		c.checkExpr = &expr
+		c.checkConstraintName = &constraintName
+	}
+}
+
 func (c *ColumnDDL[C]) Alias() C {
 	return c.fa
 }
@@ -181,6 +219,34 @@ func (c *ColumnDDL[C]) Check(expr string) *ColumnDDL[C] {
 	return c
 }
 
+// UniqueNamed sets UNIQUE constraint with explicit name.
+func (c *ColumnDDL[C]) UniqueNamed(constraintName string) *ColumnDDL[C] {
+	c.unique = true
+	c.uniqueConstraintName = &constraintName
+	return c
+}
+
+// PrimaryKeyNamed sets PRIMARY KEY constraint with explicit name.
+func (c *ColumnDDL[C]) PrimaryKeyNamed(constraintName string) *ColumnDDL[C] {
+	c.primaryKey = true
+	c.pkConstraintName = &constraintName
+	return c
+}
+
+// ReferencesNamed sets REFERENCES clause with explicit constraint name.
+func (c *ColumnDDL[C]) ReferencesNamed(constraintName, table, column string) *ColumnDDL[C] {
+	c.reference = &Reference{table: table, column: column}
+	c.fkConstraintName = &constraintName
+	return c
+}
+
+// CheckNamed sets CHECK constraint with explicit name.
+func (c *ColumnDDL[C]) CheckNamed(constraintName, expr string) *ColumnDDL[C] {
+	c.checkExpr = &expr
+	c.checkConstraintName = &constraintName
+	return c
+}
+
 func (c *ColumnDDL[C]) SchemaSql() string {
 	var sql strings.Builder
 
@@ -196,13 +262,21 @@ func (c *ColumnDDL[C]) SchemaSql() string {
 		sql.WriteString(" NULL")
 	}
 
-	// UNIQUE
+	// UNIQUE (with optional constraint name)
 	if c.unique {
+		if c.uniqueConstraintName != nil {
+			sql.WriteString(" CONSTRAINT ")
+			sql.WriteString(*c.uniqueConstraintName)
+		}
 		sql.WriteString(" UNIQUE")
 	}
 
-	// PRIMARY KEY
+	// PRIMARY KEY (with optional constraint name)
 	if c.primaryKey {
+		if c.pkConstraintName != nil {
+			sql.WriteString(" CONSTRAINT ")
+			sql.WriteString(*c.pkConstraintName)
+		}
 		sql.WriteString(" PRIMARY KEY")
 	}
 
@@ -212,8 +286,12 @@ func (c *ColumnDDL[C]) SchemaSql() string {
 		sql.WriteString(*c.defaultValue)
 	}
 
-	// REFERENCES
+	// REFERENCES (with optional constraint name)
 	if c.reference != nil {
+		if c.fkConstraintName != nil {
+			sql.WriteString(" CONSTRAINT ")
+			sql.WriteString(*c.fkConstraintName)
+		}
 		sql.WriteString(" REFERENCES ")
 		sql.WriteString(c.reference.table)
 		sql.WriteString("(")
@@ -231,8 +309,12 @@ func (c *ColumnDDL[C]) SchemaSql() string {
 		}
 	}
 
-	// CHECK
+	// CHECK (with optional constraint name)
 	if c.checkExpr != nil {
+		if c.checkConstraintName != nil {
+			sql.WriteString(" CONSTRAINT ")
+			sql.WriteString(*c.checkConstraintName)
+		}
 		sql.WriteString(" CHECK (")
 		sql.WriteString(*c.checkExpr)
 		sql.WriteString(")")

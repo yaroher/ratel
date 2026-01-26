@@ -1,8 +1,9 @@
 package ddl
 
 import (
-	"github.com/yaroher/ratel/pkg/types"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 type Index[T types.TableAlias, C types.ColumnAlias] struct {

@@ -139,13 +139,14 @@ func (p *CurrencyScanner) IntoPb() *Currency {
 //	User - пользователь системы (с BaseEntity)
 //	============================================================================
 type UserScanner struct {
-	Id        int64          `json:"id"` // origin: embed, empath: id
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
-	Email     string         `json:"email"`
-	FullName  string         `json:"fullName"`
-	IsActive  bool           `json:"isActive"`
-	Orders    []OrderScanner `json:"orders"`
+	Id        int64           `json:"id"` // origin: embed, empath: id
+	CreatedAt time.Time       `json:"createdAt"`
+	UpdatedAt time.Time       `json:"updatedAt"`
+	Email     string          `json:"email"`
+	FullName  string          `json:"fullName"`
+	IsActive  bool            `json:"isActive"`
+	Orders    []OrderScanner  `json:"orders"`
+	Profile   *ProfileScanner `json:"profile"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -177,6 +178,9 @@ func (pb *User) IntoPlain() *UserScanner {
 				p.Orders[i] = *v.IntoPlain()
 			}
 		}
+	}
+	if pb.Profile != nil {
+		p.Profile = pb.Profile.IntoPlain()
 	}
 	return p
 }
@@ -220,6 +224,97 @@ func (p *UserScanner) IntoPb() *User {
 		for i := range p.Orders {
 			pb.Orders[i] = (&p.Orders[i]).IntoPb()
 		}
+	}
+	if p.Profile != nil {
+		pb.Profile = p.Profile.IntoPb()
+	}
+	return pb
+}
+
+// ============================================================================
+//
+//	Profile - профиль пользователя (один к одному с User)
+//	============================================================================
+type ProfileScanner struct {
+	Id        int64        `json:"id"` // origin: embed, empath: id
+	CreatedAt time.Time    `json:"createdAt"`
+	UpdatedAt time.Time    `json:"updatedAt"`
+	UserId    int64        `json:"userId"` // origin: type_alias, empath: user_id
+	Bio       string       `json:"bio"`
+	AvatarUrl string       `json:"avatarUrl"`
+	User      *UserScanner `json:"user"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *Profile) IntoPlain() *ProfileScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &ProfileScanner{}
+
+	// Id from id
+	if pb.GetBase() != nil && pb.GetBase().GetId() != nil {
+		p.Id = pb.GetBase().GetId().GetValue()
+	}
+	// CreatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetCreatedAt() != nil {
+		p.CreatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetCreatedAt())
+	}
+	// UpdatedAt from
+	if pb.GetBase() != nil && pb.GetBase().GetTimestamps() != nil && pb.GetBase().GetTimestamps().GetUpdatedAt() != nil {
+		p.UpdatedAt = ratelcast.TimestampToTime(pb.GetBase().GetTimestamps().GetUpdatedAt())
+	}
+	// UserId type alias from user_id
+	if pb.GetUserId() != nil {
+		p.UserId = pb.GetUserId().GetValue()
+	}
+	p.Bio = pb.Bio
+	p.AvatarUrl = pb.AvatarUrl
+	if pb.User != nil {
+		p.User = pb.User.IntoPlain()
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *ProfileScanner) IntoPb() *Profile {
+	if p == nil {
+		return nil
+	}
+	pb := &Profile{}
+
+	// Id -> id
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Id == nil {
+		pb.Base.Id = &EntityID{}
+	}
+	pb.Base.Id.Value = p.Id
+	// CreatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.CreatedAt = ratelcast.TimeToTimestamp(p.CreatedAt)
+	// UpdatedAt ->
+	if pb.Base == nil {
+		pb.Base = &BaseEntity{}
+	}
+	if pb.Base.Timestamps == nil {
+		pb.Base.Timestamps = &Timestamps{}
+	}
+	pb.Base.Timestamps.UpdatedAt = ratelcast.TimeToTimestamp(p.UpdatedAt)
+	// UserId type alias -> user_id
+	{
+		pb.UserId = &EntityID{Value: p.UserId}
+	}
+	pb.Bio = p.Bio
+	pb.AvatarUrl = p.AvatarUrl
+	if p.User != nil {
+		pb.User = p.User.IntoPb()
 	}
 	return pb
 }
@@ -499,6 +594,8 @@ type OrderScanner struct {
 	Status    string             `json:"status"`
 	Currency  string             `json:"currency"`
 	Items     []OrderItemScanner `json:"items"`
+	User      *UserScanner       `json:"user"`
+	Money     *CurrencyScanner   `json:"money"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -533,6 +630,12 @@ func (pb *Order) IntoPlain() *OrderScanner {
 				p.Items[i] = *v.IntoPlain()
 			}
 		}
+	}
+	if pb.User != nil {
+		p.User = pb.User.IntoPlain()
+	}
+	if pb.Money != nil {
+		p.Money = pb.Money.IntoPlain()
 	}
 	return p
 }
@@ -580,6 +683,12 @@ func (p *OrderScanner) IntoPb() *Order {
 			pb.Items[i] = (&p.Items[i]).IntoPb()
 		}
 	}
+	if p.User != nil {
+		pb.User = p.User.IntoPb()
+	}
+	if p.Money != nil {
+		pb.Money = p.Money.IntoPb()
+	}
 	return pb
 }
 
@@ -588,11 +697,13 @@ func (p *OrderScanner) IntoPb() *Order {
 //	OrderItem - позиция заказа (без BaseEntity - композитный PK)
 //	============================================================================
 type OrderItemScanner struct {
-	OrderId   int64   `json:"orderId"` // origin: type_alias, empath: order_id
-	LineNo    int32   `json:"lineNo"`
-	ProductId int64   `json:"productId"` // origin: type_alias, empath: product_id
-	Qty       int32   `json:"qty"`
-	UnitPrice float64 `json:"unitPrice"`
+	OrderId   int64           `json:"orderId"` // origin: type_alias, empath: order_id
+	LineNo    int32           `json:"lineNo"`
+	ProductId int64           `json:"productId"` // origin: type_alias, empath: product_id
+	Qty       int32           `json:"qty"`
+	UnitPrice float64         `json:"unitPrice"`
+	Order     *OrderScanner   `json:"order"`
+	Product   *ProductScanner `json:"product"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -613,6 +724,12 @@ func (pb *OrderItem) IntoPlain() *OrderItemScanner {
 	}
 	p.Qty = pb.Qty
 	p.UnitPrice = pb.UnitPrice
+	if pb.Order != nil {
+		p.Order = pb.Order.IntoPlain()
+	}
+	if pb.Product != nil {
+		p.Product = pb.Product.IntoPlain()
+	}
 	return p
 }
 
@@ -634,5 +751,11 @@ func (p *OrderItemScanner) IntoPb() *OrderItem {
 	}
 	pb.Qty = p.Qty
 	pb.UnitPrice = p.UnitPrice
+	if p.Order != nil {
+		pb.Order = p.Order.IntoPb()
+	}
+	if p.Product != nil {
+		pb.Product = p.Product.IntoPb()
+	}
 	return pb
 }
