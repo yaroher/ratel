@@ -63,6 +63,29 @@ func (c *TableDDL[T, C]) Alias() T {
 	return c.alias
 }
 
+// TableName returns the name of this table (implements DependencySqler)
+func (c *TableDDL[T, C]) TableName() string {
+	return c.alias.String()
+}
+
+// Dependencies returns names of tables this table depends on via foreign keys (implements DependencySqler)
+func (c *TableDDL[T, C]) Dependencies() []string {
+	var deps []string
+	seen := make(map[string]bool)
+
+	for _, col := range c.columns {
+		if col.reference != nil && col.reference.table != "" {
+			// Exclude self-references (like categories -> categories)
+			if col.reference.table != c.alias.String() && !seen[col.reference.table] {
+				deps = append(deps, col.reference.table)
+				seen[col.reference.table] = true
+			}
+		}
+	}
+
+	return deps
+}
+
 func (c *TableDDL[T, C]) SchemaSql() []string {
 	var statements []string
 	var sql strings.Builder

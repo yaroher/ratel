@@ -1,0 +1,33 @@
+name: Question
+description: Ask a question about using Ratel
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using Ratel? Ask away!
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Provide any relevant context or code samples.
+      render: go
+
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before Asking
+      options:
+        - label: I have read the README
+          required: true
+        - label: I have checked existing issues for similar questions
+          required: true

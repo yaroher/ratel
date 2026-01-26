@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
 	"ariga.io/atlas/sql/migrate"
@@ -22,6 +23,9 @@ var (
 	diffSqlFile      string
 	diffMigrationDir string
 	diffName         string
+	diffPackage      string
+	diffTables       []string
+	diffDiscover     bool
 )
 
 var diffCmd = &cobra.Command{
@@ -29,10 +33,17 @@ var diffCmd = &cobra.Command{
 	Short: "Generate SQL migration diff",
 	Long: `Generate a SQL migration diff between the current database schema and the schema defined in Go models.
 
-Example:
-  ratel diff -s schema.sql -d migrations -n 001_initial
+Examples:
+  # From SQL file:
+  ratel diff -s schema.sql -d migrations -n add_users
 
-This will create a SQL migration file that can be applied to the database to bring it up to date with the schema defined in your Go models.`,
+  # From Go models package:
+  ratel diff -p github.com/myproject/models -d migrations -n add_users
+
+  # From Go models with auto-discovery:
+  ratel diff -p github.com/myproject/models --discover -d migrations -n add_users
+
+This will create a SQL migration file that can be applied to the database.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDiff(cmd, args)
 	},
@@ -43,18 +54,23 @@ const defaultPostgresVersion = 18
 func init() {
 	rootCmd.AddCommand(diffCmd)
 
-	diffCmd.Flags().StringVarP(&diffSqlFile, "sql", "s", "", "SQL schema file to compare against (required)")
+	diffCmd.Flags().StringVarP(&diffSqlFile, "sql", "s", "", "SQL schema file to compare against")
+	diffCmd.Flags().StringVarP(&diffPackage, "package", "p", "", "Go package path containing models")
+	diffCmd.Flags().StringSliceVarP(&diffTables, "tables", "t", nil, "Table variable names (e.g., Users,Products)")
+	diffCmd.Flags().BoolVar(&diffDiscover, "discover", false, "Auto-discover tables from source files")
 	diffCmd.Flags().StringVarP(&diffMigrationDir, "dir", "d", "./migrations", "Migration directory for output")
 	diffCmd.Flags().StringVarP(&diffName, "name", "n", "migration", "Migration name")
 	diffCmd.Flags().Int16P("pg_version", "v", defaultPostgresVersion, "PostgreSQL version")
-	diffCmd.MarkFlagRequired("sql")
 	diffCmd.MarkFlagRequired("dir")
 }
 
 func runDiff(cmd *cobra.Command, _ []string) error {
-	// Validate flags
-	if diffSqlFile == "" {
-		return errors.New("sql file is required (use --sql or -s flag)")
+	// Validate flags - need either sql file or package
+	if diffSqlFile == "" && diffPackage == "" {
+		return errors.New("either --sql (-s) or --package (-p) is required")
+	}
+	if diffSqlFile != "" && diffPackage != "" {
+		return errors.New("cannot use both --sql and --package, choose one")
 	}
 	if diffMigrationDir == "" {
 		return errors.New("migration directory is required (use --dir or -d flag)")
@@ -64,10 +80,26 @@ func runDiff(cmd *cobra.Command, _ []string) error {
 	}
 	diffPgVersion, _ := cmd.Flags().GetInt16("pg_version")
 
-	// Check if SQL file exists
-	if _, err := os.Stat(diffSqlFile); os.IsNotExist(err) {
-		return fmt.Errorf("sql file does not exist: %s", diffSqlFile)
+	var sqlFilePath string
+	var cleanupSQL func()
+
+	if diffPackage != "" {
+		// Generate SQL from Go models package
+		tmpFile, err := generateSchemaFromPackage(diffPackage, diffTables, diffDiscover)
+		if err != nil {
+			return fmt.Errorf("failed to generate schema from package: %w", err)
+		}
+		sqlFilePath = tmpFile
+		cleanupSQL = func() { os.Remove(tmpFile) }
+	} else {
+		// Use provided SQL file
+		if _, err := os.Stat(diffSqlFile); os.IsNotExist(err) {
+			return fmt.Errorf("sql file does not exist: %s", diffSqlFile)
+		}
+		sqlFilePath = diffSqlFile
+		cleanupSQL = func() {} // no cleanup needed
 	}
+	defer cleanupSQL()
 
 	// Create migration directory if it doesn't exist
 	if err := os.MkdirAll(diffMigrationDir, 0755); err != nil {
@@ -97,7 +129,7 @@ func runDiff(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get connection string: %v", err)
 	}
-	return migrateDiff(cmd.Context(), connStr, diffSqlFile, diffMigrationDir, diffName)
+	return migrateDiff(cmd.Context(), connStr, sqlFilePath, diffMigrationDir, diffName)
 }
 
 func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrationName string) error {
@@ -216,4 +248,77 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 
 	fmt.Printf("Migration '%s' created successfully\n", migrationName)
 	return nil
+}
+
+// generateSchemaFromPackage generates SQL schema from Go models package
+// and returns path to temporary SQL file
+func generateSchemaFromPackage(pkg string, tables []string, discover bool) (string, error) {
+	workspaceRoot := mustGetWorkspaceRoot()
+
+	// Auto-discover tables if requested or no tables specified
+	if discover || len(tables) == 0 {
+		discovered, err := discoverTables(pkg, workspaceRoot)
+		if err != nil {
+			return "", fmt.Errorf("failed to discover tables: %w", err)
+		}
+		if len(discovered) == 0 {
+			return "", fmt.Errorf("no tables discovered in package %s", pkg)
+		}
+		tables = discovered
+		fmt.Printf("Discovered tables: %v\n", tables)
+	}
+
+	if len(tables) == 0 {
+		return "", errors.New("no tables specified")
+	}
+
+	// Create temporary Go file in workspace
+	tmpGoFile, err := os.CreateTemp(workspaceRoot, "ratel_schema_gen_*.go")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %w", err)
+	}
+	tmpGoFileName := tmpGoFile.Name()
+	defer os.Remove(tmpGoFileName)
+
+	// Generate the temporary Go program
+	program := generateSchemaProgram(pkg, tables)
+
+	if _, err := tmpGoFile.WriteString(program); err != nil {
+		tmpGoFile.Close()
+		return "", fmt.Errorf("failed to write temp program: %w", err)
+	}
+	tmpGoFile.Close()
+
+	// Run the program from workspace root
+	runCmd := execCommand("go", "run", tmpGoFileName)
+	runCmd.Dir = workspaceRoot
+	runCmd.Stderr = os.Stderr
+	output, err := runCmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to run schema generator: %w", err)
+	}
+
+	// Write output to temporary SQL file
+	tmpSqlFile, err := os.CreateTemp("", "ratel_schema_*.sql")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp SQL file: %w", err)
+	}
+
+	if _, err := tmpSqlFile.Write(output); err != nil {
+		tmpSqlFile.Close()
+		os.Remove(tmpSqlFile.Name())
+		return "", fmt.Errorf("failed to write temp SQL file: %w", err)
+	}
+	tmpSqlFile.Close()
+
+	return tmpSqlFile.Name(), nil
+}
+
+// execCommand is a wrapper for exec.Command (allows testing)
+var execCommand = func(name string, arg ...string) *execCmd {
+	return &execCmd{exec.Command(name, arg...)}
+}
+
+type execCmd struct {
+	*exec.Cmd
 }
