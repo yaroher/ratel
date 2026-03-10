@@ -9,6 +9,11 @@ type SchemaSqler interface {
 	SchemaSql() []string
 }
 
+// SchemaProvider is an optional interface for tables that belong to a PostgreSQL schema.
+type SchemaProvider interface {
+	Schema() string
+}
+
 // DependencySqler is an optional interface for tables that have foreign key dependencies
 type DependencySqler interface {
 	SchemaSqler
@@ -19,7 +24,16 @@ type DependencySqler interface {
 }
 
 func SchemaStatements(sqlers ...SchemaSqler) []string {
-	statements := make([]string, 0, len(sqlers)*2)
+	return collectStatements(sqlers)
+}
+
+// collectStatements collects CREATE SCHEMA (deduplicated) + table statements.
+func collectStatements(sqlers []SchemaSqler) []string {
+	schemas := collectSchemas(sqlers)
+	statements := make([]string, 0, len(schemas)+len(sqlers)*2)
+	for _, s := range schemas {
+		statements = append(statements, fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS "%s"`, s))
+	}
 	for _, sqler := range sqlers {
 		if sqler == nil {
 			continue
@@ -27,6 +41,21 @@ func SchemaStatements(sqlers ...SchemaSqler) []string {
 		statements = append(statements, sqler.SchemaSql()...)
 	}
 	return statements
+}
+
+// collectSchemas returns unique schema names from all sqlers that implement SchemaProvider.
+func collectSchemas(sqlers []SchemaSqler) []string {
+	seen := make(map[string]bool)
+	var schemas []string
+	for _, sqler := range sqlers {
+		if sp, ok := sqler.(SchemaProvider); ok {
+			if s := sp.Schema(); s != "" && !seen[s] {
+				seen[s] = true
+				schemas = append(schemas, s)
+			}
+		}
+	}
+	return schemas
 }
 
 // SchemaSortedStatements returns SQL statements with tables sorted by dependencies.
@@ -53,8 +82,20 @@ func SchemaSortedStatements(sqlers ...SchemaSqler) ([]string, error) {
 		return nil, err
 	}
 
-	// Collect statements: first other sqlers, then sorted tables
-	statements := make([]string, 0, len(sqlers)*2)
+	// Collect unique CREATE SCHEMA statements first
+	allSqlers := make([]SchemaSqler, 0, len(otherSqlers)+len(sorted))
+	for _, s := range otherSqlers {
+		allSqlers = append(allSqlers, s)
+	}
+	for _, s := range sorted {
+		allSqlers = append(allSqlers, s)
+	}
+	schemas := collectSchemas(allSqlers)
+
+	statements := make([]string, 0, len(schemas)+len(sqlers)*2)
+	for _, s := range schemas {
+		statements = append(statements, fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS "%s"`, s))
+	}
 	for _, sqler := range otherSqlers {
 		statements = append(statements, sqler.SchemaSql()...)
 	}

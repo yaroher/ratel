@@ -52,7 +52,7 @@ func (q *InsertQuery[T, C]) Build() (string, []any) {
 func (q *InsertQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
 	// INSERT INTO tbl (c1,c2) VALUES ($1,$2)
 	buf.WriteString("INSERT INTO ")
-	buf.WriteString(ta)
+	buf.WriteString(q.fromName())
 	if len(q.columns) > 0 {
 		buf.WriteString(" (")
 		for i, c := range q.columns {

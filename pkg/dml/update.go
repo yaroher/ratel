@@ -42,8 +42,13 @@ func (q *UpdateQuery[T, C]) Build() (string, []any) {
 }
 
 func (q *UpdateQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
+	fromName := q.fromName()
 	buf.WriteString("UPDATE ")
-	buf.WriteString(ta)
+	buf.WriteString(fromName)
+	if fromName != ta {
+		buf.WriteString(" AS ")
+		buf.WriteString(ta)
+	}
 	buf.WriteString(" SET ")
 	for i, asg := range q.setAssigns {
 		if i > 0 {

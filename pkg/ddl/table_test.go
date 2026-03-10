@@ -68,9 +68,11 @@ func TestTableDDL_SchemaSql_WithSchema(t *testing.T) {
 	)
 
 	stmts := tbl.SchemaSql()
-	require.Len(t, stmts, 2)
-	assert.Equal(t, `CREATE SCHEMA IF NOT EXISTS "auth"`, stmts[0])
-	assert.Contains(t, stmts[1], `CREATE TABLE IF NOT EXISTS "auth"."users"`)
+	require.Len(t, stmts, 1)
+	assert.Contains(t, stmts[0], `CREATE TABLE IF NOT EXISTS "auth"."users"`)
+
+	// Verify schema is accessible for SchemaStatements deduplication
+	assert.Equal(t, "auth", tbl.Schema())
 }
 
 func TestTableDDL_SchemaSql_WithSchemaAndIndexes(t *testing.T) {
@@ -88,11 +90,10 @@ func TestTableDDL_SchemaSql_WithSchemaAndIndexes(t *testing.T) {
 	)
 
 	stmts := tbl.SchemaSql()
-	require.Len(t, stmts, 3)
-	assert.Equal(t, `CREATE SCHEMA IF NOT EXISTS "auth"`, stmts[0])
-	assert.Contains(t, stmts[1], `CREATE TABLE IF NOT EXISTS "auth"."users"`)
-	assert.Contains(t, stmts[2], "CREATE UNIQUE INDEX")
-	assert.Contains(t, stmts[2], "idx_users_email")
+	require.Len(t, stmts, 2)
+	assert.Contains(t, stmts[0], `CREATE TABLE IF NOT EXISTS "auth"."users"`)
+	assert.Contains(t, stmts[1], "CREATE UNIQUE INDEX")
+	assert.Contains(t, stmts[1], "idx_users_email")
 }
 
 func TestTableDDL_Dependencies_WithSchema(t *testing.T) {
@@ -269,10 +270,9 @@ func TestTableDDL_AllConstraintsTogether(t *testing.T) {
 	)
 
 	stmts := tbl.SchemaSql()
-	require.Len(t, stmts, 2)
-	assert.Equal(t, `CREATE SCHEMA IF NOT EXISTS "store"`, stmts[0])
+	require.Len(t, stmts, 1)
 
-	createTable := stmts[1]
+	createTable := stmts[0]
 	assert.Contains(t, createTable, `CREATE TABLE IF NOT EXISTS "store"."order_items"`)
 	assert.Contains(t, createTable, "CONSTRAINT pk_order_items PRIMARY KEY (order_id, product_id)")
 	assert.Contains(t, createTable, "CONSTRAINT uq_order_product UNIQUE (order_id, product_id)")
@@ -302,6 +302,19 @@ func TestSchemaSortedStatements_WithSchemaQualifiedDeps(t *testing.T) {
 	// orders depends on users, so users should come first regardless of input order
 	stmts, err := SchemaSortedStatements(orders, users)
 	require.NoError(t, err)
+
+	// CREATE SCHEMA should appear once at the beginning
+	require.True(t, len(stmts) >= 3, "expected at least 3 statements (CREATE SCHEMA + 2 tables)")
+	assert.Equal(t, `CREATE SCHEMA IF NOT EXISTS "auth"`, stmts[0])
+
+	// Verify only one CREATE SCHEMA statement (deduplicated)
+	schemaCount := 0
+	for _, s := range stmts {
+		if strings.Contains(s, "CREATE SCHEMA") {
+			schemaCount++
+		}
+	}
+	assert.Equal(t, 1, schemaCount, "CREATE SCHEMA should appear exactly once")
 
 	// Find which CREATE TABLE statement appears first
 	// Use "EXISTS" prefix to avoid matching REFERENCES "auth"."users"

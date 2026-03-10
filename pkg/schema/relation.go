@@ -13,6 +13,9 @@ import (
 
 type RelationTableAlias[T types.TableAlias] interface {
 	Alias() T
+	// FromName returns the schema-qualified table name for FROM/JOIN clauses.
+	// Returns alias.String() when no schema is set.
+	FromName() string
 }
 
 type RelationTableJoin[T types.TableAlias, C types.ColumnAlias] interface {
@@ -37,9 +40,10 @@ type ForwardRelation[
 	RC types.ColumnAlias, // Related table column alias
 	RS exec2.Scanner[RC], // Related table scanner
 ] struct {
-	foreignKeyName string // Foreign key in related table pointing to current table (as string)
-	localKeyName   string // Primary key in current table (as string)
-	relatedName    RT     // Name of the related table
+	foreignKeyName  string // Foreign key in related table pointing to current table (as string)
+	localKeyName    string // Primary key in current table (as string)
+	relatedName     RT     // Alias of the related table (for column references)
+	relatedFromName string // Schema-qualified name (for FROM/JOIN clauses)
 }
 
 // BackwardRelation represents a "belongs to" relationship
@@ -52,9 +56,10 @@ type BackwardRelation[
 	RC types.ColumnAlias, // Related table column alias
 	RS exec2.Scanner[RC], // Related table scanner
 ] struct {
-	foreignKeyName string // Foreign key in current table (as string)
-	ownerKeyName   string // Primary key in related table (as string)
-	relatedName    RT     // Name of the related table
+	foreignKeyName  string // Foreign key in current table (as string)
+	ownerKeyName    string // Primary key in related table (as string)
+	relatedName     RT     // Alias of the related table (for column references)
+	relatedFromName string // Schema-qualified name (for FROM/JOIN clauses)
 }
 
 // HasMany creates a forward relation (one-to-many)
@@ -66,9 +71,10 @@ func HasMany[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT typ
 	localKey C, // primary key in current table
 ) *ForwardRelation[T, C, S, RT, RC, RS] {
 	return &ForwardRelation[T, C, S, RT, RC, RS]{
-		foreignKeyName: foreignKey.String(),
-		localKeyName:   localKey.String(),
-		relatedName:    relatedTable.Alias(),
+		foreignKeyName:  foreignKey.String(),
+		localKeyName:    localKey.String(),
+		relatedName:     relatedTable.Alias(),
+		relatedFromName: relatedTable.FromName(),
 	}
 }
 
@@ -81,9 +87,10 @@ func HasOne[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT type
 	localKey C, // primary key in current table
 ) *ForwardRelation[T, C, S, RT, RC, RS] {
 	return &ForwardRelation[T, C, S, RT, RC, RS]{
-		foreignKeyName: foreignKey.String(),
-		localKeyName:   localKey.String(),
-		relatedName:    relatedTable.Alias(),
+		foreignKeyName:  foreignKey.String(),
+		localKeyName:    localKey.String(),
+		relatedName:     relatedTable.Alias(),
+		relatedFromName: relatedTable.FromName(),
 	}
 }
 
@@ -96,9 +103,10 @@ func BelongsTo[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C], RT t
 	ownerKey RC, // primary key in related table
 ) *BackwardRelation[T, C, S, RT, RC, RS] {
 	return &BackwardRelation[T, C, S, RT, RC, RS]{
-		foreignKeyName: foreignKey.String(),
-		ownerKeyName:   ownerKey.String(),
-		relatedName:    relatedTable.Alias(),
+		foreignKeyName:  foreignKey.String(),
+		ownerKeyName:    ownerKey.String(),
+		relatedName:     relatedTable.Alias(),
+		relatedFromName: relatedTable.FromName(),
 	}
 }
 
@@ -177,40 +185,42 @@ func (r *BackwardRelation[T, C, S, RT, RC, RS]) LoadOne(
 	return result, nil
 }
 
-// WithJoin adds a JOIN clause to a SelectQuery for forward relation
+// WithJoin adds a JOIN clause to a SelectQuery for forward relation.
+// Uses schema-qualified name for the JOIN table and alias for column references.
 func (r *ForwardRelation[T, C, S, RT, RC, RS]) WithJoin(
 	currentTable RelationTableJoin[T, C],
 	query *dml.SelectQuery[T, C],
 	joinType dml.JoinType,
 ) *dml.SelectQuery[T, C] {
-	// Create ON clause using raw SQL: current_table.localKey = related_table.foreignKey
 	currentTableName := currentTable.Alias().String()
+	relatedAlias := r.relatedName.String()
 	leftExpr := fmt.Sprintf("%s.%s", currentTableName, r.localKeyName)
-	rightExpr := fmt.Sprintf("%s.%s", r.relatedName.String(), r.foreignKeyName)
+	rightExpr := fmt.Sprintf("%s.%s", relatedAlias, r.foreignKeyName)
 
 	onClause := currentTable.Raw(
 		fmt.Sprintf("%s = %s", leftExpr, rightExpr),
 	)
 
-	return query.Join(joinType, r.relatedName.String(), r.relatedName.String(), onClause)
+	return query.Join(joinType, r.relatedFromName, relatedAlias, onClause)
 }
 
-// WithJoin adds a JOIN clause to a SelectQuery for backward relation
+// WithJoin adds a JOIN clause to a SelectQuery for backward relation.
+// Uses schema-qualified name for the JOIN table and alias for column references.
 func (r *BackwardRelation[T, C, S, RT, RC, RS]) WithJoin(
 	currentTable RelationTableJoin[T, C],
 	query *dml.SelectQuery[T, C],
 	joinType dml.JoinType,
 ) *dml.SelectQuery[T, C] {
-	// Create ON clause using raw SQL: current_table.foreignKey = related_table.ownerKey
 	currentTableName := currentTable.Alias().String()
+	relatedAlias := r.relatedName.String()
 	leftExpr := fmt.Sprintf("%s.%s", currentTableName, r.foreignKeyName)
-	rightExpr := fmt.Sprintf("%s.%s", r.relatedName.String(), r.ownerKeyName)
+	rightExpr := fmt.Sprintf("%s.%s", relatedAlias, r.ownerKeyName)
 
 	onClause := currentTable.Raw(
 		fmt.Sprintf("%s = %s", leftExpr, rightExpr),
 	)
 
-	return query.Join(joinType, r.relatedName.String(), r.relatedName.String(), onClause)
+	return query.Join(joinType, r.relatedFromName, relatedAlias, onClause)
 }
 
 type HasManyLoader[
@@ -380,8 +390,10 @@ type ManyToManyRelation[
 	pivotLocalKeyName   string // Foreign key in pivot table pointing to current table
 	pivotRelatedKeyName string // Foreign key in pivot table pointing to related table
 	relatedKeyName      string // Primary key in related table (e.g., category_id)
-	pivotName           PT     // Name of the pivot table
-	relatedName         RT     // Name of the related table
+	pivotName           PT     // Alias of the pivot table (for column references)
+	pivotFromName       string // Schema-qualified pivot table name (for FROM/JOIN)
+	relatedName         RT     // Alias of the related table (for column references)
+	relatedFromName     string // Schema-qualified related table name (for FROM/JOIN)
 }
 
 // ManyToMany creates a many-to-many relation through a pivot table
@@ -405,36 +417,39 @@ func ManyToMany[
 		pivotRelatedKeyName: pivotRelatedKey.String(),
 		relatedKeyName:      relatedKey.String(),
 		pivotName:           pivotTable.Alias(),
+		pivotFromName:       pivotTable.FromName(),
 		relatedName:         relatedTable.Alias(),
+		relatedFromName:     relatedTable.FromName(),
 	}
 }
 
-// WithJoin adds JOIN clauses to a SelectQuery for many-to-many relation
-// Joins: current_table -> pivot_table -> related_table
+// WithJoin adds JOIN clauses to a SelectQuery for many-to-many relation.
+// Joins: current_table -> pivot_table -> related_table.
+// Uses schema-qualified names for JOIN tables and aliases for column references.
 func (r *ManyToManyRelation[T, C, S, PT, PC, RT, RC, RS]) WithJoin(
 	currentTable RelationTableJoin[T, C],
 	query *dml.SelectQuery[T, C],
 	joinType dml.JoinType,
 ) *dml.SelectQuery[T, C] {
 	currentTableName := currentTable.Alias().String()
+	pivotAlias := r.pivotName.String()
+	relatedAlias := r.relatedName.String()
 
 	// First JOIN: current_table -> pivot_table
-	// ON current_table.localKey = pivot_table.pivotLocalKey
 	pivotOnClause := currentTable.Raw(
 		fmt.Sprintf("%s.%s = %s.%s",
 			currentTableName, r.localKeyName,
-			r.pivotName.String(), r.pivotLocalKeyName),
+			pivotAlias, r.pivotLocalKeyName),
 	)
-	query = query.Join(joinType, r.pivotName.String(), r.pivotName.String(), pivotOnClause)
+	query = query.Join(joinType, r.pivotFromName, pivotAlias, pivotOnClause)
 
 	// Second JOIN: pivot_table -> related_table
-	// ON pivot_table.pivotRelatedKey = related_table.relatedKey
 	relatedOnClause := currentTable.Raw(
 		fmt.Sprintf("%s.%s = %s.%s",
-			r.pivotName.String(), r.pivotRelatedKeyName,
-			r.relatedName.String(), r.relatedKeyName),
+			pivotAlias, r.pivotRelatedKeyName,
+			relatedAlias, r.relatedKeyName),
 	)
-	query = query.Join(joinType, r.relatedName.String(), r.relatedName.String(), relatedOnClause)
+	query = query.Join(joinType, r.relatedFromName, relatedAlias, relatedOnClause)
 
 	return query
 }
@@ -446,16 +461,17 @@ func (r *ManyToManyRelation[T, C, S, PT, PC, RT, RC, RS]) LoadMany(
 	relatedTable RelationTableQuery[RT, RC, RS],
 	localValue any, // value of the local key (e.g., product.ID)
 ) ([]RS, error) {
-	// Build subquery to get related IDs from pivot table
-	// SELECT related_key FROM pivot_table WHERE pivot_local_key = $1
+	// Build subquery to get related IDs from pivot table (uses qualified name)
+	// SELECT related_key FROM "schema"."pivot_table" WHERE pivot_local_key = $1
 	subQuery := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE %s = $1",
 		r.pivotRelatedKeyName,
-		r.pivotName.String(),
+		r.pivotFromName,
 		r.pivotLocalKeyName,
 	)
 
 	// Build main query: SELECT * FROM related_table WHERE related_key IN (subquery)
+	// Column reference uses alias (short name) since SELECT aliases the table
 	rawWhere := relatedTable.Raw(
 		fmt.Sprintf("%s.%s IN (%s)", r.relatedName.String(), r.relatedKeyName, subQuery),
 		localValue,

@@ -96,10 +96,13 @@ func (q *SelectQuery[T, C]) AddToBuilder(buf *strings.Builder, ta string, paramI
 	}
 
 	// ---------- FROM ----------
+	fromName := q.fromName()
 	buf.WriteString(" FROM ")
-	buf.WriteString(ta)
-	buf.WriteString(" AS ")
-	buf.WriteString(ta)
+	buf.WriteString(fromName)
+	if fromName != ta {
+		buf.WriteString(" AS ")
+		buf.WriteString(ta)
+	}
 
 	// ---------- JOIN ----------
 	for _, join := range q.joins {

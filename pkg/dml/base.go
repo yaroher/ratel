@@ -12,8 +12,17 @@ var sbPool = sync.Pool{
 
 type BaseQuery[T types.TableAlias, C types.ColumnAlias] struct {
 	Ta          T
+	FromName    string // schema-qualified table name for FROM (empty = use Ta.String())
 	UsingFields []C
 	AllFields   []C
+}
+
+// fromName returns the table name for FROM clauses (qualified if schema is set).
+func (q *BaseQuery[T, C]) fromName() string {
+	if q.FromName != "" {
+		return q.FromName
+	}
+	return q.Ta.String()
 }
 
 func (q *BaseQuery[T, C]) ScanAbleFields() []string {

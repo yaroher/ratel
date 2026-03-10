@@ -7,6 +7,7 @@ import (
 
 type TableDML[T types.TableAlias, C types.ColumnAlias] struct {
 	alias     T
+	schema    string // PostgreSQL schema (empty = use alias as-is)
 	allFields []C
 }
 
@@ -17,9 +18,24 @@ func NewTableDML[T types.TableAlias, C types.ColumnAlias](alias T, fields ...C) 
 	}
 }
 
+// WithSchema sets the PostgreSQL schema for qualified table names in FROM clauses.
+func (t *TableDML[T, C]) WithSchema(schema string) *TableDML[T, C] {
+	t.schema = schema
+	return t
+}
+
+// FromName returns the schema-qualified table name for FROM clauses.
+func (t *TableDML[T, C]) FromName() string {
+	if t.schema != "" {
+		return `"` + t.schema + `"."` + t.alias.String() + `"`
+	}
+	return t.alias.String()
+}
+
 func (t *TableDML[T, C]) baseQuery(ta T, field ...C) BaseQuery[T, C] {
 	return BaseQuery[T, C]{
 		Ta:          ta,
+		FromName:    t.FromName(),
 		UsingFields: field,
 		AllFields:   t.allFields,
 	}

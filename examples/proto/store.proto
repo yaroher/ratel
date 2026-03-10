@@ -75,6 +75,7 @@ message User {
   option (ratel.table) = {
     generate: true
     table_name: "users"
+    schema: "store"
     indexes: [
       { columns: ["email"], unique: true },
       { columns: ["is_active", "created_at"] }
@@ -116,6 +117,7 @@ message Profile {
   option (ratel.table) = {
     generate: true
     table_name: "profiles"
+    schema: "store"
     indexes: [
       { columns: ["user_id"], unique: true }
     ]
@@ -144,6 +146,7 @@ message Category {
   option (ratel.table) = {
     generate: true
     table_name: "categories"
+    schema: "store"
   };
   
   // Embedded BaseEntity (id + timestamps)
@@ -186,6 +189,7 @@ message Product {
   option (ratel.table) = {
     generate: true
     table_name: "products"
+    schema: "store"
     constraints: ["CHECK (stock_qty >= 0)"]
     indexes: [
       { columns: ["sku"] },
@@ -240,6 +244,7 @@ message Order {
   option (ratel.table) = {
     generate: true
     table_name: "orders"
+    schema: "store"
     constraints: ["CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))"]
     indexes: [
       { columns: ["user_id"] },
@@ -289,6 +294,7 @@ message OrderItem {
   option (ratel.table) = {
     generate: true
     table_name: "order_items"
+    schema: "store"
     constraints: [
       "CHECK (line_no > 0)",
       "CHECK (qty > 0)"

@@ -53,7 +53,10 @@ func (i *Index[T, C]) Where(predicate string) *Index[T, C] {
 	return i
 }
 
-func (i *Index[T, C]) SchemaSql() string {
+// SchemaSqlFor generates the CREATE INDEX statement using the given table name.
+// Use this instead of building index SQL directly, as the table name may need
+// schema-qualification (e.g., "store"."users") which the Index struct does not track.
+func (i *Index[T, C]) SchemaSqlFor(tableName string) string {
 	var sql strings.Builder
 
 	sql.WriteString("CREATE ")
@@ -71,7 +74,7 @@ func (i *Index[T, C]) SchemaSql() string {
 	sql.WriteString("IF NOT EXISTS ")
 	sql.WriteString(i.name)
 	sql.WriteString(" ON ")
-	sql.WriteString(i.table.String())
+	sql.WriteString(tableName)
 
 	if i.using != "" {
 		sql.WriteString(" USING ")

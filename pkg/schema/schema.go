@@ -24,9 +24,14 @@ func NewTable[T types.TableAlias, C types.ColumnAlias, S exec2.Scanner[C]](
 	for _, col := range columns {
 		allAliases = append(allAliases, col.Alias())
 	}
+	tableDDL := ddl2.NewTableDDL[T, C](alias, columns, ddlOptions...)
+	tableDML := dml.NewTableDML[T, C](alias, allAliases...)
+	if s := tableDDL.Schema(); s != "" {
+		tableDML.WithSchema(s)
+	}
 	return &Table[T, C, S]{
-		TableDDL:      ddl2.NewTableDDL[T, C](alias, columns, ddlOptions...),
-		TableDML:      dml.NewTableDML[T, C](alias, allAliases...),
+		TableDDL:      tableDDL,
+		TableDML:      tableDML,
 		TableExecutor: exec2.NewTableExecutor[T, C, S](alias, allAliases, constructor),
 		constructor:   constructor,
 	}

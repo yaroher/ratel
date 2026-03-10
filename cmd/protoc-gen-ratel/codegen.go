@@ -133,17 +133,16 @@ func constraintErrorMessage(c *ConstraintInfo) string {
 func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	msgName := table.Message.GoIdent.GoName
 	tableName := getTableName(table)
-	qualifiedName := getQualifiedTableName(table)
 	tableSchema := getTableSchema(table)
 
 	// 1. Generate table alias type
 	aliasTypeName := msgName + "Alias"
-	gf.P("// ", aliasTypeName, " is the table alias type for the ", qualifiedName, " table")
+	gf.P("// ", aliasTypeName, " is the table alias type for the ", tableName, " table")
 	gf.P("type ", aliasTypeName, " string")
 	gf.P()
 	gf.P("func (a ", aliasTypeName, ") String() string { return string(a) }")
 	gf.P()
-	gf.P("const ", aliasTypeName, "Name ", aliasTypeName, " = \"", qualifiedName, "\"")
+	gf.P("const ", aliasTypeName, "Name ", aliasTypeName, " = \"", tableName, "\"")
 	gf.P()
 
 	// 2. Generate column alias type

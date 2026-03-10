@@ -823,6 +823,75 @@ func TestGeneratedModels(t *testing.T) {
 		}
 	})
 
+	// ========================================================================
+	// Cross-Schema Relations Tests
+	// Currency and Tags live in "public", everything else in "store" schema
+	// ========================================================================
+	t.Run("Cross-Schema: Order(store) BelongsTo Currency(public)", func(t *testing.T) {
+		query := Orders.SelectAll().
+			Where(Orders.Id.Eq(orderIDs[0]))
+
+		order, err := Orders.QueryRow(ctx, db, query, OrdersWithMoney())
+		if err != nil {
+			t.Fatalf("failed to load order with cross-schema currency relation: %v", err)
+		}
+
+		if order.Money == nil {
+			t.Fatal("expected order.Money (Currency from public schema) to be loaded")
+		}
+		if order.Money.Code != "USD" {
+			t.Errorf("expected currency code USD, got %s", order.Money.Code)
+		}
+		t.Logf("Cross-schema BelongsTo OK: Order(store).Money -> Currency(public) code=%s name=%s",
+			order.Money.Code, order.Money.Name)
+	})
+
+	t.Run("Cross-Schema: Order(store) with all relations including Currency(public)", func(t *testing.T) {
+		query := Orders.SelectAll().
+			Where(Orders.Id.Eq(orderIDs[0]))
+
+		order, err := Orders.QueryRow(ctx, db, query, OrdersWithAllRelations())
+		if err != nil {
+			t.Fatalf("failed to load order with all relations: %v", err)
+		}
+
+		// BelongsTo User (store -> store)
+		if order.User == nil {
+			t.Fatal("expected order.User (same schema) to be loaded")
+		}
+		// BelongsTo Currency (store -> public)
+		if order.Money == nil {
+			t.Fatal("expected order.Money (cross-schema) to be loaded")
+		}
+		// HasMany OrderItems (store -> store)
+		if len(order.Items) == 0 {
+			t.Fatal("expected order.Items to be loaded")
+		}
+
+		t.Logf("Cross-schema AllRelations OK: Order(store) -> User(store)=%s, Currency(public)=%s, Items=%d",
+			order.User.FullName, order.Money.Code, len(order.Items))
+	})
+
+	t.Run("Cross-Schema: OrderItem(store) -> Order(store) -> Currency(public) chain", func(t *testing.T) {
+		query := OrderItems.SelectAll().
+			Where(OrderItems.OrderId.Eq(orderIDs[1]))
+
+		item, err := OrderItems.QueryRow(ctx, db, query, OrderItemsWithAllRelations())
+		if err != nil {
+			t.Fatalf("failed to load order item with relations: %v", err)
+		}
+
+		if item.Order == nil {
+			t.Fatal("expected orderItem.Order to be loaded")
+		}
+		if item.Product == nil {
+			t.Fatal("expected orderItem.Product to be loaded")
+		}
+
+		t.Logf("Cross-schema chain OK: OrderItem(store) -> Order(store) id=%d, Product(store) sku=%s",
+			item.Order.Id, item.Product.Sku)
+	})
+
 	// Suppress unused variables
 	_ = categoryIDs
 	_ = tagIDs

@@ -83,9 +83,12 @@ func WithTableCheckConstraint[T types.TableAlias, C types.ColumnAlias](name, exp
 }
 
 // WithSchema sets the PostgreSQL schema for the table.
-// When set, SchemaSql() will prepend CREATE SCHEMA IF NOT EXISTS
-// and use schema-qualified table names.
+// When set, schema-qualified table names are used in DDL and DML.
+// Panics if schemaName is empty or contains only whitespace.
 func WithSchema[T types.TableAlias, C types.ColumnAlias](schemaName string) TableOptions[T, C] {
+	if strings.TrimSpace(schemaName) == "" {
+		panic("ddl.WithSchema: schema name must not be empty")
+	}
 	return func(ddl *TableDDL[T, C]) {
 		ddl.schema = schemaName
 	}
@@ -120,7 +123,7 @@ func (c *TableDDL[T, C]) Alias() T {
 	return c.alias
 }
 
-// TableName returns the name of this table (implements DependencySqler)
+// TableName returns the schema-qualified table name (implements DependencySqler).
 func (c *TableDDL[T, C]) TableName() string {
 	return c.qualifiedName()
 }
@@ -130,7 +133,7 @@ func (c *TableDDL[T, C]) Schema() string {
 	return c.schema
 }
 
-// qualifiedName returns schema-qualified table name if schema is set
+// qualifiedName returns schema-qualified table name if schema is set.
 func (c *TableDDL[T, C]) qualifiedName() string {
 	if c.schema != "" {
 		return fmt.Sprintf(`"%s"."%s"`, c.schema, c.alias.String())
@@ -143,11 +146,11 @@ func (c *TableDDL[T, C]) Dependencies() []string {
 	var deps []string
 	seen := make(map[string]bool)
 
-	qn := c.qualifiedName()
+	tableName := c.qualifiedName()
 	for _, col := range c.columns {
 		if col.reference != nil && col.reference.table != "" {
 			// Exclude self-references (like categories -> categories)
-			if col.reference.table != qn && !seen[col.reference.table] {
+			if col.reference.table != tableName && !seen[col.reference.table] {
 				deps = append(deps, col.reference.table)
 				seen[col.reference.table] = true
 			}
@@ -159,13 +162,6 @@ func (c *TableDDL[T, C]) Dependencies() []string {
 
 func (c *TableDDL[T, C]) SchemaSql() []string {
 	var statements []string
-
-	// CREATE SCHEMA IF NOT EXISTS (when schema is set)
-	if c.schema != "" {
-		statements = append(statements,
-			fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %q", c.schema))
-	}
-
 	var sql strings.Builder
 
 	// CREATE TABLE IF NOT EXISTS
@@ -246,9 +242,10 @@ func (c *TableDDL[T, C]) SchemaSql() []string {
 	// Add CREATE TABLE statement
 	statements = append(statements, sql.String())
 
-	// Add indexes as separate statements
+	// Add indexes as separate statements (use qualified table name)
+	qn := c.qualifiedName()
 	for _, idx := range c.indexes {
-		statements = append(statements, idx.SchemaSql())
+		statements = append(statements, idx.SchemaSqlFor(qn))
 	}
 
 	return statements

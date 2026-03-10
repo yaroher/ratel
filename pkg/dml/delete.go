@@ -33,8 +33,13 @@ func (q *DeleteQuery[T, C]) Build() (string, []any) {
 	return sql, args
 }
 func (q *DeleteQuery[T, C]) AddToBuilder(sb *strings.Builder, ta string, paramIndex *int, args *[]any) {
+	fromName := q.fromName()
 	sb.WriteString("DELETE FROM ")
-	sb.WriteString(ta)
+	sb.WriteString(fromName)
+	if fromName != ta {
+		sb.WriteString(" AS ")
+		sb.WriteString(ta)
+	}
 
 	if len(q.whereClauses) > 0 {
 		sb.WriteString(" WHERE ")

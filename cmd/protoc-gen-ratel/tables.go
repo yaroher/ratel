@@ -176,13 +176,3 @@ func getTableSchema(table *RatelTable) string {
 	}
 	return ""
 }
-
-// getQualifiedTableName returns schema-qualified table name for SQL alias
-func getQualifiedTableName(table *RatelTable) string {
-	name := getTableName(table)
-	schema := getTableSchema(table)
-	if schema != "" {
-		return `"` + schema + `"."` + name + `"`
-	}
-	return name
-}
