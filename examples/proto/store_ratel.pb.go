@@ -86,7 +86,7 @@ type CurrencysTable struct {
 // Currencys is the global currency table instance
 var Currencys = func() CurrencysTable {
 	codeCol := schema.TextColumn(CurrencyColumnCode, ddl.WithPrimaryKey[CurrencyColumnAlias](), ddl.WithCheck[CurrencyColumnAlias]("code <> ''"))
-	nameCol := schema.TextColumn(CurrencyColumnName)
+	nameCol := schema.TextColumn(CurrencyColumnName, ddl.WithNotNull[CurrencyColumnAlias]())
 
 	return CurrencysTable{
 		Table: schema.NewTable[CurrencyAlias, CurrencyColumnAlias, *CurrencyScanner](
@@ -318,11 +318,11 @@ type UsersTable struct {
 // Users is the global users table instance
 var Users = func() UsersTable {
 	idCol := schema.BigSerialColumn(UserColumnId, ddl.WithPrimaryKey[UserColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(UserColumnCreatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(UserColumnUpdatedAt, ddl.WithDefault[UserColumnAlias]("now()"))
-	emailCol := schema.TextColumn(UserColumnEmail, ddl.WithUnique[UserColumnAlias]())
-	fullNameCol := schema.TextColumn(UserColumnFullName)
-	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"))
+	createdAtCol := schema.TimestamptzColumn(UserColumnCreatedAt, ddl.WithDefault[UserColumnAlias]("now()"), ddl.WithNotNull[UserColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(UserColumnUpdatedAt, ddl.WithDefault[UserColumnAlias]("now()"), ddl.WithNotNull[UserColumnAlias]())
+	emailCol := schema.TextColumn(UserColumnEmail, ddl.WithUnique[UserColumnAlias](), ddl.WithNotNull[UserColumnAlias]())
+	fullNameCol := schema.TextColumn(UserColumnFullName, ddl.WithNotNull[UserColumnAlias]())
+	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"), ddl.WithNotNull[UserColumnAlias]())
 	emailConfirmedAtCol := schema.NullTimestamptzColumn(UserColumnEmailConfirmedAt)
 	nicknameCol := schema.NullTextColumn(UserColumnNickname)
 	deletedAtCol := schema.NullTimestamptzColumn(UserColumnDeletedAt)
@@ -514,11 +514,11 @@ type ProfilesTable struct {
 // Profiles is the global profiles table instance
 var Profiles = func() ProfilesTable {
 	idCol := schema.BigSerialColumn(ProfileColumnId, ddl.WithPrimaryKey[ProfileColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(ProfileColumnCreatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(ProfileColumnUpdatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"))
-	userIdCol := schema.BigIntColumn(ProfileColumnUserId, ddl.WithReferences[ProfileColumnAlias]("\"store\".\"users\"", "id"), ddl.WithOnDelete[ProfileColumnAlias]("CASCADE"))
-	bioCol := schema.TextColumn(ProfileColumnBio)
-	avatarUrlCol := schema.TextColumn(ProfileColumnAvatarUrl)
+	createdAtCol := schema.TimestamptzColumn(ProfileColumnCreatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"), ddl.WithNotNull[ProfileColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(ProfileColumnUpdatedAt, ddl.WithDefault[ProfileColumnAlias]("now()"), ddl.WithNotNull[ProfileColumnAlias]())
+	userIdCol := schema.BigIntColumn(ProfileColumnUserId, ddl.WithReferences[ProfileColumnAlias]("\"store\".\"users\"", "id"), ddl.WithOnDelete[ProfileColumnAlias]("CASCADE"), ddl.WithNotNull[ProfileColumnAlias]())
+	bioCol := schema.TextColumn(ProfileColumnBio, ddl.WithNotNull[ProfileColumnAlias]())
+	avatarUrlCol := schema.TextColumn(ProfileColumnAvatarUrl, ddl.WithNotNull[ProfileColumnAlias]())
 
 	idx0 := ddl.NewIndex[ProfileAlias, ProfileColumnAlias]("idx_profiles_user_id", ProfileAliasName).OnColumns(ProfileColumnUserId)
 	idx0 = idx0.Unique()
@@ -655,10 +655,10 @@ type CategorysTable struct {
 // Categorys is the global categories table instance
 var Categorys = func() CategorysTable {
 	idCol := schema.BigSerialColumn(CategoryColumnId, ddl.WithPrimaryKey[CategoryColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(CategoryColumnCreatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(CategoryColumnUpdatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"))
-	nameCol := schema.TextColumn(CategoryColumnName)
-	slugCol := schema.TextColumn(CategoryColumnSlug, ddl.WithUnique[CategoryColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(CategoryColumnCreatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"), ddl.WithNotNull[CategoryColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(CategoryColumnUpdatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"), ddl.WithNotNull[CategoryColumnAlias]())
+	nameCol := schema.TextColumn(CategoryColumnName, ddl.WithNotNull[CategoryColumnAlias]())
+	slugCol := schema.TextColumn(CategoryColumnSlug, ddl.WithUnique[CategoryColumnAlias](), ddl.WithNotNull[CategoryColumnAlias]())
 	parentIdCol := schema.NullBigIntColumn(CategoryColumnParentId, ddl.WithReferences[CategoryColumnAlias]("\"store\".\"categories\"", "id"), ddl.WithOnDelete[CategoryColumnAlias]("SET NULL"))
 
 	return CategorysTable{
@@ -782,10 +782,10 @@ type TagsTable struct {
 // Tags is the global tags table instance
 var Tags = func() TagsTable {
 	idCol := schema.BigSerialColumn(TagColumnId, ddl.WithPrimaryKey[TagColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(TagColumnCreatedAt, ddl.WithDefault[TagColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(TagColumnUpdatedAt, ddl.WithDefault[TagColumnAlias]("now()"))
-	nameCol := schema.TextColumn(TagColumnName)
-	slugCol := schema.TextColumn(TagColumnSlug, ddl.WithUnique[TagColumnAlias]())
+	createdAtCol := schema.TimestamptzColumn(TagColumnCreatedAt, ddl.WithDefault[TagColumnAlias]("now()"), ddl.WithNotNull[TagColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(TagColumnUpdatedAt, ddl.WithDefault[TagColumnAlias]("now()"), ddl.WithNotNull[TagColumnAlias]())
+	nameCol := schema.TextColumn(TagColumnName, ddl.WithNotNull[TagColumnAlias]())
+	slugCol := schema.TextColumn(TagColumnSlug, ddl.WithUnique[TagColumnAlias](), ddl.WithNotNull[TagColumnAlias]())
 
 	return TagsTable{
 		Table: schema.NewTable[TagAlias, TagColumnAlias, *TagScanner](
@@ -937,14 +937,14 @@ type ProductsTable struct {
 // Products is the global products table instance
 var Products = func() ProductsTable {
 	idCol := schema.BigSerialColumn(ProductColumnId, ddl.WithPrimaryKey[ProductColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(ProductColumnCreatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(ProductColumnUpdatedAt, ddl.WithDefault[ProductColumnAlias]("now()"))
-	skuCol := schema.TextColumn(ProductColumnSku, ddl.WithUnique[ProductColumnAlias]())
-	nameCol := schema.TextColumn(ProductColumnName)
-	priceCol := schema.DoublePrecisionColumn(ProductColumnPrice)
-	currencyCol := schema.TextColumn(ProductColumnCurrency, ddl.WithReferences[ProductColumnAlias]("currency", "code"), ddl.WithOnDelete[ProductColumnAlias]("RESTRICT"))
-	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"))
-	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"))
+	createdAtCol := schema.TimestamptzColumn(ProductColumnCreatedAt, ddl.WithDefault[ProductColumnAlias]("now()"), ddl.WithNotNull[ProductColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(ProductColumnUpdatedAt, ddl.WithDefault[ProductColumnAlias]("now()"), ddl.WithNotNull[ProductColumnAlias]())
+	skuCol := schema.TextColumn(ProductColumnSku, ddl.WithUnique[ProductColumnAlias](), ddl.WithNotNull[ProductColumnAlias]())
+	nameCol := schema.TextColumn(ProductColumnName, ddl.WithNotNull[ProductColumnAlias]())
+	priceCol := schema.DoublePrecisionColumn(ProductColumnPrice, ddl.WithNotNull[ProductColumnAlias]())
+	currencyCol := schema.TextColumn(ProductColumnCurrency, ddl.WithReferences[ProductColumnAlias]("currency", "code"), ddl.WithOnDelete[ProductColumnAlias]("RESTRICT"), ddl.WithNotNull[ProductColumnAlias]())
+	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"), ddl.WithNotNull[ProductColumnAlias]())
+	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"), ddl.WithNotNull[ProductColumnAlias]())
 
 	idx0 := ddl.NewIndex[ProductAlias, ProductColumnAlias]("idx_products_sku", ProductAliasName).OnColumns(ProductColumnSku)
 	idx1 := ddl.NewIndex[ProductAlias, ProductColumnAlias]("idx_products_currency", ProductAliasName).OnColumns(ProductColumnCurrency)
@@ -1207,11 +1207,11 @@ type OrdersTable struct {
 // Orders is the global orders table instance
 var Orders = func() OrdersTable {
 	idCol := schema.BigSerialColumn(OrderColumnId, ddl.WithPrimaryKey[OrderColumnAlias]())
-	createdAtCol := schema.TimestamptzColumn(OrderColumnCreatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
-	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
-	userIdCol := schema.BigIntColumn(OrderColumnUserId, ddl.WithReferences[OrderColumnAlias]("\"store\".\"users\"", "id"), ddl.WithOnDelete[OrderColumnAlias]("CASCADE"))
-	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"))
-	currencyCol := schema.TextColumn(OrderColumnCurrency, ddl.WithReferences[OrderColumnAlias]("currency", "code"), ddl.WithOnDelete[OrderColumnAlias]("RESTRICT"))
+	createdAtCol := schema.TimestamptzColumn(OrderColumnCreatedAt, ddl.WithDefault[OrderColumnAlias]("now()"), ddl.WithNotNull[OrderColumnAlias]())
+	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"), ddl.WithNotNull[OrderColumnAlias]())
+	userIdCol := schema.BigIntColumn(OrderColumnUserId, ddl.WithReferences[OrderColumnAlias]("\"store\".\"users\"", "id"), ddl.WithOnDelete[OrderColumnAlias]("CASCADE"), ddl.WithNotNull[OrderColumnAlias]())
+	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"), ddl.WithNotNull[OrderColumnAlias]())
+	currencyCol := schema.TextColumn(OrderColumnCurrency, ddl.WithReferences[OrderColumnAlias]("currency", "code"), ddl.WithOnDelete[OrderColumnAlias]("RESTRICT"), ddl.WithNotNull[OrderColumnAlias]())
 
 	idx0 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_user_id", OrderAliasName).OnColumns(OrderColumnUserId)
 	idx1 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_status", OrderAliasName).OnColumns(OrderColumnStatus)
@@ -1413,11 +1413,11 @@ type OrderItemsTable struct {
 
 // OrderItems is the global order_items table instance
 var OrderItems = func() OrderItemsTable {
-	orderIdCol := schema.BigIntColumn(OrderItemColumnOrderId, ddl.WithReferences[OrderItemColumnAlias]("\"store\".\"orders\"", "id"), ddl.WithOnDelete[OrderItemColumnAlias]("CASCADE"))
-	lineNoCol := schema.IntegerColumn(OrderItemColumnLineNo)
-	productIdCol := schema.BigIntColumn(OrderItemColumnProductId, ddl.WithReferences[OrderItemColumnAlias]("\"store\".\"products\"", "id"), ddl.WithOnDelete[OrderItemColumnAlias]("RESTRICT"))
-	qtyCol := schema.IntegerColumn(OrderItemColumnQty)
-	unitPriceCol := schema.DoublePrecisionColumn(OrderItemColumnUnitPrice)
+	orderIdCol := schema.BigIntColumn(OrderItemColumnOrderId, ddl.WithReferences[OrderItemColumnAlias]("\"store\".\"orders\"", "id"), ddl.WithOnDelete[OrderItemColumnAlias]("CASCADE"), ddl.WithNotNull[OrderItemColumnAlias]())
+	lineNoCol := schema.IntegerColumn(OrderItemColumnLineNo, ddl.WithNotNull[OrderItemColumnAlias]())
+	productIdCol := schema.BigIntColumn(OrderItemColumnProductId, ddl.WithReferences[OrderItemColumnAlias]("\"store\".\"products\"", "id"), ddl.WithOnDelete[OrderItemColumnAlias]("RESTRICT"), ddl.WithNotNull[OrderItemColumnAlias]())
+	qtyCol := schema.IntegerColumn(OrderItemColumnQty, ddl.WithNotNull[OrderItemColumnAlias]())
+	unitPriceCol := schema.DoublePrecisionColumn(OrderItemColumnUnitPrice, ddl.WithNotNull[OrderItemColumnAlias]())
 
 	return OrderItemsTable{
 		Table: schema.NewTable[OrderItemAlias, OrderItemColumnAlias, *OrderItemScanner](

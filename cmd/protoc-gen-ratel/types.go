@@ -341,6 +341,9 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	if onUpdate != ratelproto.ReferenceAction_NO_ACTION {
 		opts = append(opts, "ddl.WithOnUpdate["+msgName+"ColumnAlias](\""+referenceActionToSQL(onUpdate)+"\")")
 	}
+	if !nullable && !isPK {
+		opts = append(opts, "ddl.WithNotNull["+msgName+"ColumnAlias]()")
+	}
 
 	optStr := ""
 	for _, opt := range opts {
