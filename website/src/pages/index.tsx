@@ -1,5 +1,6 @@
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './index.module.css';
 
 const features = [
@@ -41,7 +42,7 @@ export default function Home() {
       {/* Hero */}
       <section className={styles.hero}>
         <div className={styles.heroBadge}>v0.1 — early access</div>
-        <img src="/img/ratel.png" alt="Ratel" className={styles.heroMascot} />
+        <img src={useBaseUrl('/img/ratel.png')} alt="Ratel" className={styles.heroMascot} />
         <div className={styles.heroLogo}>
           R<span className={styles.heroLogoAccent}>A</span>TEL
         </div>
