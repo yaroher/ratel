@@ -24,6 +24,20 @@ This:
 2. Compares it against the current database state
 3. Produces a migration file in `./migrations/`
 
+## Multiple Packages
+
+When your models are split across packages, pass them all at once to avoid migrations that drop tables from other packages:
+
+```bash
+ratel diff \
+  -p github.com/myapp/auth,github.com/myapp/store \
+  --discover \
+  -d ./migrations \
+  -n init
+```
+
+All tables from all packages are collected into a single schema before diffing.
+
 ## From SQL File
 
 You can also diff against a SQL schema file:
@@ -42,7 +56,7 @@ ratel diff [flags]
 
 Flags:
   -s, --sql string         SQL schema file to compare against
-  -p, --package string     Go package path containing models
+  -p, --package strings    Go package path(s) containing models (comma-separated)
   -t, --tables strings     Table variable names to include
   -d, --discover           Auto-discover tables from source files
   --dir string             Migration directory (default: ./migrations)

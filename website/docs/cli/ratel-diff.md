@@ -18,7 +18,7 @@ ratel diff [flags]
 | Flag | Short | Description |
 |------|-------|-------------|
 | `--sql` | `-s` | SQL schema file to compare against |
-| `--package` | `-p` | Go package path containing models |
+| `--package` | `-p` | Go package path(s) containing models (comma-separated or repeated) |
 | `--tables` | `-t` | Table variable names |
 | `--discover` | `-d` | Auto-discover tables |
 | `--dir` | | Migration directory (default: ./migrations) |
@@ -28,9 +28,13 @@ ratel diff [flags]
 ## Examples
 
 ```bash
-# From Go models
+# From Go models (single package)
 ratel diff -p github.com/myapp/models --discover \
   -d ./migrations -n add_profiles
+
+# From multiple packages
+ratel diff -p github.com/myapp/auth,github.com/myapp/store \
+  --discover -d ./migrations -n init
 
 # From SQL file
 ratel diff -s schema.sql -d ./migrations -n initial

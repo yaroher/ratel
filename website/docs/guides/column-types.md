@@ -56,15 +56,14 @@ Primary key fields with integer types automatically use serial variants:
 
 ## Nullability
 
-A column is nullable when:
+Regular proto3 fields generate `NOT NULL` columns. A column is nullable only when:
 
 1. The field uses a **wrapper type** (`Int64Value`, `StringValue`, etc.)
 2. The field uses proto3 `optional` keyword
-3. The field is explicitly declared nullable in Go models
 
 ```protobuf
 message User {
-  // NOT NULL — required field
+  // NOT NULL — regular proto3 field
   string email = 1;
 
   // NULL — wrapper type
@@ -73,6 +72,14 @@ message User {
   // NULL — optional keyword
   optional string nickname = 3;
 }
+```
+
+Generated DDL:
+
+```sql
+"email" text NOT NULL,
+"bio" text NULL,
+"nickname" text NULL
 ```
 
 ## Type Aliases

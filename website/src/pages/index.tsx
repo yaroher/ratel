@@ -41,7 +41,7 @@ export default function Home() {
     <Layout title="Fearless PostgreSQL ORM for Go" description="Type-safe, compile-time checked PostgreSQL ORM for Go">
       {/* Hero */}
       <section className={styles.hero}>
-        <div className={styles.heroBadge}>v0.1 — early access</div>
+        <div className={styles.heroBadge}>early access</div>
         <img src={useBaseUrl('/img/ratel.png')} alt="Ratel" className={styles.heroMascot} />
         <div className={styles.heroLogo}>
           R<span className={styles.heroLogoAccent}>A</span>TEL
