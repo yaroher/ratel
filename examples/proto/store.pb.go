@@ -245,6 +245,12 @@ type User struct {
 	Email    string      `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	FullName string      `protobuf:"bytes,3,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
 	IsActive bool        `protobuf:"varint,4,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	// Nullable via proto3 optional on Timestamp
+	EmailConfirmedAt *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=email_confirmed_at,json=emailConfirmedAt,proto3,oneof" json:"email_confirmed_at,omitempty"`
+	// Nullable via proto3 optional on scalar
+	Nickname *string `protobuf:"bytes,6,opt,name=nickname,proto3,oneof" json:"nickname,omitempty"`
+	// Nullable via proto3 optional on Timestamp
+	DeletedAt *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=deleted_at,json=deletedAt,proto3,oneof" json:"deleted_at,omitempty"`
 	// OneToMany: User has many Orders
 	Orders []*Order `protobuf:"bytes,10,rep,name=orders,proto3" json:"orders,omitempty"`
 	// HasOne: User has one Profile
@@ -309,6 +315,27 @@ func (x *User) GetIsActive() bool {
 		return x.IsActive
 	}
 	return false
+}
+
+func (x *User) GetEmailConfirmedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EmailConfirmedAt
+	}
+	return nil
+}
+
+func (x *User) GetNickname() string {
+	if x != nil && x.Nickname != nil {
+		return *x.Nickname
+	}
+	return ""
+}
+
+func (x *User) GetDeletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.DeletedAt
+	}
+	return nil
 }
 
 func (x *User) GetOrders() []*Order {
@@ -873,19 +900,26 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"timestamps:\x06\x82\xa6\x1d\x02\b\x01\"T\n" +
 	"\bCurrency\x12\x1c\n" +
 	"\x04code\x18\x01 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x04code\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\xd1\x02\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\xb4\x04\n" +
 	"\x04User\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x1e\n" +
 	"\x05email\x18\x02 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x05email\x12\x1b\n" +
 	"\tfull_name\x18\x03 \x01(\tR\bfullName\x12)\n" +
-	"\tis_active\x18\x04 \x01(\bB\f\x9a\xb5\x18\b\x12\x06\x1a\x04trueR\bisActive\x127\n" +
+	"\tis_active\x18\x04 \x01(\bB\f\x9a\xb5\x18\b\x12\x06\x1a\x04trueR\bisActive\x12M\n" +
+	"\x12email_confirmed_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x10emailConfirmedAt\x88\x01\x01\x12\x1f\n" +
+	"\bnickname\x18\x06 \x01(\tH\x01R\bnickname\x88\x01\x01\x12>\n" +
+	"\n" +
+	"deleted_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampH\x02R\tdeletedAt\x88\x01\x01\x127\n" +
 	"\x06orders\x18\n" +
 	" \x03(\v2\f.store.OrderB\x11\xa2\xb5\x18\r\n" +
 	"\v\n" +
 	"\auser_id\x18\x01R\x06orders\x129\n" +
 	"\aprofile\x18\v \x01(\v2\x0e.store.ProfileB\x0f\xa2\xb5\x18\v\x1a\t\n" +
 	"\auser_idR\aprofile:>\x92\xb5\x184\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
-	"created_atB\x05store\x82\xa6\x1d\x02\b\x01\"\xf1\x01\n" +
+	"created_atB\x05store\x82\xa6\x1d\x02\b\x01B\x15\n" +
+	"\x13_email_confirmed_atB\v\n" +
+	"\t_nicknameB\r\n" +
+	"\v_deleted_at\"\xf1\x01\n" +
 	"\aProfile\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12(\n" +
 	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDR\x06userId\x12\x10\n" +
@@ -992,31 +1026,33 @@ var file_examples_proto_store_proto_depIdxs = []int32{
 	0,  // 2: store.BaseEntity.id:type_name -> store.EntityID
 	1,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
 	2,  // 4: store.User.base:type_name -> store.BaseEntity
-	9,  // 5: store.User.orders:type_name -> store.Order
-	5,  // 6: store.User.profile:type_name -> store.Profile
-	2,  // 7: store.Profile.base:type_name -> store.BaseEntity
-	0,  // 8: store.Profile.user_id:type_name -> store.EntityID
-	4,  // 9: store.Profile.user:type_name -> store.User
-	2,  // 10: store.Category.base:type_name -> store.BaseEntity
-	12, // 11: store.Category.parent_id:type_name -> google.protobuf.Int64Value
-	2,  // 12: store.Tag.base:type_name -> store.BaseEntity
-	2,  // 13: store.Product.base:type_name -> store.BaseEntity
-	6,  // 14: store.Product.categories:type_name -> store.Category
-	7,  // 15: store.Product.tags:type_name -> store.Tag
-	2,  // 16: store.Order.base:type_name -> store.BaseEntity
-	0,  // 17: store.Order.user_id:type_name -> store.EntityID
-	10, // 18: store.Order.items:type_name -> store.OrderItem
-	4,  // 19: store.Order.user:type_name -> store.User
-	3,  // 20: store.Order.money:type_name -> store.Currency
-	0,  // 21: store.OrderItem.order_id:type_name -> store.EntityID
-	0,  // 22: store.OrderItem.product_id:type_name -> store.EntityID
-	9,  // 23: store.OrderItem.order:type_name -> store.Order
-	8,  // 24: store.OrderItem.product:type_name -> store.Product
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	11, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
+	11, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
+	9,  // 7: store.User.orders:type_name -> store.Order
+	5,  // 8: store.User.profile:type_name -> store.Profile
+	2,  // 9: store.Profile.base:type_name -> store.BaseEntity
+	0,  // 10: store.Profile.user_id:type_name -> store.EntityID
+	4,  // 11: store.Profile.user:type_name -> store.User
+	2,  // 12: store.Category.base:type_name -> store.BaseEntity
+	12, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	2,  // 14: store.Tag.base:type_name -> store.BaseEntity
+	2,  // 15: store.Product.base:type_name -> store.BaseEntity
+	6,  // 16: store.Product.categories:type_name -> store.Category
+	7,  // 17: store.Product.tags:type_name -> store.Tag
+	2,  // 18: store.Order.base:type_name -> store.BaseEntity
+	0,  // 19: store.Order.user_id:type_name -> store.EntityID
+	10, // 20: store.Order.items:type_name -> store.OrderItem
+	4,  // 21: store.Order.user:type_name -> store.User
+	3,  // 22: store.Order.money:type_name -> store.Currency
+	0,  // 23: store.OrderItem.order_id:type_name -> store.EntityID
+	0,  // 24: store.OrderItem.product_id:type_name -> store.EntityID
+	9,  // 25: store.OrderItem.order:type_name -> store.Order
+	8,  // 26: store.OrderItem.product:type_name -> store.Product
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
@@ -1024,6 +1060,7 @@ func file_examples_proto_store_proto_init() {
 	if File_examples_proto_store_proto != nil {
 		return
 	}
+	file_examples_proto_store_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

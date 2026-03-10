@@ -94,7 +94,16 @@ message User {
   bool is_active = 4 [(ratel.column) = {
     constraints: { default_value: "true" }
   }];
-  
+
+  // Nullable via proto3 optional on Timestamp
+  optional google.protobuf.Timestamp email_confirmed_at = 5;
+
+  // Nullable via proto3 optional on scalar
+  optional string nickname = 6;
+
+  // Nullable via proto3 optional on Timestamp
+  optional google.protobuf.Timestamp deleted_at = 7;
+
   // OneToMany: User has many Orders
   repeated Order orders = 10 [(ratel.relation) = {
     one_to_many: {

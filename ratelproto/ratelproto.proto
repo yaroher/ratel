@@ -189,7 +189,7 @@ message Constraint {
   bool unique = 1;
   bool primary_key = 2;
   string default_value = 3;
-  
+
   // Raw SQL constraint (overrides above if set)
   string raw = 4;
 }

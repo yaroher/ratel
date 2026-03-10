@@ -85,10 +85,10 @@ func collectRatelTables(f *protogen.File) []*RatelTable {
 				Options:   colOpts,
 				SQLName:   strcase.ToSnake(string(field.Desc.Name())),
 				SQLType:   protoFieldToSQLType(field),
-				GoType:    protoFieldToGoType(field),
 				GoName:    field.GoName,
 				IsSkipped: colOpts != nil && colOpts.Skip,
 			}
+			col.GoType = computeGoType(col)
 
 			if !col.IsSkipped {
 				table.Columns = append(table.Columns, col)
@@ -147,11 +147,11 @@ func collectEmbeddedColumns(msg *protogen.Message, prefix string) []*RatelColumn
 			Options:    colOpts,
 			SQLName:    strcase.ToSnake(string(field.Desc.Name())),
 			SQLType:    protoFieldToSQLType(field),
-			GoType:     protoFieldToGoType(field),
 			GoName:     field.GoName, // Plain struct uses field.GoName directly for embed without prefix
 			IsSkipped:  colOpts != nil && colOpts.Skip,
 			IsEmbedded: true,
 		}
+		col.GoType = computeGoType(col)
 
 		if !col.IsSkipped {
 			cols = append(cols, col)

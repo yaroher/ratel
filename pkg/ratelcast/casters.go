@@ -97,3 +97,37 @@ func Int64ValueToInt64(v *wrapperspb.Int64Value) int64 {
 func Int64ToInt64Value(v int64) *wrapperspb.Int64Value {
 	return wrapperspb.Int64(v)
 }
+
+// TimestampToNullableTime converts *timestamppb.Timestamp to *time.Time
+func TimestampToNullableTime(ts *timestamppb.Timestamp) *time.Time {
+	if ts == nil {
+		return nil
+	}
+	t := ts.AsTime()
+	return &t
+}
+
+// NullableTimeToTimestamp converts *time.Time to *timestamppb.Timestamp
+func NullableTimeToTimestamp(t *time.Time) *timestamppb.Timestamp {
+	if t == nil {
+		return nil
+	}
+	return timestamppb.New(*t)
+}
+
+// DurationPbToNullableDuration converts *durationpb.Duration to *time.Duration
+func DurationPbToNullableDuration(d *durationpb.Duration) *time.Duration {
+	if d == nil {
+		return nil
+	}
+	dur := d.AsDuration()
+	return &dur
+}
+
+// NullableDurationToDurationPb converts *time.Duration to *durationpb.Duration
+func NullableDurationToDurationPb(d *time.Duration) *durationpb.Duration {
+	if d == nil {
+		return nil
+	}
+	return durationpb.New(*d)
+}

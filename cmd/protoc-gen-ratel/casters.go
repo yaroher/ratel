@@ -158,6 +158,78 @@ func getRatelCasters() []*generator.ExistingCaster {
 			},
 			IsFunc: true,
 		},
+		// *timestamppb.Timestamp -> *time.Time (nullable)
+		{
+			SourceType: generator.GoType{
+				Name:       "Timestamp",
+				ImportPath: "google.golang.org/protobuf/types/known/timestamppb",
+				IsPointer:  true,
+			},
+			TargetType: generator.GoType{
+				Name:       "Time",
+				ImportPath: "time",
+				IsPointer:  true,
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "TimestampToNullableTime",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
+		// *time.Time -> *timestamppb.Timestamp (nullable)
+		{
+			SourceType: generator.GoType{
+				Name:       "Time",
+				ImportPath: "time",
+				IsPointer:  true,
+			},
+			TargetType: generator.GoType{
+				Name:       "Timestamp",
+				ImportPath: "google.golang.org/protobuf/types/known/timestamppb",
+				IsPointer:  true,
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "NullableTimeToTimestamp",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
+		// *durationpb.Duration -> *time.Duration (nullable)
+		{
+			SourceType: generator.GoType{
+				Name:       "Duration",
+				ImportPath: "google.golang.org/protobuf/types/known/durationpb",
+				IsPointer:  true,
+			},
+			TargetType: generator.GoType{
+				Name:       "Duration",
+				ImportPath: "time",
+				IsPointer:  true,
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "DurationPbToNullableDuration",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
+		// *time.Duration -> *durationpb.Duration (nullable)
+		{
+			SourceType: generator.GoType{
+				Name:       "Duration",
+				ImportPath: "time",
+				IsPointer:  true,
+			},
+			TargetType: generator.GoType{
+				Name:       "Duration",
+				ImportPath: "google.golang.org/protobuf/types/known/durationpb",
+				IsPointer:  true,
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "NullableDurationToDurationPb",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
 	}
 }
 

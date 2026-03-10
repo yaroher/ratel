@@ -124,12 +124,15 @@ type UserColumnAlias string
 func (c UserColumnAlias) String() string { return string(c) }
 
 const (
-	UserColumnId        UserColumnAlias = "id"
-	UserColumnCreatedAt UserColumnAlias = "created_at"
-	UserColumnUpdatedAt UserColumnAlias = "updated_at"
-	UserColumnEmail     UserColumnAlias = "email"
-	UserColumnFullName  UserColumnAlias = "full_name"
-	UserColumnIsActive  UserColumnAlias = "is_active"
+	UserColumnId               UserColumnAlias = "id"
+	UserColumnCreatedAt        UserColumnAlias = "created_at"
+	UserColumnUpdatedAt        UserColumnAlias = "updated_at"
+	UserColumnEmail            UserColumnAlias = "email"
+	UserColumnFullName         UserColumnAlias = "full_name"
+	UserColumnIsActive         UserColumnAlias = "is_active"
+	UserColumnEmailConfirmedAt UserColumnAlias = "email_confirmed_at"
+	UserColumnNickname         UserColumnAlias = "nickname"
+	UserColumnDeletedAt        UserColumnAlias = "deleted_at"
 )
 
 func (s *UserScanner) GetTarget(col string) func() any {
@@ -146,6 +149,12 @@ func (s *UserScanner) GetTarget(col string) func() any {
 		return func() any { return &s.FullName }
 	case UserColumnIsActive:
 		return func() any { return &s.IsActive }
+	case UserColumnEmailConfirmedAt:
+		return func() any { return &s.EmailConfirmedAt }
+	case UserColumnNickname:
+		return func() any { return &s.Nickname }
+	case UserColumnDeletedAt:
+		return func() any { return &s.DeletedAt }
 	default:
 		panic("unknown field: " + col)
 	}
@@ -165,6 +174,12 @@ func (s *UserScanner) GetSetter(f UserColumnAlias) func() set.ValueSetter[UserCo
 		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.FullName) }
 	case UserColumnIsActive:
 		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.IsActive) }
+	case UserColumnEmailConfirmedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.EmailConfirmedAt) }
+	case UserColumnNickname:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.Nickname) }
+	case UserColumnDeletedAt:
+		return func() set.ValueSetter[UserColumnAlias] { return set.NewSetter(f, &s.DeletedAt) }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -184,6 +199,12 @@ func (s *UserScanner) GetValue(f UserColumnAlias) func() any {
 		return func() any { return s.FullName }
 	case UserColumnIsActive:
 		return func() any { return s.IsActive }
+	case UserColumnEmailConfirmedAt:
+		return func() any { return s.EmailConfirmedAt }
+	case UserColumnNickname:
+		return func() any { return s.Nickname }
+	case UserColumnDeletedAt:
+		return func() any { return s.DeletedAt }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -283,12 +304,15 @@ func UsersWithAllRelations() exec.QueryOption[UserColumnAlias, *UserScanner] {
 // UsersTable represents the users table with its columns
 type UsersTable struct {
 	*schema.Table[UserAlias, UserColumnAlias, *UserScanner]
-	Id        schema.BigSerialColumnI[UserColumnAlias]
-	CreatedAt schema.TimestamptzColumnI[UserColumnAlias]
-	UpdatedAt schema.TimestamptzColumnI[UserColumnAlias]
-	Email     schema.TextColumnI[UserColumnAlias]
-	FullName  schema.TextColumnI[UserColumnAlias]
-	IsActive  schema.BooleanColumnI[UserColumnAlias]
+	Id               schema.BigSerialColumnI[UserColumnAlias]
+	CreatedAt        schema.TimestamptzColumnI[UserColumnAlias]
+	UpdatedAt        schema.TimestamptzColumnI[UserColumnAlias]
+	Email            schema.TextColumnI[UserColumnAlias]
+	FullName         schema.TextColumnI[UserColumnAlias]
+	IsActive         schema.BooleanColumnI[UserColumnAlias]
+	EmailConfirmedAt schema.NullTimestamptzColumnI[UserColumnAlias]
+	Nickname         schema.NullTextColumnI[UserColumnAlias]
+	DeletedAt        schema.NullTimestamptzColumnI[UserColumnAlias]
 }
 
 // Users is the global users table instance
@@ -299,6 +323,9 @@ var Users = func() UsersTable {
 	emailCol := schema.TextColumn(UserColumnEmail, ddl.WithUnique[UserColumnAlias]())
 	fullNameCol := schema.TextColumn(UserColumnFullName)
 	isActiveCol := schema.BooleanColumn(UserColumnIsActive, ddl.WithDefault[UserColumnAlias]("true"))
+	emailConfirmedAtCol := schema.NullTimestamptzColumn(UserColumnEmailConfirmedAt)
+	nicknameCol := schema.NullTextColumn(UserColumnNickname)
+	deletedAtCol := schema.NullTimestamptzColumn(UserColumnDeletedAt)
 
 	idx0 := ddl.NewIndex[UserAlias, UserColumnAlias]("idx_users_email", UserAliasName).OnColumns(UserColumnEmail)
 	idx0 = idx0.Unique()
@@ -315,6 +342,9 @@ var Users = func() UsersTable {
 				emailCol.DDL(),
 				fullNameCol.DDL(),
 				isActiveCol.DDL(),
+				emailConfirmedAtCol.DDL(),
+				nicknameCol.DDL(),
+				deletedAtCol.DDL(),
 			},
 			ddl.WithIndexes[UserAlias, UserColumnAlias](
 				idx0,
@@ -322,12 +352,15 @@ var Users = func() UsersTable {
 			),
 			ddl.WithSchema[UserAlias, UserColumnAlias]("store"),
 		),
-		Id:        idCol,
-		CreatedAt: createdAtCol,
-		UpdatedAt: updatedAtCol,
-		Email:     emailCol,
-		FullName:  fullNameCol,
-		IsActive:  isActiveCol,
+		Id:               idCol,
+		CreatedAt:        createdAtCol,
+		UpdatedAt:        updatedAtCol,
+		Email:            emailCol,
+		FullName:         fullNameCol,
+		IsActive:         isActiveCol,
+		EmailConfirmedAt: emailConfirmedAtCol,
+		Nickname:         nicknameCol,
+		DeletedAt:        deletedAtCol,
 	}
 }()
 
@@ -613,7 +646,7 @@ type CategorysTable struct {
 	UpdatedAt schema.TimestamptzColumnI[CategoryColumnAlias]
 	Name      schema.TextColumnI[CategoryColumnAlias]
 	Slug      schema.TextColumnI[CategoryColumnAlias]
-	ParentId  schema.NullBigIntColumnI[CategoryColumnAlias]
+	ParentId  schema.NullTextColumnI[CategoryColumnAlias]
 }
 
 // Categorys is the global categories table instance
@@ -623,7 +656,7 @@ var Categorys = func() CategorysTable {
 	updatedAtCol := schema.TimestamptzColumn(CategoryColumnUpdatedAt, ddl.WithDefault[CategoryColumnAlias]("now()"))
 	nameCol := schema.TextColumn(CategoryColumnName)
 	slugCol := schema.TextColumn(CategoryColumnSlug, ddl.WithUnique[CategoryColumnAlias]())
-	parentIdCol := schema.NullBigIntColumn(CategoryColumnParentId)
+	parentIdCol := schema.NullTextColumn(CategoryColumnParentId)
 
 	return CategorysTable{
 		Table: schema.NewTable[CategoryAlias, CategoryColumnAlias, *CategoryScanner](

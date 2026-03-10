@@ -7,6 +7,39 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// isWrapperType checks if a message field is a protobuf wrapper type
+func isWrapperType(field *protogen.Field) bool {
+	if field.Message == nil {
+		return false
+	}
+	switch string(field.Message.Desc.FullName()) {
+	case "google.protobuf.Int64Value", "google.protobuf.UInt64Value",
+		"google.protobuf.Int32Value", "google.protobuf.UInt32Value",
+		"google.protobuf.StringValue", "google.protobuf.BoolValue",
+		"google.protobuf.FloatValue", "google.protobuf.DoubleValue",
+		"google.protobuf.BytesValue":
+		return true
+	}
+	return false
+}
+
+// isFieldNullable determines if a column should be nullable.
+// Sources: wrapper type (e.g. StringValue), proto3 optional keyword.
+func isFieldNullable(col *RatelColumn) bool {
+	return isWrapperType(col.Field) || col.Field.Desc.HasOptionalKeyword()
+}
+
+// computeGoType returns the Go type for a column, wrapping in pointer if nullable.
+// PK fields are never nullable.
+func computeGoType(col *RatelColumn) string {
+	isPK := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.PrimaryKey
+	base := protoFieldToBaseGoType(col.Field)
+	if !isPK && isFieldNullable(col) {
+		return "*" + base
+	}
+	return base
+}
+
 // protoFieldToSQLType converts a protobuf field to SQL type
 func protoFieldToSQLType(field *protogen.Field) string {
 	// Check for well-known types first
@@ -94,9 +127,9 @@ func protoKindToSQLType(kind protoreflect.Kind) string {
 	}
 }
 
-// protoFieldToGoType converts a protobuf field to Go type string
-func protoFieldToGoType(field *protogen.Field) string {
-	// Check for well-known types
+// protoFieldToBaseGoType converts a protobuf field to its base (non-pointer) Go type string.
+// For nullable fields, the caller wraps this in a pointer.
+func protoFieldToBaseGoType(field *protogen.Field) string {
 	if field.Message != nil {
 		fullName := string(field.Message.Desc.FullName())
 		switch fullName {
@@ -104,30 +137,30 @@ func protoFieldToGoType(field *protogen.Field) string {
 			return "time.Time"
 		case "google.protobuf.Duration":
 			return "time.Duration"
+		// Wrapper types -> same base type as their scalar
 		case "google.protobuf.Int64Value":
-			return "*int64"
+			return "int64"
 		case "google.protobuf.Int32Value":
-			return "*int32"
+			return "int32"
 		case "google.protobuf.UInt64Value":
-			return "*uint64"
+			return "uint64"
 		case "google.protobuf.UInt32Value":
-			return "*uint32"
+			return "uint32"
 		case "google.protobuf.StringValue":
-			return "*string"
+			return "string"
 		case "google.protobuf.BoolValue":
-			return "*bool"
+			return "bool"
 		case "google.protobuf.FloatValue":
-			return "*float32"
+			return "float32"
 		case "google.protobuf.DoubleValue":
-			return "*float64"
+			return "float64"
+		case "google.protobuf.BytesValue":
+			return "[]byte"
 		}
 
-		// Check for type_alias messages
 		if isTypeAlias(field.Message) {
-			// Get the wrapped scalar type
 			if len(field.Message.Fields) > 0 {
-				valueField := field.Message.Fields[0]
-				return protoKindToGoType(valueField.Desc.Kind())
+				return protoKindToGoType(field.Message.Fields[0].Desc.Kind())
 			}
 		}
 	}
@@ -161,92 +194,90 @@ func protoKindToGoType(kind protoreflect.Kind) string {
 	}
 }
 
-// getSchemaColumnType returns the schema.XxxColumnI type for a column
 func getSchemaColumnType(col *RatelColumn, msgName string) string {
 	isPK := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.PrimaryKey
-	kind := col.Field.Desc.Kind()
+	nullable := isFieldNullable(col)
+	alias := msgName + "ColumnAlias"
 
-	// Check for type_alias messages first
+	kind := col.Field.Desc.Kind()
 	if col.Field.Message != nil && isTypeAlias(col.Field.Message) {
 		if len(col.Field.Message.Fields) > 0 {
-			valueField := col.Field.Message.Fields[0]
-			kind = valueField.Desc.Kind()
+			kind = col.Field.Message.Fields[0].Desc.Kind()
 		}
 	}
 
-	// For int64 primary keys, use BigSerialColumn
+	// PK overrides — never nullable
 	if isPK && kind == protoreflect.Int64Kind {
-		return "schema.BigSerialColumnI[" + msgName + "ColumnAlias]"
+		return "schema.BigSerialColumnI[" + alias + "]"
 	}
-
-	// For string primary keys
 	if isPK && kind == protoreflect.StringKind {
-		return "schema.TextColumnI[" + msgName + "ColumnAlias]"
+		return "schema.TextColumnI[" + alias + "]"
 	}
 
-	// Check for well-known types
+	// Well-known message types
 	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) {
 		fullName := string(col.Field.Message.Desc.FullName())
 		switch fullName {
 		case "google.protobuf.Timestamp":
-			return "schema.TimestamptzColumnI[" + msgName + "ColumnAlias]"
+			if nullable {
+				return "schema.NullTimestamptzColumnI[" + alias + "]"
+			}
+			return "schema.TimestamptzColumnI[" + alias + "]"
 		case "google.protobuf.Duration":
-			return "schema.IntervalColumnI[" + msgName + "ColumnAlias]"
-		case "google.protobuf.Int64Value":
-			return "schema.NullBigIntColumnI[" + msgName + "ColumnAlias]"
-		case "google.protobuf.Int32Value":
-			return "schema.NullIntegerColumnI[" + msgName + "ColumnAlias]"
-		case "google.protobuf.StringValue":
-			return "schema.NullTextColumnI[" + msgName + "ColumnAlias]"
-		case "google.protobuf.BoolValue":
-			return "schema.NullBooleanColumnI[" + msgName + "ColumnAlias]"
+			if nullable {
+				return "schema.NullIntervalColumnI[" + alias + "]"
+			}
+			return "schema.IntervalColumnI[" + alias + "]"
 		case "google.protobuf.Struct":
-			return "schema.JSONColumnI[" + msgName + "ColumnAlias]"
+			if nullable {
+				return "schema.NullJSONColumnI[" + alias + "]"
+			}
+			return "schema.JSONColumnI[" + alias + "]"
 		}
 	}
 
-	// For other types
+	// Scalars and wrapper types (wrappers resolved to base kind via isWrapperType)
+	prefix := "schema."
+	if nullable {
+		prefix = "schema.Null"
+	}
 	switch kind {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		return "schema.IntegerColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "IntegerColumnI[" + alias + "]"
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
-		return "schema.BigIntColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "BigIntColumnI[" + alias + "]"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "schema.IntegerColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "IntegerColumnI[" + alias + "]"
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "schema.BigIntColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "BigIntColumnI[" + alias + "]"
 	case protoreflect.StringKind:
-		return "schema.TextColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "TextColumnI[" + alias + "]"
 	case protoreflect.BoolKind:
-		return "schema.BooleanColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "BooleanColumnI[" + alias + "]"
 	case protoreflect.FloatKind:
-		return "schema.RealColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "RealColumnI[" + alias + "]"
 	case protoreflect.DoubleKind:
-		return "schema.DoublePrecisionColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "DoublePrecisionColumnI[" + alias + "]"
 	case protoreflect.BytesKind:
-		return "schema.ByteaColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "ByteaColumnI[" + alias + "]"
 	default:
-		return "schema.TextColumnI[" + msgName + "ColumnAlias]"
+		return prefix + "TextColumnI[" + alias + "]"
 	}
 }
 
-// getSchemaColumnConstructor returns the schema.XxxColumn constructor call for a column
-// msgName is the name of the parent message (table) that owns this column
 func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName string) string {
 	isPK := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.PrimaryKey
 	isUnique := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.Unique
+	nullable := isFieldNullable(col)
 	defaultVal := ""
 	if col.Options != nil && col.Options.Constraints != nil {
 		defaultVal = col.Options.Constraints.DefaultValue
 	}
 
 	kind := col.Field.Desc.Kind()
-
-	// Check for type_alias messages
 	if col.Field.Message != nil && isTypeAlias(col.Field.Message) {
 		if len(col.Field.Message.Fields) > 0 {
-			valueField := col.Field.Message.Fields[0]
-			kind = valueField.Desc.Kind()
+			kind = col.Field.Message.Fields[0].Desc.Kind()
 		}
 	}
 
@@ -263,56 +294,64 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	}
 
 	optStr := ""
-	if len(opts) > 0 {
-		for _, opt := range opts {
-			optStr += ", " + opt
-		}
+	for _, opt := range opts {
+		optStr += ", " + opt
 	}
 
-	// Check for well-known types
-	if col.Field.Message != nil {
-		fullName := string(col.Field.Message.Desc.FullName())
-		switch fullName {
-		case "google.protobuf.Timestamp":
-			return "schema.TimestamptzColumn(" + constName + optStr + ")"
-		case "google.protobuf.Duration":
-			return "schema.IntervalColumn(" + constName + optStr + ")"
-		case "google.protobuf.Int64Value":
-			return "schema.NullBigIntColumn(" + constName + optStr + ")"
-		case "google.protobuf.Int32Value":
-			return "schema.NullIntegerColumn(" + constName + optStr + ")"
-		case "google.protobuf.StringValue":
-			return "schema.NullTextColumn(" + constName + optStr + ")"
-		case "google.protobuf.BoolValue":
-			return "schema.NullBooleanColumn(" + constName + optStr + ")"
-		}
-	}
-
-	// For int64 primary keys, use BigSerialColumn
+	// PK overrides — never nullable, must come first
 	if isPK && kind == protoreflect.Int64Kind {
 		return "schema.BigSerialColumn(" + constName + optStr + ")"
 	}
+	if isPK && kind == protoreflect.StringKind {
+		return "schema.TextColumn(" + constName + optStr + ")"
+	}
 
+	// Well-known message types
+	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) {
+		fullName := string(col.Field.Message.Desc.FullName())
+		switch fullName {
+		case "google.protobuf.Timestamp":
+			if nullable {
+				return "schema.NullTimestamptzColumn(" + constName + optStr + ")"
+			}
+			return "schema.TimestamptzColumn(" + constName + optStr + ")"
+		case "google.protobuf.Duration":
+			if nullable {
+				return "schema.NullIntervalColumn(" + constName + optStr + ")"
+			}
+			return "schema.IntervalColumn(" + constName + optStr + ")"
+		case "google.protobuf.Struct":
+			if nullable {
+				return "schema.NullJSONColumn(" + constName + optStr + ")"
+			}
+			return "schema.JSONColumn(" + constName + optStr + ")"
+		}
+	}
+
+	prefix := "schema."
+	if nullable {
+		prefix = "schema.Null"
+	}
 	switch kind {
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		return "schema.IntegerColumn(" + constName + optStr + ")"
+		return prefix + "IntegerColumn(" + constName + optStr + ")"
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
-		return "schema.BigIntColumn(" + constName + optStr + ")"
+		return prefix + "BigIntColumn(" + constName + optStr + ")"
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return "schema.IntegerColumn(" + constName + optStr + ")"
+		return prefix + "IntegerColumn(" + constName + optStr + ")"
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return "schema.BigIntColumn(" + constName + optStr + ")"
+		return prefix + "BigIntColumn(" + constName + optStr + ")"
 	case protoreflect.StringKind:
-		return "schema.TextColumn(" + constName + optStr + ")"
+		return prefix + "TextColumn(" + constName + optStr + ")"
 	case protoreflect.BoolKind:
-		return "schema.BooleanColumn(" + constName + optStr + ")"
+		return prefix + "BooleanColumn(" + constName + optStr + ")"
 	case protoreflect.FloatKind:
-		return "schema.RealColumn(" + constName + optStr + ")"
+		return prefix + "RealColumn(" + constName + optStr + ")"
 	case protoreflect.DoubleKind:
-		return "schema.DoublePrecisionColumn(" + constName + optStr + ")"
+		return prefix + "DoublePrecisionColumn(" + constName + optStr + ")"
 	case protoreflect.BytesKind:
-		return "schema.ByteaColumn(" + constName + optStr + ")"
+		return prefix + "ByteaColumn(" + constName + optStr + ")"
 	default:
-		return "schema.TextColumn(" + constName + optStr + ")"
+		return prefix + "TextColumn(" + constName + optStr + ")"
 	}
 }

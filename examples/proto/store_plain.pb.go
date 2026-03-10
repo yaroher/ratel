@@ -139,14 +139,17 @@ func (p *CurrencyScanner) IntoPb() *Currency {
 //	User - пользователь системы (с BaseEntity)
 //	============================================================================
 type UserScanner struct {
-	Id        int64           `json:"id"` // origin: embed, empath: id
-	CreatedAt time.Time       `json:"createdAt"`
-	UpdatedAt time.Time       `json:"updatedAt"`
-	Email     string          `json:"email"`
-	FullName  string          `json:"fullName"`
-	IsActive  bool            `json:"isActive"`
-	Orders    []OrderScanner  `json:"orders"`
-	Profile   *ProfileScanner `json:"profile"`
+	Id               int64           `json:"id"` // origin: embed, empath: id
+	CreatedAt        time.Time       `json:"createdAt"`
+	UpdatedAt        time.Time       `json:"updatedAt"`
+	Email            string          `json:"email"`
+	FullName         string          `json:"fullName"`
+	IsActive         bool            `json:"isActive"`
+	EmailConfirmedAt *time.Time      `json:"emailConfirmedAt,omitempty"`
+	Nickname         *string         `json:"nickname,omitempty"`
+	DeletedAt        *time.Time      `json:"deletedAt,omitempty"`
+	Orders           []OrderScanner  `json:"orders"`
+	Profile          *ProfileScanner `json:"profile"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -171,6 +174,15 @@ func (pb *User) IntoPlain() *UserScanner {
 	p.Email = pb.Email
 	p.FullName = pb.FullName
 	p.IsActive = pb.IsActive
+	if pb.EmailConfirmedAt != nil {
+		_tmp := ratelcast.TimestampToTime(pb.EmailConfirmedAt)
+		p.EmailConfirmedAt = &_tmp
+	}
+	p.Nickname = pb.Nickname
+	if pb.DeletedAt != nil {
+		_tmp := ratelcast.TimestampToTime(pb.DeletedAt)
+		p.DeletedAt = &_tmp
+	}
 	if len(pb.Orders) > 0 {
 		p.Orders = make([]OrderScanner, len(pb.Orders))
 		for i, v := range pb.Orders {
@@ -219,6 +231,13 @@ func (p *UserScanner) IntoPb() *User {
 	pb.Email = p.Email
 	pb.FullName = p.FullName
 	pb.IsActive = p.IsActive
+	if p.EmailConfirmedAt != nil {
+		pb.EmailConfirmedAt = ratelcast.TimeToTimestamp(*p.EmailConfirmedAt)
+	}
+	pb.Nickname = p.Nickname
+	if p.DeletedAt != nil {
+		pb.DeletedAt = ratelcast.TimeToTimestamp(*p.DeletedAt)
+	}
 	if len(p.Orders) > 0 {
 		pb.Orders = make([]*Order, len(p.Orders))
 		for i := range p.Orders {
