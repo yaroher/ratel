@@ -17,6 +17,10 @@
   <a href="https://github.com/yaroher/ratel/actions/workflows/ci.yml"><img src="https://github.com/yaroher/ratel/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
 </p>
 
+<p align="center">
+  <a href="https://yaroher.github.io/ratel/"><strong>Documentation</strong></a>
+</p>
+
 ---
 
 ```bash
