@@ -221,7 +221,13 @@ message Product {
   
   double price = 4;
   
-  string currency = 5;  // FK to currency.code
+  string currency = 5 [(ratel.column) = {
+    constraints: {
+      references_table: "currency"
+      references_column: "code"
+      on_delete: RESTRICT
+    }
+  }];  // FK to currency.code
   
   int32 stock_qty = 6 [(ratel.column) = {
     constraints: { default_value: "0" }
@@ -274,7 +280,13 @@ message Order {
     constraints: { default_value: "'NEW'" }
   }];
   
-  string currency = 4;  // FK to currency.code
+  string currency = 4 [(ratel.column) = {
+    constraints: {
+      references_table: "currency"
+      references_column: "code"
+      on_delete: RESTRICT
+    }
+  }];  // FK to currency.code
   
   // OneToMany: Order has many OrderItems
   repeated OrderItem items = 10 [(ratel.relation) = {

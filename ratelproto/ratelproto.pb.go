@@ -22,6 +22,62 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// SQL referential action for ON DELETE / ON UPDATE
+type ReferenceAction int32
+
+const (
+	ReferenceAction_NO_ACTION   ReferenceAction = 0 // default PostgreSQL behavior, not emitted in DDL
+	ReferenceAction_CASCADE     ReferenceAction = 1
+	ReferenceAction_SET_NULL    ReferenceAction = 2
+	ReferenceAction_SET_DEFAULT ReferenceAction = 3
+	ReferenceAction_RESTRICT    ReferenceAction = 4
+)
+
+// Enum value maps for ReferenceAction.
+var (
+	ReferenceAction_name = map[int32]string{
+		0: "NO_ACTION",
+		1: "CASCADE",
+		2: "SET_NULL",
+		3: "SET_DEFAULT",
+		4: "RESTRICT",
+	}
+	ReferenceAction_value = map[string]int32{
+		"NO_ACTION":   0,
+		"CASCADE":     1,
+		"SET_NULL":    2,
+		"SET_DEFAULT": 3,
+		"RESTRICT":    4,
+	}
+)
+
+func (x ReferenceAction) Enum() *ReferenceAction {
+	p := new(ReferenceAction)
+	*p = x
+	return p
+}
+
+func (x ReferenceAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ReferenceAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_ratelproto_proto_enumTypes[0].Descriptor()
+}
+
+func (ReferenceAction) Type() protoreflect.EnumType {
+	return &file_ratelproto_proto_enumTypes[0]
+}
+
+func (x ReferenceAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ReferenceAction.Descriptor instead.
+func (ReferenceAction) EnumDescriptor() ([]byte, []int) {
+	return file_ratelproto_proto_rawDescGZIP(), []int{0}
+}
+
 type Table struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Generate table schema for this message
@@ -369,9 +425,15 @@ type Constraint struct {
 	Raw string `protobuf:"bytes,4,opt,name=raw,proto3" json:"raw,omitempty"`
 	// CHECK expression, combinable with other constraints
 	// Example: check: "id <> ”"  →  CHECK (id <> ”)
-	Check         string `protobuf:"bytes,5,opt,name=check,proto3" json:"check,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Check string `protobuf:"bytes,5,opt,name=check,proto3" json:"check,omitempty"`
+	// Foreign key reference (REFERENCES clause)
+	// Example: references_table: "\"auth\".\"users\"", references_column: "id"
+	ReferencesTable  string          `protobuf:"bytes,6,opt,name=references_table,json=referencesTable,proto3" json:"references_table,omitempty"`
+	ReferencesColumn string          `protobuf:"bytes,7,opt,name=references_column,json=referencesColumn,proto3" json:"references_column,omitempty"`
+	OnDelete         ReferenceAction `protobuf:"varint,8,opt,name=on_delete,json=onDelete,proto3,enum=ratel.ReferenceAction" json:"on_delete,omitempty"`
+	OnUpdate         ReferenceAction `protobuf:"varint,9,opt,name=on_update,json=onUpdate,proto3,enum=ratel.ReferenceAction" json:"on_update,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Constraint) Reset() {
@@ -437,6 +499,34 @@ func (x *Constraint) GetCheck() string {
 		return x.Check
 	}
 	return ""
+}
+
+func (x *Constraint) GetReferencesTable() string {
+	if x != nil {
+		return x.ReferencesTable
+	}
+	return ""
+}
+
+func (x *Constraint) GetReferencesColumn() string {
+	if x != nil {
+		return x.ReferencesColumn
+	}
+	return ""
+}
+
+func (x *Constraint) GetOnDelete() ReferenceAction {
+	if x != nil {
+		return x.OnDelete
+	}
+	return ReferenceAction_NO_ACTION
+}
+
+func (x *Constraint) GetOnUpdate() ReferenceAction {
+	if x != nil {
+		return x.OnUpdate
+	}
+	return ReferenceAction_NO_ACTION
 }
 
 type VirtualColumn struct {
@@ -1076,7 +1166,7 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\vexpressions\x18\a \x03(\tR\vexpressions\x12\x1e\n" +
 	"\n" +
 	"concurrent\x18\b \x01(\bR\n" +
-	"concurrent\"\x92\x01\n" +
+	"concurrent\"\xd4\x02\n" +
 	"\n" +
 	"Constraint\x12\x16\n" +
 	"\x06unique\x18\x01 \x01(\bR\x06unique\x12\x1f\n" +
@@ -1084,7 +1174,11 @@ const file_ratelproto_proto_rawDesc = "" +
 	"primaryKey\x12#\n" +
 	"\rdefault_value\x18\x03 \x01(\tR\fdefaultValue\x12\x10\n" +
 	"\x03raw\x18\x04 \x01(\tR\x03raw\x12\x14\n" +
-	"\x05check\x18\x05 \x01(\tR\x05check\"\xb6\x01\n" +
+	"\x05check\x18\x05 \x01(\tR\x05check\x12)\n" +
+	"\x10references_table\x18\x06 \x01(\tR\x0freferencesTable\x12+\n" +
+	"\x11references_column\x18\a \x01(\tR\x10referencesColumn\x123\n" +
+	"\ton_delete\x18\b \x01(\x0e2\x16.ratel.ReferenceActionR\bonDelete\x123\n" +
+	"\ton_update\x18\t \x01(\x0e2\x16.ratel.ReferenceActionR\bonUpdate\"\xb6\x01\n" +
 	"\rVirtualColumn\x12\x19\n" +
 	"\bsql_name\x18\x01 \x01(\tR\asqlName\x12\x19\n" +
 	"\bsql_type\x18\x02 \x01(\tR\asqlType\x123\n" +
@@ -1131,7 +1225,13 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\n" +
 	"belongs_to\x18\x04 \x01(\v2\x10.ratel.BelongsToH\x00R\tbelongsToB\n" +
 	"\n" +
-	"\brelation:G\n" +
+	"\brelation*Z\n" +
+	"\x0fReferenceAction\x12\r\n" +
+	"\tNO_ACTION\x10\x00\x12\v\n" +
+	"\aCASCADE\x10\x01\x12\f\n" +
+	"\bSET_NULL\x10\x02\x12\x0f\n" +
+	"\vSET_DEFAULT\x10\x03\x12\f\n" +
+	"\bRESTRICT\x10\x04:G\n" +
 	"\x0fadditional_code\x12\x1c.google.protobuf.FileOptions\x18І\x03 \x03(\tR\x0eadditionalCode:S\n" +
 	"\x0evirtual_tables\x12\x1c.google.protobuf.FileOptions\x18ц\x03 \x03(\v2\f.ratel.TableR\rvirtualTables:E\n" +
 	"\x05table\x12\x1f.google.protobuf.MessageOptions\x18҆\x03 \x01(\v2\f.ratel.TableR\x05table:F\n" +
@@ -1150,50 +1250,54 @@ func file_ratelproto_proto_rawDescGZIP() []byte {
 	return file_ratelproto_proto_rawDescData
 }
 
+var file_ratelproto_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_ratelproto_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_ratelproto_proto_goTypes = []any{
-	(*Table)(nil),                       // 0: ratel.Table
-	(*UniqueConstraint)(nil),            // 1: ratel.UniqueConstraint
-	(*PrimaryKey)(nil),                  // 2: ratel.PrimaryKey
-	(*Index)(nil),                       // 3: ratel.Index
-	(*Constraint)(nil),                  // 4: ratel.Constraint
-	(*VirtualColumn)(nil),               // 5: ratel.VirtualColumn
-	(*Column)(nil),                      // 6: ratel.Column
-	(*OneToMany)(nil),                   // 7: ratel.OneToMany
-	(*HasOne)(nil),                      // 8: ratel.HasOne
-	(*BelongsTo)(nil),                   // 9: ratel.BelongsTo
-	(*ManyToMany)(nil),                  // 10: ratel.ManyToMany
-	(*Relation)(nil),                    // 11: ratel.Relation
-	(*descriptorpb.FileOptions)(nil),    // 12: google.protobuf.FileOptions
-	(*descriptorpb.MessageOptions)(nil), // 13: google.protobuf.MessageOptions
-	(*descriptorpb.FieldOptions)(nil),   // 14: google.protobuf.FieldOptions
+	(ReferenceAction)(0),                // 0: ratel.ReferenceAction
+	(*Table)(nil),                       // 1: ratel.Table
+	(*UniqueConstraint)(nil),            // 2: ratel.UniqueConstraint
+	(*PrimaryKey)(nil),                  // 3: ratel.PrimaryKey
+	(*Index)(nil),                       // 4: ratel.Index
+	(*Constraint)(nil),                  // 5: ratel.Constraint
+	(*VirtualColumn)(nil),               // 6: ratel.VirtualColumn
+	(*Column)(nil),                      // 7: ratel.Column
+	(*OneToMany)(nil),                   // 8: ratel.OneToMany
+	(*HasOne)(nil),                      // 9: ratel.HasOne
+	(*BelongsTo)(nil),                   // 10: ratel.BelongsTo
+	(*ManyToMany)(nil),                  // 11: ratel.ManyToMany
+	(*Relation)(nil),                    // 12: ratel.Relation
+	(*descriptorpb.FileOptions)(nil),    // 13: google.protobuf.FileOptions
+	(*descriptorpb.MessageOptions)(nil), // 14: google.protobuf.MessageOptions
+	(*descriptorpb.FieldOptions)(nil),   // 15: google.protobuf.FieldOptions
 }
 var file_ratelproto_proto_depIdxs = []int32{
-	5,  // 0: ratel.Table.virtual_columns:type_name -> ratel.VirtualColumn
-	3,  // 1: ratel.Table.indexes:type_name -> ratel.Index
-	1,  // 2: ratel.Table.unique:type_name -> ratel.UniqueConstraint
-	2,  // 3: ratel.Table.primary_key:type_name -> ratel.PrimaryKey
-	4,  // 4: ratel.VirtualColumn.constraints:type_name -> ratel.Constraint
-	4,  // 5: ratel.Column.constraints:type_name -> ratel.Constraint
-	0,  // 6: ratel.ManyToMany.pivot_table:type_name -> ratel.Table
-	7,  // 7: ratel.Relation.one_to_many:type_name -> ratel.OneToMany
-	10, // 8: ratel.Relation.many_to_many:type_name -> ratel.ManyToMany
-	8,  // 9: ratel.Relation.has_one:type_name -> ratel.HasOne
-	9,  // 10: ratel.Relation.belongs_to:type_name -> ratel.BelongsTo
-	12, // 11: ratel.additional_code:extendee -> google.protobuf.FileOptions
-	12, // 12: ratel.virtual_tables:extendee -> google.protobuf.FileOptions
-	13, // 13: ratel.table:extendee -> google.protobuf.MessageOptions
-	14, // 14: ratel.column:extendee -> google.protobuf.FieldOptions
-	14, // 15: ratel.relation:extendee -> google.protobuf.FieldOptions
-	0,  // 16: ratel.virtual_tables:type_name -> ratel.Table
-	0,  // 17: ratel.table:type_name -> ratel.Table
-	6,  // 18: ratel.column:type_name -> ratel.Column
-	11, // 19: ratel.relation:type_name -> ratel.Relation
-	20, // [20:20] is the sub-list for method output_type
-	20, // [20:20] is the sub-list for method input_type
-	16, // [16:20] is the sub-list for extension type_name
-	11, // [11:16] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	6,  // 0: ratel.Table.virtual_columns:type_name -> ratel.VirtualColumn
+	4,  // 1: ratel.Table.indexes:type_name -> ratel.Index
+	2,  // 2: ratel.Table.unique:type_name -> ratel.UniqueConstraint
+	3,  // 3: ratel.Table.primary_key:type_name -> ratel.PrimaryKey
+	0,  // 4: ratel.Constraint.on_delete:type_name -> ratel.ReferenceAction
+	0,  // 5: ratel.Constraint.on_update:type_name -> ratel.ReferenceAction
+	5,  // 6: ratel.VirtualColumn.constraints:type_name -> ratel.Constraint
+	5,  // 7: ratel.Column.constraints:type_name -> ratel.Constraint
+	1,  // 8: ratel.ManyToMany.pivot_table:type_name -> ratel.Table
+	8,  // 9: ratel.Relation.one_to_many:type_name -> ratel.OneToMany
+	11, // 10: ratel.Relation.many_to_many:type_name -> ratel.ManyToMany
+	9,  // 11: ratel.Relation.has_one:type_name -> ratel.HasOne
+	10, // 12: ratel.Relation.belongs_to:type_name -> ratel.BelongsTo
+	13, // 13: ratel.additional_code:extendee -> google.protobuf.FileOptions
+	13, // 14: ratel.virtual_tables:extendee -> google.protobuf.FileOptions
+	14, // 15: ratel.table:extendee -> google.protobuf.MessageOptions
+	15, // 16: ratel.column:extendee -> google.protobuf.FieldOptions
+	15, // 17: ratel.relation:extendee -> google.protobuf.FieldOptions
+	1,  // 18: ratel.virtual_tables:type_name -> ratel.Table
+	1,  // 19: ratel.table:type_name -> ratel.Table
+	7,  // 20: ratel.column:type_name -> ratel.Column
+	12, // 21: ratel.relation:type_name -> ratel.Relation
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	18, // [18:22] is the sub-list for extension type_name
+	13, // [13:18] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_ratelproto_proto_init() }
@@ -1214,13 +1318,14 @@ func file_ratelproto_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ratelproto_proto_rawDesc), len(file_ratelproto_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   12,
 			NumExtensions: 5,
 			NumServices:   0,
 		},
 		GoTypes:           file_ratelproto_proto_goTypes,
 		DependencyIndexes: file_ratelproto_proto_depIdxs,
+		EnumInfos:         file_ratelproto_proto_enumTypes,
 		MessageInfos:      file_ratelproto_proto_msgTypes,
 		ExtensionInfos:    file_ratelproto_proto_extTypes,
 	}.Build()

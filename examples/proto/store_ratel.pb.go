@@ -942,7 +942,7 @@ var Products = func() ProductsTable {
 	skuCol := schema.TextColumn(ProductColumnSku, ddl.WithUnique[ProductColumnAlias]())
 	nameCol := schema.TextColumn(ProductColumnName)
 	priceCol := schema.DoublePrecisionColumn(ProductColumnPrice)
-	currencyCol := schema.TextColumn(ProductColumnCurrency)
+	currencyCol := schema.TextColumn(ProductColumnCurrency, ddl.WithReferences[ProductColumnAlias]("currency", "code"), ddl.WithOnDelete[ProductColumnAlias]("RESTRICT"))
 	stockQtyCol := schema.IntegerColumn(ProductColumnStockQty, ddl.WithDefault[ProductColumnAlias]("0"))
 	isDeletedCol := schema.BooleanColumn(ProductColumnIsDeleted, ddl.WithDefault[ProductColumnAlias]("false"))
 
@@ -1211,7 +1211,7 @@ var Orders = func() OrdersTable {
 	updatedAtCol := schema.TimestamptzColumn(OrderColumnUpdatedAt, ddl.WithDefault[OrderColumnAlias]("now()"))
 	userIdCol := schema.BigIntColumn(OrderColumnUserId)
 	statusCol := schema.TextColumn(OrderColumnStatus, ddl.WithDefault[OrderColumnAlias]("'NEW'"))
-	currencyCol := schema.TextColumn(OrderColumnCurrency)
+	currencyCol := schema.TextColumn(OrderColumnCurrency, ddl.WithReferences[OrderColumnAlias]("currency", "code"), ddl.WithOnDelete[OrderColumnAlias]("RESTRICT"))
 
 	idx0 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_user_id", OrderAliasName).OnColumns(OrderColumnUserId)
 	idx1 := ddl.NewIndex[OrderAlias, OrderColumnAlias]("idx_orders_status", OrderAliasName).OnColumns(OrderColumnStatus)

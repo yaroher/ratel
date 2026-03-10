@@ -193,6 +193,15 @@ message Index {
 // Column Constraints
 // ============================================================================
 
+// SQL referential action for ON DELETE / ON UPDATE
+enum ReferenceAction {
+  NO_ACTION = 0;    // default PostgreSQL behavior, not emitted in DDL
+  CASCADE = 1;
+  SET_NULL = 2;
+  SET_DEFAULT = 3;
+  RESTRICT = 4;
+}
+
 message Constraint {
   bool unique = 1;
   bool primary_key = 2;
@@ -204,6 +213,13 @@ message Constraint {
   // CHECK expression, combinable with other constraints
   // Example: check: "id <> ''"  →  CHECK (id <> '')
   string check = 5;
+
+  // Foreign key reference (REFERENCES clause)
+  // Example: references_table: "\"auth\".\"users\"", references_column: "id"
+  string references_table = 6;
+  string references_column = 7;
+  ReferenceAction on_delete = 8;
+  ReferenceAction on_update = 9;
 }
 
 // ============================================================================

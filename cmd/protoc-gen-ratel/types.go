@@ -2,10 +2,27 @@ package main
 
 import (
 	"github.com/yaroher/protoc-gen-go-plain/goplain"
+	"github.com/yaroher/ratel/ratelproto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+// referenceActionToSQL converts ReferenceAction enum to SQL string.
+func referenceActionToSQL(action ratelproto.ReferenceAction) string {
+	switch action {
+	case ratelproto.ReferenceAction_CASCADE:
+		return "CASCADE"
+	case ratelproto.ReferenceAction_SET_NULL:
+		return "SET NULL"
+	case ratelproto.ReferenceAction_SET_DEFAULT:
+		return "SET DEFAULT"
+	case ratelproto.ReferenceAction_RESTRICT:
+		return "RESTRICT"
+	default:
+		return ""
+	}
+}
 
 // isWrapperType checks if a message field is a protobuf wrapper type
 func isWrapperType(field *protogen.Field) bool {
@@ -271,9 +288,16 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	nullable := isFieldNullable(col)
 	defaultVal := ""
 	checkExpr := ""
+	refTable := ""
+	refColumn := ""
+	var onDelete, onUpdate ratelproto.ReferenceAction
 	if col.Options != nil && col.Options.Constraints != nil {
 		defaultVal = col.Options.Constraints.DefaultValue
 		checkExpr = col.Options.Constraints.Check
+		refTable = col.Options.Constraints.ReferencesTable
+		refColumn = col.Options.Constraints.ReferencesColumn
+		onDelete = col.Options.Constraints.OnDelete
+		onUpdate = col.Options.Constraints.OnUpdate
 	}
 
 	kind := col.Field.Desc.Kind()
@@ -296,6 +320,15 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	}
 	if checkExpr != "" {
 		opts = append(opts, "ddl.WithCheck["+msgName+"ColumnAlias](\""+checkExpr+"\")")
+	}
+	if refTable != "" {
+		opts = append(opts, "ddl.WithReferences["+msgName+"ColumnAlias](\""+refTable+"\", \""+refColumn+"\")")
+	}
+	if onDelete != ratelproto.ReferenceAction_NO_ACTION {
+		opts = append(opts, "ddl.WithOnDelete["+msgName+"ColumnAlias](\""+referenceActionToSQL(onDelete)+"\")")
+	}
+	if onUpdate != ratelproto.ReferenceAction_NO_ACTION {
+		opts = append(opts, "ddl.WithOnUpdate["+msgName+"ColumnAlias](\""+referenceActionToSQL(onUpdate)+"\")")
 	}
 
 	optStr := ""
