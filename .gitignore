@@ -3,6 +3,9 @@
 .idea
 .vscode
 
+# bin
+protoc-gen-ratel
+
 # Build
 bin/
 dist/
