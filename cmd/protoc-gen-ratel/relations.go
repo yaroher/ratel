@@ -31,7 +31,7 @@ type RelationInfo struct {
 
 // parseRelations extracts relation info from a table
 func parseRelations(table *RatelTable) []*RelationInfo {
-	var relations []*RelationInfo
+	relations := make([]*RelationInfo, 0, len(table.Relations))
 
 	msgName := table.Message.GoIdent.GoName
 	tableName := getTableName(table)

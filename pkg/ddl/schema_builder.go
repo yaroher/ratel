@@ -84,9 +84,7 @@ func SchemaSortedStatements(sqlers ...SchemaSqler) ([]string, error) {
 
 	// Collect unique CREATE SCHEMA statements first
 	allSqlers := make([]SchemaSqler, 0, len(otherSqlers)+len(sorted))
-	for _, s := range otherSqlers {
-		allSqlers = append(allSqlers, s)
-	}
+	allSqlers = append(allSqlers, otherSqlers...)
 	for _, s := range sorted {
 		allSqlers = append(allSqlers, s)
 	}

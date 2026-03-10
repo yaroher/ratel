@@ -1,10 +1,11 @@
 package clause
 
 import (
-	"github.com/yaroher/ratel/pkg/types"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 type Clause[C types.ColumnAlias] interface {

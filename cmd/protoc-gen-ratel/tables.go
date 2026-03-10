@@ -3,9 +3,10 @@ package main
 import (
 	"github.com/iancoleman/strcase"
 	"github.com/yaroher/protoc-gen-go-plain/goplain"
-	"github.com/yaroher/ratel/ratelproto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/yaroher/ratel/ratelproto"
 )
 
 // RatelTable represents a table definition for ratel
@@ -122,7 +123,7 @@ func isEmbeddedField(field *protogen.Field) bool {
 }
 
 // collectEmbeddedColumns collects columns from an embedded message (recursively handles nested embeds)
-func collectEmbeddedColumns(msg *protogen.Message, prefix string) []*RatelColumn {
+func collectEmbeddedColumns(msg *protogen.Message, _ string) []*RatelColumn {
 	var cols []*RatelColumn
 
 	for _, field := range msg.Fields {
@@ -134,7 +135,7 @@ func collectEmbeddedColumns(msg *protogen.Message, prefix string) []*RatelColumn
 		// Check for nested embed
 		if isEmbeddedField(field) && field.Message != nil {
 			// Recursively collect columns from nested embedded message
-			nestedCols := collectEmbeddedColumns(field.Message, prefix)
+			nestedCols := collectEmbeddedColumns(field.Message, "")
 			cols = append(cols, nestedCols...)
 			continue
 		}

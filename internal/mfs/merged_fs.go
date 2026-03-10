@@ -254,7 +254,7 @@ func mergeDirEntries(aFile, bFile fs.File) ([]fs.DirEntry, error) { //nolint:fun
 
 		// The name conflicts, so look up the entry it conflicts with.
 		existingEntry := toReturn[existingIndex]
-		if !(existingEntry.IsDir() && entry.IsDir()) {
+		if !existingEntry.IsDir() || !entry.IsDir() {
 			// At least one of the conflicting entries isn't a directory so we
 			// won't need to worry about a MergedDirectory's metadata not
 			// matching.

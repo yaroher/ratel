@@ -1,10 +1,11 @@
 package set
 
 import (
-	"github.com/yaroher/ratel/pkg/dml/clause"
-	"github.com/yaroher/ratel/pkg/types"
 	"strconv"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/dml/clause"
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 type SetterColumn[V any, C types.ColumnAlias] interface {

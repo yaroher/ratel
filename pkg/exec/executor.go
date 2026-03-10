@@ -150,7 +150,7 @@ type copyIterator[C types.ColumnAlias, S Scanner[C]] struct {
 }
 
 func newCopyIterator[C types.ColumnAlias, S Scanner[C]](
-	allFields []C,
+	_ []C,
 	rows []S,
 ) *copyIterator[C, S] {
 	return &copyIterator[C, S]{

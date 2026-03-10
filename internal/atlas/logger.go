@@ -13,13 +13,6 @@ type migrationLogger struct {
 func NewMigrationLogger(logger2 *zap.Logger) migrate.Logger {
 	return migrationLogger{lg: logger2}
 }
-func (m migrationLogger) fileToLog(file migrate.File) []zap.Field {
-	return []zap.Field{
-		zap.String("name", file.Name()),
-		zap.String("version", file.Version()),
-		zap.String("desc", file.Desc()),
-	}
-}
 func (m migrationLogger) listFilesToLog(files []migrate.File) []zap.Field {
 	ret := make([]zap.Field, 0, len(files))
 	for _, f := range files {
@@ -29,9 +22,8 @@ func (m migrationLogger) listFilesToLog(files []migrate.File) []zap.Field {
 }
 
 func (m migrationLogger) Log(entry migrate.LogEntry) {
-	switch entry.(type) {
+	switch e := entry.(type) {
 	case migrate.LogExecution:
-		e := entry.(migrate.LogExecution)
 		m.lg.Debug(
 			"migration execution",
 			append(m.listFilesToLog(e.Files),
@@ -40,21 +32,17 @@ func (m migrationLogger) Log(entry migrate.LogEntry) {
 			)...,
 		)
 	case migrate.LogStmt:
-		e := entry.(migrate.LogStmt)
 		m.lg.Debug(
 			"migration statement",
 			zap.String("sql", e.SQL),
 		)
-
 	case migrate.LogError:
-		e := entry.(migrate.LogError)
 		m.lg.Error(
 			"migration error",
 			zap.String("sql", e.SQL),
 			zap.Error(e.Error),
 		)
 	case migrate.LogChecks:
-		e := entry.(migrate.LogChecks)
 		m.lg.Debug(
 			"migration checks",
 			zap.String("name", e.Name),
@@ -66,15 +54,12 @@ func (m migrationLogger) Log(entry migrate.LogEntry) {
 			})),
 		)
 	case migrate.LogCheck:
-		e := entry.(migrate.LogCheck)
 		m.lg.Debug(
 			"migration check",
 			zap.String("stmt", e.Stmt),
 			zap.Error(e.Error),
 		)
-
 	case migrate.LogChecksDone:
-		e := entry.(migrate.LogChecksDone)
 		m.lg.Debug(
 			"migration checks done",
 			zap.Error(e.Error),

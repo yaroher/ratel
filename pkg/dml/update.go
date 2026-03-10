@@ -1,10 +1,11 @@
 package dml
 
 import (
+	"strings"
+
 	"github.com/yaroher/ratel/pkg/dml/clause"
 	"github.com/yaroher/ratel/pkg/dml/set"
 	"github.com/yaroher/ratel/pkg/types"
-	"strings"
 )
 
 // ---------------------------------------------------------------------------

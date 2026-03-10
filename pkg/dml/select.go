@@ -1,10 +1,11 @@
 package dml
 
 import (
-	"github.com/yaroher/ratel/pkg/dml/clause"
-	"github.com/yaroher/ratel/pkg/types"
 	"strconv"
 	"strings"
+
+	"github.com/yaroher/ratel/pkg/dml/clause"
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 type JoinType string

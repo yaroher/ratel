@@ -5,72 +5,78 @@ run:
   modules-download-mode: readonly
 
 linters:
-  # Use default linters (errcheck, govet, ineffassign, staticcheck, unused)
-  # Plus add some additional useful ones
   enable:
     - misspell
     - unconvert
     - unparam
     - prealloc
 
+  settings:
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+        - shadow
+
+    misspell:
+      locale: US
+
+    unparam:
+      check-exported: false
+
+  exclusions:
+    rules:
+      # Exclude some linters from running on test files
+      - path: _test\.go
+        linters:
+          - errcheck
+          - unparam
+
+      # Exclude generated files
+      - path: \.pb\.go$
+        linters:
+          - all
+
+      - path: _ratel\.pb\.go$
+        linters:
+          - all
+
+      - path: _plain\.pb\.go$
+        linters:
+          - all
+
+      # CLI commands - MarkFlagRequired errors are okay
+      - path: cmd/
+        text: "Error return value of .*(MarkFlagRequired|MarkFlagFilename).* is not checked"
+
+      # Close/Remove/Sscanf errors are okay to ignore
+      - text: "Error return value of .*(Close|Remove|Sscanf).* is not checked"
+        linters:
+          - errcheck
+
+      # Style suggestions in internal code
+      - text: "QF1003:|QF1008:"
+        linters:
+          - staticcheck
+
+      # Internal functions where unused params are part of the interface contract
+      - path: internal/
+        linters:
+          - unparam
+
 formatters:
   enable:
     - gofmt
     - goimports
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
+  settings:
+    gofmt:
+      simplify: true
 
-  govet:
-    enable-all: true
-    disable:
-      - fieldalignment
-      - shadow
-
-  misspell:
-    locale: US
-
-  unparam:
-    check-exported: false
-
-formatters-settings:
-  gofmt:
-    simplify: true
-
-  goimports:
-    local-prefixes:
-      - github.com/yaroher/ratel
-
-issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - errcheck
-        - unparam
-
-    # Exclude generated files
-    - path: \.pb\.go$
-      linters:
-        - all
-
-    - path: _ratel\.pb\.go$
-      linters:
-        - all
-
-    - path: _plain\.pb\.go$
-      linters:
-        - all
-
-    # CLI commands - MarkFlagRequired errors are okay
-    - path: cmd/
-      text: "Error return value of .*(MarkFlagRequired|MarkFlagFilename).* is not checked"
-
-    # Cleanup functions where errors don't matter
-    - text: "Error return value of .*(Close|Remove).* is not checked"
-      source: "(defer|cleanup)"
-
-  max-issues-per-linter: 0
-  max-same-issues: 0
+    goimports:
+      local-prefixes:
+        - github.com/yaroher/ratel

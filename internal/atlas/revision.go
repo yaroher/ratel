@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/yaroher/ratel/internal/pgtypecast"
 	"github.com/yaroher/ratel/pkg/pgx-ext/sqlexec"
 

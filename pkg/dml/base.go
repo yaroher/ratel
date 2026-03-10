@@ -1,9 +1,10 @@
 package dml
 
 import (
-	"github.com/yaroher/ratel/pkg/types"
 	"strings"
 	"sync"
+
+	"github.com/yaroher/ratel/pkg/types"
 )
 
 var sbPool = sync.Pool{

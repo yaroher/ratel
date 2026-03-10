@@ -8,6 +8,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/cobra"
+
 	"github.com/yaroher/ratel/internal/parser"
 )
 
@@ -94,7 +95,7 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 	}
 
 	// Write package and imports
-	b.WriteString(fmt.Sprintf("package %s\n\n", pkg))
+	fmt.Fprintf(&b, "package %s\n\n", pkg)
 	b.WriteString("import (\n")
 	if needsTime {
 		b.WriteString("\t\"time\"\n\n")
@@ -105,21 +106,21 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 	b.WriteString(")\n\n")
 
 	// Write alias type
-	b.WriteString(fmt.Sprintf("// %s is the table alias type for the %s table\n", aliasType, tableName))
-	b.WriteString(fmt.Sprintf("type %s string\n\n", aliasType))
-	b.WriteString(fmt.Sprintf("func (a %s) String() string { return string(a) }\n\n", aliasType))
-	b.WriteString(fmt.Sprintf("const %sAliasName %s = \"%s\"\n\n", structName, aliasType, tableName))
+	fmt.Fprintf(&b, "// %s is the table alias type for the %s table\n", aliasType, tableName)
+	fmt.Fprintf(&b, "type %s string\n\n", aliasType)
+	fmt.Fprintf(&b, "func (a %s) String() string { return string(a) }\n\n", aliasType)
+	fmt.Fprintf(&b, "const %sAliasName %s = \"%s\"\n\n", structName, aliasType, tableName)
 
 	// Write column alias type
-	b.WriteString(fmt.Sprintf("// %s represents column names for the %s table\n", columnAliasType, tableName))
-	b.WriteString(fmt.Sprintf("type %s string\n\n", columnAliasType))
-	b.WriteString(fmt.Sprintf("func (c %s) String() string { return string(c) }\n\n", columnAliasType))
+	fmt.Fprintf(&b, "// %s represents column names for the %s table\n", columnAliasType, tableName)
+	fmt.Fprintf(&b, "type %s string\n\n", columnAliasType)
+	fmt.Fprintf(&b, "func (c %s) String() string { return string(c) }\n\n", columnAliasType)
 
 	// Write column constants
 	b.WriteString("const (\n")
 	for _, col := range table.Columns {
 		constName := structName + "Column" + toPascalCase(col.Name)
-		b.WriteString(fmt.Sprintf("\t%s %s = \"%s\"\n", constName, columnAliasType, col.Name))
+		fmt.Fprintf(&b, "\t%s %s = \"%s\"\n", constName, columnAliasType, col.Name)
 	}
 	b.WriteString(")\n\n")
 
@@ -129,14 +130,14 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 		b.WriteString("const (\n")
 		for _, idx := range table.Indexes {
 			constName := structName + "Index" + toPascalCase(strings.TrimPrefix(idx.Name, "ix_"+tableName+"_"))
-			b.WriteString(fmt.Sprintf("\t%s %s = \"%s\"\n", constName, aliasType, idx.Name))
+			fmt.Fprintf(&b, "\t%s %s = \"%s\"\n", constName, aliasType, idx.Name)
 		}
 		b.WriteString(")\n\n")
 	}
 
 	// Write scanner struct
-	b.WriteString(fmt.Sprintf("// %s is the scanner struct for %s rows\n", scannerType, tableName))
-	b.WriteString(fmt.Sprintf("type %s struct {\n", scannerType))
+	fmt.Fprintf(&b, "// %s is the scanner struct for %s rows\n", scannerType, tableName)
+	fmt.Fprintf(&b, "type %s struct {\n", scannerType)
 	for _, col := range table.Columns {
 		fieldName := toPascalCase(col.Name)
 		goType := col.GoType()
@@ -146,18 +147,18 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 				goType = "*" + goType
 			}
 		}
-		b.WriteString(fmt.Sprintf("\t%s %s\n", fieldName, goType))
+		fmt.Fprintf(&b, "\t%s %s\n", fieldName, goType)
 	}
 	b.WriteString("}\n\n")
 
 	// Write GetTarget method
-	b.WriteString(fmt.Sprintf("func (s *%s) GetTarget(col string) func() any {\n", scannerType))
-	b.WriteString(fmt.Sprintf("\tswitch %s(col) {\n", columnAliasType))
+	fmt.Fprintf(&b, "func (s *%s) GetTarget(col string) func() any {\n", scannerType)
+	fmt.Fprintf(&b, "\tswitch %s(col) {\n", columnAliasType)
 	for _, col := range table.Columns {
 		constName := structName + "Column" + toPascalCase(col.Name)
 		fieldName := toPascalCase(col.Name)
-		b.WriteString(fmt.Sprintf("\tcase %s:\n", constName))
-		b.WriteString(fmt.Sprintf("\t\treturn func() any { return &s.%s }\n", fieldName))
+		fmt.Fprintf(&b, "\tcase %s:\n", constName)
+		fmt.Fprintf(&b, "\t\treturn func() any { return &s.%s }\n", fieldName)
 	}
 	b.WriteString("\tdefault:\n")
 	b.WriteString("\t\tpanic(\"unknown column: \" + col)\n")
@@ -165,59 +166,59 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 	b.WriteString("}\n\n")
 
 	// Write GetSetter method
-	b.WriteString(fmt.Sprintf("func (s *%s) GetSetter(f %s) func() set.ValueSetter[%s] {\n", scannerType, columnAliasType, columnAliasType))
+	fmt.Fprintf(&b, "func (s *%s) GetSetter(f %s) func() set.ValueSetter[%s] {\n", scannerType, columnAliasType, columnAliasType)
 	b.WriteString("\tswitch f {\n")
 	for _, col := range table.Columns {
 		constName := structName + "Column" + toPascalCase(col.Name)
 		fieldName := toPascalCase(col.Name)
-		b.WriteString(fmt.Sprintf("\tcase %s:\n", constName))
-		b.WriteString(fmt.Sprintf("\t\treturn func() set.ValueSetter[%s] { return set.NewSetter(f, &s.%s) }\n", columnAliasType, fieldName))
+		fmt.Fprintf(&b, "\tcase %s:\n", constName)
+		fmt.Fprintf(&b, "\t\treturn func() set.ValueSetter[%s] { return set.NewSetter(f, &s.%s) }\n", columnAliasType, fieldName)
 	}
 	b.WriteString("\tdefault:\n")
-	b.WriteString(fmt.Sprintf("\t\tpanic(\"unknown column: \" + string(f))\n"))
+	b.WriteString("\t\tpanic(\"unknown column: \" + string(f))\n")
 	b.WriteString("\t}\n")
 	b.WriteString("}\n\n")
 
 	// Write GetValue method
-	b.WriteString(fmt.Sprintf("func (s *%s) GetValue(f %s) func() any {\n", scannerType, columnAliasType))
+	fmt.Fprintf(&b, "func (s *%s) GetValue(f %s) func() any {\n", scannerType, columnAliasType)
 	b.WriteString("\tswitch f {\n")
 	for _, col := range table.Columns {
 		constName := structName + "Column" + toPascalCase(col.Name)
 		fieldName := toPascalCase(col.Name)
-		b.WriteString(fmt.Sprintf("\tcase %s:\n", constName))
-		b.WriteString(fmt.Sprintf("\t\treturn func() any { return s.%s }\n", fieldName))
+		fmt.Fprintf(&b, "\tcase %s:\n", constName)
+		fmt.Fprintf(&b, "\t\treturn func() any { return s.%s }\n", fieldName)
 	}
 	b.WriteString("\tdefault:\n")
-	b.WriteString(fmt.Sprintf("\t\tpanic(\"unknown column: \" + string(f))\n"))
+	b.WriteString("\t\tpanic(\"unknown column: \" + string(f))\n")
 	b.WriteString("\t}\n")
 	b.WriteString("}\n\n")
 
 	// Write table struct
-	b.WriteString(fmt.Sprintf("// %s represents the %s table with its columns\n", tableType, tableName))
-	b.WriteString(fmt.Sprintf("type %s struct {\n", tableType))
-	b.WriteString(fmt.Sprintf("\t*schema.Table[%s, %s, *%s]\n", aliasType, columnAliasType, scannerType))
+	fmt.Fprintf(&b, "// %s represents the %s table with its columns\n", tableType, tableName)
+	fmt.Fprintf(&b, "type %s struct {\n", tableType)
+	fmt.Fprintf(&b, "\t*schema.Table[%s, %s, *%s]\n", aliasType, columnAliasType, scannerType)
 	for _, col := range table.Columns {
 		fieldName := toPascalCase(col.Name)
 		colInterface := getColumnInterface(col)
-		b.WriteString(fmt.Sprintf("\t%s %s[%s]\n", fieldName, colInterface, columnAliasType))
+		fmt.Fprintf(&b, "\t%s %s[%s]\n", fieldName, colInterface, columnAliasType)
 	}
 	b.WriteString("}\n\n")
 
 	// Write table variable
-	b.WriteString(fmt.Sprintf("// %s is the global %s table instance\n", structName, tableName))
-	b.WriteString(fmt.Sprintf("var %s = func() %s {\n", structName, tableType))
+	fmt.Fprintf(&b, "// %s is the global %s table instance\n", structName, tableName)
+	fmt.Fprintf(&b, "var %s = func() %s {\n", structName, tableType)
 
 	// Create column variables
 	for _, col := range table.Columns {
 		varName := toCamelCase(col.Name) + "Col"
-		b.WriteString(fmt.Sprintf("\t%s := schema.%s(%s%s", varName, col.DDLType(), structName+"Column"+toPascalCase(col.Name), getColumnArgs(col)))
+		fmt.Fprintf(&b, "\t%s := schema.%s(%s%s", varName, col.DDLType(), structName+"Column"+toPascalCase(col.Name), getColumnArgs(col))
 
 		// Add options
 		options := getColumnOptions(col, structName, columnAliasType)
 		if len(options) > 0 {
 			b.WriteString(",\n")
 			for i, opt := range options {
-				b.WriteString(fmt.Sprintf("\t\t%s", opt))
+				fmt.Fprintf(&b, "\t\t%s", opt)
 				if i < len(options)-1 {
 					b.WriteString(",\n")
 				}
@@ -227,21 +228,21 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 	}
 
 	// Return table struct
-	b.WriteString(fmt.Sprintf("\n\treturn %s{\n", tableType))
-	b.WriteString(fmt.Sprintf("\t\tTable: schema.NewTable[%s, %s, *%s](\n", aliasType, columnAliasType, scannerType))
-	b.WriteString(fmt.Sprintf("\t\t\t%sAliasName,\n", structName))
-	b.WriteString(fmt.Sprintf("\t\t\tfunc() *%s { return &%s{} },\n", scannerType, scannerType))
-	b.WriteString(fmt.Sprintf("\t\t\t[]*ddl.ColumnDDL[%s]{\n", columnAliasType))
+	fmt.Fprintf(&b, "\n\treturn %s{\n", tableType)
+	fmt.Fprintf(&b, "\t\tTable: schema.NewTable[%s, %s, *%s](\n", aliasType, columnAliasType, scannerType)
+	fmt.Fprintf(&b, "\t\t\t%sAliasName,\n", structName)
+	fmt.Fprintf(&b, "\t\t\tfunc() *%s { return &%s{} },\n", scannerType, scannerType)
+	fmt.Fprintf(&b, "\t\t\t[]*ddl.ColumnDDL[%s]{\n", columnAliasType)
 	for _, col := range table.Columns {
 		varName := toCamelCase(col.Name) + "Col"
-		b.WriteString(fmt.Sprintf("\t\t\t\t%s.DDL(),\n", varName))
+		fmt.Fprintf(&b, "\t\t\t\t%s.DDL(),\n", varName)
 	}
 	b.WriteString("\t\t\t},\n")
 
 	// Add table options
 	tableOptions := getTableOptions(table, structName, aliasType, columnAliasType)
 	for _, opt := range tableOptions {
-		b.WriteString(fmt.Sprintf("\t\t\t%s,\n", opt))
+		fmt.Fprintf(&b, "\t\t\t%s,\n", opt)
 	}
 
 	b.WriteString("\t\t),\n")
@@ -250,14 +251,14 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 	for _, col := range table.Columns {
 		fieldName := toPascalCase(col.Name)
 		varName := toCamelCase(col.Name) + "Col"
-		b.WriteString(fmt.Sprintf("\t\t%s: %s,\n", fieldName, varName))
+		fmt.Fprintf(&b, "\t\t%s: %s,\n", fieldName, varName)
 	}
 	b.WriteString("\t}\n")
 	b.WriteString("}()\n\n")
 
 	// Write ref variable
-	b.WriteString(fmt.Sprintf("// %sRef is a reference to the %s table for relations\n", structName, tableName))
-	b.WriteString(fmt.Sprintf("var %sRef schema.RelationTableAlias[%s] = %s.Table\n", structName, aliasType, structName))
+	fmt.Fprintf(&b, "// %sRef is a reference to the %s table for relations\n", structName, tableName)
+	fmt.Fprintf(&b, "var %sRef schema.RelationTableAlias[%s] = %s.Table\n", structName, aliasType, structName)
 
 	// Write to file
 	filename := filepath.Join(outputDir, tableName+".go")
@@ -267,7 +268,7 @@ func generateModelFile(table parser.Table, outputDir, pkg string) error {
 func generateRelationsFile(tables []parser.Table, outputDir, pkg string) error {
 	var b strings.Builder
 
-	b.WriteString(fmt.Sprintf("package %s\n\n", pkg))
+	fmt.Fprintf(&b, "package %s\n\n", pkg)
 	b.WriteString("import (\n")
 	b.WriteString("\t\"github.com/yaroher/ratel/pkg/schema\"\n")
 	b.WriteString(")\n\n")
@@ -288,7 +289,7 @@ func generateRelationsFile(tables []parser.Table, outputDir, pkg string) error {
 	for _, table := range tables {
 		structName := toPascalCase(table.Name)
 		aliasType := structName + "Alias"
-		b.WriteString(fmt.Sprintf("\t_ schema.RelationTableAlias[%s] = %s.Table\n", aliasType, structName))
+		fmt.Fprintf(&b, "\t_ schema.RelationTableAlias[%s] = %s.Table\n", aliasType, structName)
 	}
 	b.WriteString(")\n")
 
@@ -376,7 +377,7 @@ func getColumnArgs(col parser.Column) string {
 	return ""
 }
 
-func getColumnOptions(col parser.Column, structName, columnAliasType string) []string {
+func getColumnOptions(col parser.Column, _, columnAliasType string) []string {
 	var options []string
 
 	if col.IsPrimaryKey {
@@ -429,7 +430,7 @@ func getTableOptions(table parser.Table, structName, aliasType, columnAliasType 
 
 	// Indexes
 	if len(table.Indexes) > 0 {
-		var indexDefs []string
+		indexDefs := make([]string, 0, len(table.Indexes))
 		for _, idx := range table.Indexes {
 			cols := make([]string, len(idx.Columns))
 			for i, c := range idx.Columns {

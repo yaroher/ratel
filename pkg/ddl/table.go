@@ -170,7 +170,7 @@ func (c *TableDDL[T, C]) Dependencies() []string {
 }
 
 func (c *TableDDL[T, C]) SchemaSql() []string {
-	var statements []string
+	statements := make([]string, 0, 1+len(c.indexes)+len(c.postStatements))
 	var sql strings.Builder
 
 	// CREATE TABLE IF NOT EXISTS

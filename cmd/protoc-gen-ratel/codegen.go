@@ -257,7 +257,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 			idxVarName := fmt.Sprintf("idx%d", i)
 
 			// Build column constants list
-			var colConsts []string
+			colConsts := make([]string, 0, len(idx.Columns))
 			for _, colName := range idx.Columns {
 				colConsts = append(colConsts, msgName+"Column"+strcase.ToCamel(colName))
 			}
@@ -309,7 +309,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	if hasUnique {
 		gf.P("\t\t\tddl.WithUniqueColumns[", aliasTypeName, ", ", colAliasTypeName, "](")
 		for _, uq := range table.Options.Unique {
-			var colConsts []string
+			colConsts := make([]string, 0, len(uq.Columns))
 			for _, colName := range uq.Columns {
 				colConsts = append(colConsts, msgName+"Column"+strcase.ToCamel(colName))
 			}
@@ -321,7 +321,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	// Add composite primary key if any
 	hasPK := table.Options != nil && table.Options.PrimaryKey != nil && len(table.Options.PrimaryKey.Columns) > 0
 	if hasPK {
-		var pkColConsts []string
+		pkColConsts := make([]string, 0, len(table.Options.PrimaryKey.Columns))
 		for _, colName := range table.Options.PrimaryKey.Columns {
 			pkColConsts = append(pkColConsts, msgName+"Column"+strcase.ToCamel(colName))
 		}

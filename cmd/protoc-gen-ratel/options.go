@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/yaroher/ratel/ratelproto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/yaroher/ratel/ratelproto"
 )
 
 // getRatelTableOptions extracts ratel.table option from a message
@@ -19,7 +20,8 @@ func getRatelTableOptions(msg *protogen.Message) *ratelproto.Table {
 	if ext == nil {
 		return nil
 	}
-	return ext.(*ratelproto.Table)
+	t, _ := ext.(*ratelproto.Table)
+	return t
 }
 
 // getRatelColumnOptions extracts ratel.column option from a field
@@ -35,7 +37,8 @@ func getRatelColumnOptions(field *protogen.Field) *ratelproto.Column {
 	if ext == nil {
 		return nil
 	}
-	return ext.(*ratelproto.Column)
+	c, _ := ext.(*ratelproto.Column)
+	return c
 }
 
 // getRatelRelationOptions extracts ratel.relation option from a field
@@ -51,5 +54,6 @@ func getRatelRelationOptions(field *protogen.Field) *ratelproto.Relation {
 	if ext == nil {
 		return nil
 	}
-	return ext.(*ratelproto.Relation)
+	r, _ := ext.(*ratelproto.Relation)
+	return r
 }

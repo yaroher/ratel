@@ -4,10 +4,11 @@ import (
 	"strings"
 
 	"github.com/yaroher/protoc-gen-go-plain/goplain"
-	"github.com/yaroher/ratel/ratelproto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	"github.com/yaroher/ratel/ratelproto"
 )
 
 // escapeGoString escapes double quotes and backslashes for embedding in a Go string literal.
