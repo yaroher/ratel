@@ -1,6 +1,8 @@
 <p align="center">
-  <img src="website/static/img/ratel-banner.svg" alt="Ratel" width="500"/>
+  <img src="website/static/img/ratel.png" alt="Ratel" width="180"/>
 </p>
+
+<h1 align="center">RATEL</h1>
 
 <p align="center">
   <strong>Fearless, type-safe PostgreSQL ORM for Go.</strong><br/>
