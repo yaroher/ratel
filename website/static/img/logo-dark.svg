@@ -3,12 +3,8 @@
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@800&amp;display=swap');
     .logo-text { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 40px; letter-spacing: 6px; }
   </style>
-  <!-- R -->
   <text x="0" y="38" class="logo-text" fill="#ffffff">R</text>
-  <!-- A (crimson) -->
   <text x="48" y="38" class="logo-text" fill="#e94560">A</text>
-  <!-- TEL -->
   <text x="96" y="38" class="logo-text" fill="#ffffff">TEL</text>
-  <!-- Accent line under A -->
   <rect x="48" y="44" width="40" height="3" rx="1" fill="#e94560"/>
 </svg>

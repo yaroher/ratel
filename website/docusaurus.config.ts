@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'Ratel',
   tagline: 'Fearless, type-safe PostgreSQL ORM for Go',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
   url: 'https://ratel.dev',
   baseUrl: '/',
   organizationName: 'yaroher',
@@ -21,6 +21,17 @@ const config: Config = {
   future: {
     v4: true,
   },
+
+  headTags: [
+    {
+      tagName: 'link',
+      attributes: {
+        rel: 'icon',
+        href: '/img/favicon.ico',
+        sizes: '32x32',
+      },
+    },
+  ],
 
   i18n: {
     defaultLocale: 'en',
@@ -50,7 +61,13 @@ const config: Config = {
       respectPrefersColorScheme: false,
     },
     navbar: {
-      title: 'RATEL',
+      title: '',
+      logo: {
+        alt: 'Ratel',
+        src: 'img/logo.svg',
+        srcDark: 'img/logo-dark.svg',
+        height: 28,
+      },
       style: 'dark',
       items: [
         {

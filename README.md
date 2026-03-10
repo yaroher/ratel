@@ -1,10 +1,20 @@
-# Ratel
+<p align="center">
+  <img src="website/static/img/ratel-banner.svg" alt="Ratel" width="500"/>
+</p>
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/yaroher/ratel)](https://go.dev/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![CI](https://github.com/yaroher/ratel/actions/workflows/ci.yml/badge.svg)](https://github.com/yaroher/ratel/actions/workflows/ci.yml)
+<p align="center">
+  <strong>Fearless, type-safe PostgreSQL ORM for Go</strong>
+</p>
 
-**Ratel** is a type-safe PostgreSQL ORM and code generator for Go. It provides compile-time safety for database operations through generated code, eliminating runtime errors from typos in column names or type mismatches.
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/github/go-mod/go-version/yaroher/ratel" alt="Go Version"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License"/></a>
+  <a href="https://github.com/yaroher/ratel/actions/workflows/ci.yml"><img src="https://github.com/yaroher/ratel/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+</p>
+
+---
+
+**Ratel** is a type-safe PostgreSQL ORM and code generator for Go. Compile-time checked queries, zero reflection, maximum performance.
 
 ## Features
 
