@@ -161,10 +161,28 @@ func collectEmbeddedColumns(msg *protogen.Message, prefix string) []*RatelColumn
 	return cols
 }
 
-// getTableName returns the SQL table name for the table
+// getTableName returns the SQL table name for the table (without schema prefix)
 func getTableName(table *RatelTable) string {
 	if table.Options != nil && table.Options.TableName != nil {
 		return *table.Options.TableName
 	}
 	return strcase.ToSnake(table.Message.GoIdent.GoName)
+}
+
+// getTableSchema returns the PostgreSQL schema name (empty = public)
+func getTableSchema(table *RatelTable) string {
+	if table.Options != nil && table.Options.Schema != nil {
+		return *table.Options.Schema
+	}
+	return ""
+}
+
+// getQualifiedTableName returns schema-qualified table name for SQL alias
+func getQualifiedTableName(table *RatelTable) string {
+	name := getTableName(table)
+	schema := getTableSchema(table)
+	if schema != "" {
+		return `"` + schema + `"."` + name + `"`
+	}
+	return name
 }

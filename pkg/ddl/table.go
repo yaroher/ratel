@@ -1,6 +1,7 @@
 package ddl
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/yaroher/ratel/pkg/types"
@@ -20,6 +21,7 @@ type CheckConstraint struct {
 
 type TableDDL[T types.TableAlias, C types.ColumnAlias] struct {
 	alias           T
+	schema          string // PostgreSQL schema (empty = public)
 	columns         []*ColumnDDL[C]
 	indexes         []*Index[T, C]
 	unique          [][]C                // legacy unnamed unique
@@ -80,6 +82,15 @@ func WithTableCheckConstraint[T types.TableAlias, C types.ColumnAlias](name, exp
 	}
 }
 
+// WithSchema sets the PostgreSQL schema for the table.
+// When set, SchemaSql() will prepend CREATE SCHEMA IF NOT EXISTS
+// and use schema-qualified table names.
+func WithSchema[T types.TableAlias, C types.ColumnAlias](schemaName string) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.schema = schemaName
+	}
+}
+
 func NewTableDDL[T types.TableAlias, C types.ColumnAlias](
 	alias T,
 	columns []*ColumnDDL[C],
@@ -111,6 +122,19 @@ func (c *TableDDL[T, C]) Alias() T {
 
 // TableName returns the name of this table (implements DependencySqler)
 func (c *TableDDL[T, C]) TableName() string {
+	return c.qualifiedName()
+}
+
+// Schema returns the PostgreSQL schema name (empty = public)
+func (c *TableDDL[T, C]) Schema() string {
+	return c.schema
+}
+
+// qualifiedName returns schema-qualified table name if schema is set
+func (c *TableDDL[T, C]) qualifiedName() string {
+	if c.schema != "" {
+		return fmt.Sprintf(`"%s"."%s"`, c.schema, c.alias.String())
+	}
 	return c.alias.String()
 }
 
@@ -119,10 +143,11 @@ func (c *TableDDL[T, C]) Dependencies() []string {
 	var deps []string
 	seen := make(map[string]bool)
 
+	qn := c.qualifiedName()
 	for _, col := range c.columns {
 		if col.reference != nil && col.reference.table != "" {
 			// Exclude self-references (like categories -> categories)
-			if col.reference.table != c.alias.String() && !seen[col.reference.table] {
+			if col.reference.table != qn && !seen[col.reference.table] {
 				deps = append(deps, col.reference.table)
 				seen[col.reference.table] = true
 			}
@@ -134,11 +159,18 @@ func (c *TableDDL[T, C]) Dependencies() []string {
 
 func (c *TableDDL[T, C]) SchemaSql() []string {
 	var statements []string
+
+	// CREATE SCHEMA IF NOT EXISTS (when schema is set)
+	if c.schema != "" {
+		statements = append(statements,
+			fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %q", c.schema))
+	}
+
 	var sql strings.Builder
 
 	// CREATE TABLE IF NOT EXISTS
 	sql.WriteString("CREATE TABLE IF NOT EXISTS ")
-	sql.WriteString(c.alias.String())
+	sql.WriteString(c.qualifiedName())
 	sql.WriteString(" (\n")
 
 	// Add columns

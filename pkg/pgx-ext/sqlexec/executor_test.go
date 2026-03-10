@@ -72,7 +72,7 @@ func TestTxExecutor_Exec(t *testing.T) {
 	tag, err := executor.Exec(ctx, sql, args...)
 
 	require.NoError(t, err)
-	require.Equal(t, "INSERT1", tag.String())
+	require.Equal(t, "INSERT 1", tag.String())
 
 	mockCtxGetter.AssertExpectations(t)
 }

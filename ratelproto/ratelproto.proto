@@ -108,26 +108,31 @@ import "google/protobuf/descriptor.proto";
 message Table {
   // Generate table schema for this message
   bool generate = 1;
-  
+
   // Override table name (default: snake_case of message name)
   optional string table_name = 2;
-  
+
   // Virtual fields (columns not in proto message)
   repeated VirtualColumn virtual_columns = 3;
-  
+
   // Table-level constraints (e.g., "CHECK (x > 0)")
   repeated string constraints = 4;
-  
+
   // Indexes
   repeated Index indexes = 5;
-  
+
   // Composite unique constraints
   // Example: unique: [{ columns: ["order_id", "product_id"] }]
   repeated UniqueConstraint unique = 6;
-  
+
   // Composite primary key (overrides column-level primary_key)
   // Example: primary_key: { columns: ["order_id", "line_no"] }
   PrimaryKey primary_key = 7;
+
+  // PostgreSQL schema name (default: "public")
+  // When set, generates CREATE SCHEMA IF NOT EXISTS and uses qualified table names
+  // Example: schema: "auth" -> creates table "auth"."users"
+  optional string schema = 8;
 }
 
 // Composite unique constraint
