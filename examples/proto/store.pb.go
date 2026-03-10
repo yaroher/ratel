@@ -974,7 +974,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\auser_idR\x04user\x12=\n" +
 	"\x05money\x18\f \x01(\v2\x0f.store.CurrencyB\x16\xa2\xb5\x18\x12\"\x10\n" +
 	"\bcurrency\x12\x04codeR\x05money:\x9c\x02\x92\xb5\x18\x91\x02\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
-	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJqCREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)\x82\xa6\x1d\x02\b\x01\"\xc0\x05\n" +
+	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJqCREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)\x82\xa6\x1d\x02\b\x01\"\xba\x05\n" +
 	"\tOrderItem\x12G\n" +
 	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDB\x1b\x9a\xb5\x18\x17\x12\x152\x06orders:\x02id@\x01R\x05storeR\aorderId\x12\x17\n" +
 	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12M\n" +
@@ -989,10 +989,10 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\border_idR\x05order\x12<\n" +
 	"\aproduct\x18\v \x01(\v2\x0e.store.ProductB\x12\xa2\xb5\x18\x0e\"\f\n" +
 	"\n" +
-	"product_idR\aproduct:\xdc\x02\x92\xb5\x18\xd1\x02\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
+	"product_idR\aproduct:\xd6\x02\x92\xb5\x18\xcb\x02\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
 	"product_id:\x13\n" +
 	"\border_id\n" +
-	"\aline_noB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJ\xb6\x01CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.order_id FROM \"store\".\"orders\" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))\x82\xa6\x1d\x02\b\x01B\xea\x01\x82\xb5\x18&CREATE EXTENSION IF NOT EXISTS pg_trgm\x82\xb5\x18\x8a\x01CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
+	"\aline_noB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJ\xb0\x01CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.id FROM \"store\".\"orders\" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))\x82\xa6\x1d\x02\b\x01B\xea\x01\x82\xb5\x18&CREATE EXTENSION IF NOT EXISTS pg_trgm\x82\xb5\x18\x8a\x01CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
 
 var (
 	file_examples_proto_store_proto_rawDescOnce sync.Once
