@@ -98,6 +98,21 @@ idx := ddl.NewIndex[UsersAlias, UsersColumnAlias](
   Using("btree")
 ```
 
+## RawSQL
+
+Wraps an arbitrary SQL statement for use with `SchemaSQL`. Use this for extensions, functions, grants, or any SQL not tied to a table definition:
+
+```go
+ddl.SchemaSQL(
+    ddl.RawSQL("CREATE EXTENSION IF NOT EXISTS pg_trgm"),
+    ddl.RawSQL("CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger ..."),
+    models.Users,
+    models.Orders,
+)
+```
+
+`RawSQL` implements `SchemaSqler`, so it works anywhere tables do.
+
 ## SchemaSortedStatements
 
 Generate all CREATE statements in dependency order:

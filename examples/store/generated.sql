@@ -10,6 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY users_own_data ON users FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint);
+CREATE POLICY users_insert ON users FOR INSERT WITH CHECK (true);
 CREATE TABLE IF NOT EXISTS categories (
   category_id BIGSERIAL PRIMARY KEY,
   name TEXT NOT NULL,
@@ -42,6 +45,8 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ix_orders_user_created ON orders (user_id, created_at DESC);
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY orders_own_data ON orders FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint);
 CREATE TABLE IF NOT EXISTS order_items (
   order_id BIGINT NOT NULL REFERENCES orders(order_id) ON DELETE CASCADE,
   line_no INTEGER NOT NULL CHECK (line_no > 0),
@@ -51,6 +56,8 @@ CREATE TABLE IF NOT EXISTS order_items (
   UNIQUE (order_id, product_id)
 );
 CREATE INDEX IF NOT EXISTS ix_order_items_product ON order_items (product_id);
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY order_items_own_data ON order_items FOR ALL USING (order_id IN (SELECT o.order_id FROM "public"."orders" o WHERE o.user_id = current_setting('app.current_user_id')::bigint));
 CREATE TABLE IF NOT EXISTS product_categories (
   product_id BIGINT NOT NULL REFERENCES products(product_id) ON DELETE CASCADE,
   category_id BIGINT NOT NULL REFERENCES categories(category_id) ON DELETE CASCADE,

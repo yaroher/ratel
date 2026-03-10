@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"ariga.io/atlas/sql/migrate"
@@ -17,6 +19,9 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	pgEngine "github.com/yaroher/ratel/internal/engine/postgres"
+	ratelMigrate "github.com/yaroher/ratel/pkg/migrate"
 )
 
 var (
@@ -26,6 +31,7 @@ var (
 	diffPackages     []string
 	diffTables       []string
 	diffDiscover     bool
+	diffEngine       string
 )
 
 var diffCmd = &cobra.Command{
@@ -64,6 +70,7 @@ func init() {
 	diffCmd.Flags().StringVarP(&diffMigrationDir, "dir", "d", "./migrations", "Migration directory for output")
 	diffCmd.Flags().StringVarP(&diffName, "name", "n", "migration", "Migration name")
 	diffCmd.Flags().Int16P("pg_version", "v", defaultPostgresVersion, "PostgreSQL version")
+	diffCmd.Flags().StringVarP(&diffEngine, "engine", "e", "atlas", "Migration engine: atlas (default) or ratel")
 	diffCmd.MarkFlagRequired("dir")
 }
 
@@ -131,6 +138,9 @@ func runDiff(cmd *cobra.Command, _ []string) error {
 	connStr, err := pgContainer.ConnectionString(cmd.Context(), "sslmode=disable")
 	if err != nil {
 		return fmt.Errorf("failed to get connection string: %v", err)
+	}
+	if diffEngine == "ratel" {
+		return migrateDiffRatel(cmd.Context(), connStr, sqlFilePath, diffMigrationDir, diffName)
 	}
 	return migrateDiff(cmd.Context(), connStr, sqlFilePath, diffMigrationDir, diffName)
 }
@@ -250,6 +260,207 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 	}
 
 	fmt.Printf("Migration '%s' created successfully\n", migrationName)
+	return nil
+}
+
+// migrateDiffRatel runs the diff using the native ratel PG engine instead of atlas.
+func migrateDiffRatel(ctx context.Context, connStr, sqlFilePath, migrationDir, migrationName string) error {
+	if connStr == "" {
+		return errors.New("connection string is required")
+	}
+	if sqlFilePath == "" {
+		return errors.New("sql file path is required")
+	}
+	if migrationDir == "" {
+		return errors.New("migration directory is required")
+	}
+
+	pool, err := pgxpool.New(ctx, connStr)
+	if err != nil {
+		return fmt.Errorf("failed to create pgx pool: %w", err)
+	}
+	defer pool.Close()
+
+	migrator := pgEngine.NewMigrator(pool)
+
+	// Acquire advisory lock
+	unlock, err := migrator.Lock(ctx, "ratel_migrate_diff", 10*time.Second)
+	if err != nil {
+		return fmt.Errorf("acquiring database lock: %w", err)
+	}
+	defer func() {
+		if err := unlock(); err != nil {
+			fmt.Printf("Warning: failed to unlock database: %v\n", err)
+		}
+	}()
+
+	// Apply existing migrations to the dev DB so the current state reflects them.
+	entries, err := ratelMigrationsFromDir(migrationDir)
+	if err != nil {
+		return fmt.Errorf("reading existing migrations: %w", err)
+	}
+	for _, sql := range entries {
+		if _, err := pool.Exec(ctx, sql); err != nil {
+			return fmt.Errorf("applying existing migration: %w", err)
+		}
+	}
+
+	// Inspect current state (after existing migrations).
+	currentState, err := migrator.InspectRealm(ctx)
+	if err != nil {
+		return fmt.Errorf("inspecting current state: %w", err)
+	}
+
+	// Reset the database to a clean state before applying the desired schema.
+	// This is necessary because the desired SQL uses CREATE TABLE IF NOT EXISTS,
+	// which would silently skip tables that already exist from migrations.
+	schemas, err := collectSchemaNames(ctx, pool)
+	if err != nil {
+		return fmt.Errorf("collecting schema names: %w", err)
+	}
+	for _, s := range schemas {
+		if _, err := pool.Exec(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %q CASCADE", s)); err != nil {
+			return fmt.Errorf("dropping schema %s: %w", s, err)
+		}
+		if _, err := pool.Exec(ctx, fmt.Sprintf("CREATE SCHEMA %q", s)); err != nil {
+			return fmt.Errorf("recreating schema %s: %w", s, err)
+		}
+	}
+	// Always ensure public schema exists.
+	if _, err := pool.Exec(ctx, "CREATE SCHEMA IF NOT EXISTS public"); err != nil {
+		return fmt.Errorf("recreating public schema: %w", err)
+	}
+
+	// Apply the desired SQL schema file on a clean database.
+	desiredSQL, err := os.ReadFile(sqlFilePath)
+	if err != nil {
+		return fmt.Errorf("reading sql file: %w", err)
+	}
+	if _, err := pool.Exec(ctx, string(desiredSQL)); err != nil {
+		return fmt.Errorf("applying desired schema: %w", err)
+	}
+
+	// Inspect desired state.
+	desiredState, err := migrator.InspectRealm(ctx)
+	if err != nil {
+		return fmt.Errorf("inspecting desired state: %w", err)
+	}
+
+	// Compute the diff.
+	changes, err := migrator.Diff(currentState, desiredState)
+	if err != nil {
+		return fmt.Errorf("computing diff: %w", err)
+	}
+
+	if len(changes) == 0 {
+		fmt.Println("No schema changes detected")
+		return nil
+	}
+
+	// Generate the migration plan.
+	plan, err := migrator.Plan(ctx, migrationName, changes)
+	if err != nil {
+		return fmt.Errorf("planning migration: %w", err)
+	}
+
+	// Write the migration file.
+	if err := writeMigrationFile(migrationDir, migrationName, plan); err != nil {
+		return fmt.Errorf("writing migration file: %w", err)
+	}
+
+	fmt.Printf("Migration '%s' created successfully\n", migrationName)
+	return nil
+}
+
+// collectSchemaNames returns all user-created schema names from the dev database.
+func collectSchemaNames(ctx context.Context, pool *pgxpool.Pool) ([]string, error) {
+	rows, err := pool.Query(ctx, `
+		SELECT schema_name FROM information_schema.schemata
+		WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+		  AND schema_name NOT LIKE 'pg_%'
+		ORDER BY schema_name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var schemas []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		schemas = append(schemas, name)
+	}
+	return schemas, rows.Err()
+}
+
+// ratelMigrationsFromDir reads all *.sql migration files from dir (sorted by name)
+// and returns their contents as strings, skipping the atlas.sum file.
+func ratelMigrationsFromDir(dir string) ([]string, error) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return nil, nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var sqls []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".sql") {
+			continue
+		}
+		content, err := os.ReadFile(filepath.Join(dir, name))
+		if err != nil {
+			return nil, fmt.Errorf("reading migration %s: %w", name, err)
+		}
+		sqls = append(sqls, string(content))
+	}
+	return sqls, nil
+}
+
+// writeMigrationFile writes a migration SQL file using atlas's LocalDir so that
+// atlas.sum is kept in sync with the new file.
+func writeMigrationFile(dir, name string, plan *ratelMigrate.Plan) error {
+	timestamp := time.Now().Format("20060102150405")
+	filename := fmt.Sprintf("%s_%s.sql", timestamp, name)
+
+	var buf strings.Builder
+	for _, c := range plan.Changes {
+		if c.Comment != "" {
+			buf.WriteString("-- " + c.Comment + "\n")
+		}
+		buf.WriteString(c.SQL)
+		if !strings.HasSuffix(c.SQL, ";") {
+			buf.WriteString(";")
+		}
+		buf.WriteString("\n")
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, filename), []byte(buf.String()), 0644); err != nil {
+		return err
+	}
+
+	// Recalculate atlas.sum so existing atlas tooling keeps working.
+	localDir, err := migrate.NewLocalDir(dir)
+	if err != nil {
+		return fmt.Errorf("opening local dir for checksum update: %w", err)
+	}
+	sum, err := localDir.Checksum()
+	if err != nil && !errors.Is(err, migrate.ErrChecksumNotFound) {
+		return fmt.Errorf("computing checksum: %w", err)
+	}
+	if sum == nil {
+		sum = migrate.HashFile{}
+	}
+	if err := migrate.WriteSumFile(localDir, sum); err != nil {
+		return fmt.Errorf("writing sum file: %w", err)
+	}
+
 	return nil
 }
 

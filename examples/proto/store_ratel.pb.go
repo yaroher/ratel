@@ -21,6 +21,17 @@ var (
 	_ = sqlerr.IsConstraintNamed
 )
 
+// ============================================================================
+// Additional SQL Statements (file-level)
+// ============================================================================
+
+// AdditionalSQL contains raw SQL statements declared via additional_code
+// file option. Pass these to ddl.SchemaSQL() alongside table definitions.
+var AdditionalSQL = []ddl.SchemaSqler{
+	ddl.RawSQL("CREATE EXTENSION IF NOT EXISTS pg_trgm"),
+	ddl.RawSQL("CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$"),
+}
+
 // CurrencyAlias is the table alias type for the currency table
 type CurrencyAlias string
 
@@ -353,6 +364,8 @@ var Users = func() UsersTable {
 			ddl.WithSchema[UserAlias, UserColumnAlias]("store"),
 			ddl.WithPostStatements[UserAlias, UserColumnAlias](
 				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY users_own_data ON {table} FOR ALL USING (id = current_setting('app.current_user_id')::bigint)",
+				"CREATE POLICY users_insert ON {table} FOR INSERT WITH CHECK (true)",
 			),
 		),
 		Id:               idCol,
@@ -539,6 +552,10 @@ var Profiles = func() ProfilesTable {
 				idx0,
 			),
 			ddl.WithSchema[ProfileAlias, ProfileColumnAlias]("store"),
+			ddl.WithPostStatements[ProfileAlias, ProfileColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY profiles_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)",
+			),
 		),
 		Id:        idCol,
 		CreatedAt: createdAtCol,
@@ -1235,6 +1252,10 @@ var Orders = func() OrdersTable {
 				idx2,
 			),
 			ddl.WithSchema[OrderAlias, OrderColumnAlias]("store"),
+			ddl.WithPostStatements[OrderAlias, OrderColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)",
+			),
 		),
 		Id:        idCol,
 		CreatedAt: createdAtCol,
@@ -1435,6 +1456,10 @@ var OrderItems = func() OrderItemsTable {
 			),
 			ddl.WithPrimaryKeyColumns[OrderItemAlias, OrderItemColumnAlias]([]OrderItemColumnAlias{OrderItemColumnOrderId, OrderItemColumnLineNo}),
 			ddl.WithSchema[OrderItemAlias, OrderItemColumnAlias]("store"),
+			ddl.WithPostStatements[OrderItemAlias, OrderItemColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.order_id FROM \"store\".\"orders\" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))",
+			),
 		),
 		OrderId:   orderIdCol,
 		LineNo:    lineNoCol,

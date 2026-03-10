@@ -66,6 +66,19 @@ message User {
 |-------|------|-------------|
 | `columns` | repeated string | Column names for composite PK |
 
+## additional_code (File Option)
+
+File-level SQL statements for extensions, functions, and other DDL not tied to a specific table.
+
+```protobuf
+import "ratelproto/ratelproto.proto";
+
+option (ratel.additional_code) = "CREATE EXTENSION IF NOT EXISTS pg_trgm";
+option (ratel.additional_code) = "CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$";
+```
+
+Generates `var AdditionalSQL []ddl.SchemaSqler` in the `_ratel.pb.go` file. Pass these to `ddl.SchemaSQL()` alongside table definitions.
+
 ## ratel.column (Field Option)
 
 Applied to a protobuf field to configure column generation.

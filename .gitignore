@@ -4,14 +4,15 @@
 .vscode
 
 # bin
-protoc-gen-ratel
+/protoc-gen-ratel
+/ratel
 
 # Build
 bin/
 dist/
 
 # Generated
-./protoc-gen-ratel
+/protoc-gen-ratel
 
 # Test
 coverage.out

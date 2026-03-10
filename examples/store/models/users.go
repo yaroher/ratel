@@ -163,6 +163,11 @@ var Users = func() UsersTable {
 				createdAtCol.DDL(),
 				updatedAtCol.DDL(),
 			},
+			ddl.WithPostStatements[UsersAlias, UsersColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY users_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)",
+				"CREATE POLICY users_insert ON {table} FOR INSERT WITH CHECK (true)",
+			),
 		),
 		UserID:    userIDCol,
 		Email:     emailCol,

@@ -80,4 +80,21 @@ func TestGenerateSchema(t *testing.T) {
 			t.Errorf("expected index creation not found: %s", idx)
 		}
 	}
+
+	// Verify RLS post_statements
+	expectedRLS := []string{
+		"ALTER TABLE users ENABLE ROW LEVEL SECURITY",
+		"CREATE POLICY users_own_data ON users",
+		"CREATE POLICY users_insert ON users",
+		"ALTER TABLE orders ENABLE ROW LEVEL SECURITY",
+		"CREATE POLICY orders_own_data ON orders",
+		"ALTER TABLE order_items ENABLE ROW LEVEL SECURITY",
+		"CREATE POLICY order_items_own_data ON order_items",
+	}
+
+	for _, rls := range expectedRLS {
+		if !strings.Contains(generated, rls) {
+			t.Errorf("expected RLS statement not found: %s", rls)
+		}
+	}
 }

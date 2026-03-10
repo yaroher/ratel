@@ -47,7 +47,7 @@ users, err := Users.Query(ctx, db,
 
 **PostgreSQL Native** — Built on [pgx](https://github.com/jackc/pgx). JSONB, arrays, partial indexes, schemas, RLS — first-class support.
 
-**Migrations** — [Atlas](https://atlasgo.io/)-powered schema diffing. Auto-generate migration files from model changes.
+**Migrations** — Two engines: [Atlas](https://atlasgo.io/) OSS for basic diffing, or the built-in Ratel engine for full PostgreSQL support (RLS, triggers, functions, extensions) without Atlas Pro.
 
 **Zero Overhead** — Go generics, no `interface{}` boxing. Direct struct scanning without reflection.
 
@@ -162,7 +162,9 @@ Users.Delete().Where(Users.ID.Eq(1))
 | Command | Description |
 |---------|-------------|
 | `ratel schema` | Generate SQL from Go models |
-| `ratel diff` | Generate migration diffs (Atlas) |
+| `ratel diff` | Generate migration diffs |
+| `ratel diff --engine ratel` | Diff with full PG support (RLS, triggers, extensions) |
+| `ratel migrate hash` | Recalculate `atlas.sum` after manual edits |
 | `ratel generate` | Generate Go models from SQL |
 | `protoc-gen-ratel` | Protoc plugin for code generation |
 
@@ -176,9 +178,12 @@ ratel/
 ├── pkg/
 │   ├── ddl/                # DDL (CREATE TABLE, indexes, constraints)
 │   ├── dml/                # DML (SELECT, INSERT, UPDATE, DELETE)
+│   ├── migrate/            # Migration types and interfaces
 │   ├── schema/             # Table and column definitions
 │   ├── exec/               # Query execution and scanning
 │   └── repository/         # Repository pattern abstractions
+├── internal/
+│   └── engine/postgres/    # Native migration engine (inspector, differ, planner)
 ├── examples/
 │   ├── store/              # Hand-written models example
 │   └── proto/              # Protobuf-based example

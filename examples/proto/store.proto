@@ -9,6 +9,10 @@ import "google/protobuf/wrappers.proto";
 import "ratelproto/ratelproto.proto";
 import "examples/proto/goplain/goplain.proto";
 
+// File-level SQL: extensions and functions available to all tables
+option (ratel.additional_code) = "CREATE EXTENSION IF NOT EXISTS pg_trgm";
+option (ratel.additional_code) = "CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$";
+
 // ============================================================================
 // Type Aliases для ID
 // ============================================================================
@@ -81,7 +85,9 @@ message User {
       { columns: ["is_active", "created_at"] }
     ]
     post_statements: [
-      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"
+      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+      "CREATE POLICY users_own_data ON {table} FOR ALL USING (id = current_setting('app.current_user_id')::bigint)",
+      "CREATE POLICY users_insert ON {table} FOR INSERT WITH CHECK (true)"
     ]
   };
   
@@ -132,6 +138,10 @@ message Profile {
     schema: "store"
     indexes: [
       { columns: ["user_id"], unique: true }
+    ]
+    post_statements: [
+      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+      "CREATE POLICY profiles_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)"
     ]
   };
   
@@ -283,6 +293,10 @@ message Order {
       { columns: ["status"] },
       { columns: ["created_at"] }
     ]
+    post_statements: [
+      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+      "CREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)"
+    ]
   };
   
   // Embedded BaseEntity (id + timestamps)
@@ -348,6 +362,10 @@ message OrderItem {
     primary_key: { columns: ["order_id", "line_no"] }
     // Composite unique constraint
     unique: [{ columns: ["order_id", "product_id"] }]
+    post_statements: [
+      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+      "CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.order_id FROM \"store\".\"orders\" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))"
+    ]
   };
   
   EntityID order_id = 1 [(ratel.column) = {

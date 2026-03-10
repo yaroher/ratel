@@ -901,7 +901,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\bCurrency\x12(\n" +
 	"\x04code\x18\x01 \x01(\tB\x14\x9a\xb5\x18\x10\x12\x0e\x10\x01*\n" +
 	"code <> ''R\x04code\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\xe3\x04\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name:\x16\x92\xb5\x18\f\b\x01\x12\bcurrency\x82\xa6\x1d\x02\b\x01\"\x96\x06\n" +
 	"\x04User\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x1e\n" +
 	"\x05email\x18\x02 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x05email\x12\x1b\n" +
@@ -916,11 +916,11 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\v\n" +
 	"\auser_id\x18\x01R\x06orders\x129\n" +
 	"\aprofile\x18\v \x01(\v2\x0e.store.ProfileB\x0f\xa2\xb5\x18\v\x1a\t\n" +
-	"\auser_idR\aprofile:m\x92\xb5\x18c\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
-	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITY\x82\xa6\x1d\x02\b\x01B\x15\n" +
+	"\auser_idR\aprofile:\x9f\x02\x92\xb5\x18\x94\x02\b\x01\x12\x05users*\t\x12\x05email\x18\x01*\x17\x12\tis_active\x12\n" +
+	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJkCREATE POLICY users_own_data ON {table} FOR ALL USING (id = current_setting('app.current_user_id')::bigint)JBCREATE POLICY users_insert ON {table} FOR INSERT WITH CHECK (true)\x82\xa6\x1d\x02\b\x01B\x15\n" +
 	"\x13_email_confirmed_atB\v\n" +
 	"\t_nicknameB\r\n" +
-	"\v_deleted_at\"\x8d\x02\n" +
+	"\v_deleted_at\"\xb3\x03\n" +
 	"\aProfile\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12D\n" +
 	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDB\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x12\x10\n" +
@@ -929,7 +929,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x120\n" +
 	"\x04user\x18\n" +
 	" \x01(\v2\v.store.UserB\x0f\xa2\xb5\x18\v\"\t\n" +
-	"\auser_idR\x04user:*\x92\xb5\x18 \b\x01\x12\bprofiles*\v\x12\auser_id\x18\x01B\x05store\x82\xa6\x1d\x02\b\x01\"\xe7\x01\n" +
+	"\auser_idR\x04user:\xcf\x01\x92\xb5\x18\xc4\x01\b\x01\x12\bprofiles*\v\x12\auser_id\x18\x01B\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJsCREATE POLICY profiles_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)\x82\xa6\x1d\x02\b\x01\"\xe7\x01\n" +
 	"\bCategory\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
@@ -960,7 +960,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\xa2\xb5\x18\x06\x12\x04\x10\x01 \x01R\x04tags:v\x92\xb5\x18l\b\x01\x12\bproducts\"\x16CHECK (stock_qty >= 0)*\x05\x12\x03sku*\n" +
 	"\x12\bcurrency*,\x12\n" +
 	"is_deleted\x12\n" +
-	"created_at\"\x12is_deleted = falseB\x05store\x82\xa6\x1d\x02\b\x01\"\x81\x04\n" +
+	"created_at\"\x12is_deleted = falseB\x05store\x82\xa6\x1d\x02\b\x01\"\xa5\x05\n" +
 	"\x05Order\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12D\n" +
 	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDB\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x12%\n" +
@@ -973,8 +973,8 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\x04user\x18\v \x01(\v2\v.store.UserB\x0f\xa2\xb5\x18\v\"\t\n" +
 	"\auser_idR\x04user\x12=\n" +
 	"\x05money\x18\f \x01(\v2\x0f.store.CurrencyB\x16\xa2\xb5\x18\x12\"\x10\n" +
-	"\bcurrency\x12\x04codeR\x05money:y\x92\xb5\x18o\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
-	"created_atB\x05store\x82\xa6\x1d\x02\b\x01\"\xd6\x03\n" +
+	"\bcurrency\x12\x04codeR\x05money:\x9c\x02\x92\xb5\x18\x91\x02\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
+	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJqCREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)\x82\xa6\x1d\x02\b\x01\"\xc0\x05\n" +
 	"\tOrderItem\x12G\n" +
 	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDB\x1b\x9a\xb5\x18\x17\x12\x152\x06orders:\x02id@\x01R\x05storeR\aorderId\x12\x17\n" +
 	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12M\n" +
@@ -989,10 +989,10 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\border_idR\x05order\x12<\n" +
 	"\aproduct\x18\v \x01(\v2\x0e.store.ProductB\x12\xa2\xb5\x18\x0e\"\f\n" +
 	"\n" +
-	"product_idR\aproduct:s\x92\xb5\x18i\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
+	"product_idR\aproduct:\xdc\x02\x92\xb5\x18\xd1\x02\b\x01\x12\vorder_items\"\x13CHECK (line_no > 0)\"\x0fCHECK (qty > 0)2\x16\x12\border_id\x12\n" +
 	"product_id:\x13\n" +
 	"\border_id\n" +
-	"\aline_noB\x05store\x82\xa6\x1d\x02\b\x01B1Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
+	"\aline_noB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITYJ\xb6\x01CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.order_id FROM \"store\".\"orders\" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))\x82\xa6\x1d\x02\b\x01B\xea\x01\x82\xb5\x18&CREATE EXTENSION IF NOT EXISTS pg_trgm\x82\xb5\x18\x8a\x01CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
 
 var (
 	file_examples_proto_store_proto_rawDescOnce sync.Once

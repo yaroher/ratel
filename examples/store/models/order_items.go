@@ -149,6 +149,10 @@ var OrderItems = func() OrderItemsTable {
 					OrderItemsAliasName,
 				).OnColumns(OrderItemsColumnProductID),
 			),
+			ddl.WithPostStatements[OrderItemsAlias, OrderItemsColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				`CREATE POLICY order_items_own_data ON {table} FOR ALL USING (order_id IN (SELECT o.order_id FROM "public"."orders" o WHERE o.user_id = current_setting('app.current_user_id')::bigint))`,
+			),
 		),
 		OrderID:   orderIDCol,
 		LineNo:    lineNoCol,

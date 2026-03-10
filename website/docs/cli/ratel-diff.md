@@ -5,7 +5,7 @@ title: ratel diff
 
 # ratel diff
 
-Generate migration diffs using Atlas.
+Generate migration diffs by comparing your models against the current database state.
 
 ## Usage
 
@@ -24,6 +24,22 @@ ratel diff [flags]
 | `--dir` | | Migration directory (default: ./migrations) |
 | `--name` | `-n` | Migration name (default: migration) |
 | `--pg_version` | | PostgreSQL version (default: 18) |
+| `--engine` | `-e` | Migration engine: `atlas` or `ratel` (default: `atlas`) |
+
+## Migration Engines
+
+### `atlas` (default)
+
+Uses Atlas OSS for diffing. Supports tables, columns, indexes, foreign keys, and check constraints.
+
+### `ratel`
+
+Native engine with full PostgreSQL support. Use this when you need **Row Level Security**, **triggers**, **functions**, or **extensions** — features that require Atlas Pro (paid license).
+
+```bash
+ratel diff --engine ratel -p github.com/myapp/models --discover \
+  -d ./migrations -n add_rls_policies
+```
 
 ## Examples
 
@@ -38,12 +54,17 @@ ratel diff -p github.com/myapp/auth,github.com/myapp/store \
 
 # From SQL file
 ratel diff -s schema.sql -d ./migrations -n initial
+
+# With RLS/triggers support
+ratel diff --engine ratel -p github.com/myapp/models --discover \
+  -d ./migrations -n add_security
 ```
 
 ## How It Works
 
 1. Generates the desired schema from your models (or reads from SQL file)
-2. Uses Atlas to diff against the migration directory state
+2. Compares against the current database state (from applied migrations)
 3. Produces a migration file with the required changes
+4. Updates `atlas.sum` checksum for compatibility
 
 The generated migration file is placed in the `--dir` directory with a timestamp prefix.

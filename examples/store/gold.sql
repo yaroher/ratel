@@ -17,6 +17,13 @@ CREATE TABLE users
     updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- RLS: users can only access their own rows
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY users_own_data ON users FOR ALL
+    USING (user_id = current_setting('app.current_user_id')::bigint);
+CREATE POLICY users_insert ON users FOR INSERT
+    WITH CHECK (true);
+
 CREATE TABLE products
 (
     product_id bigserial PRIMARY KEY,
@@ -45,6 +52,11 @@ CREATE TABLE orders
 
 CREATE INDEX ix_orders_user_created ON orders (user_id, created_at DESC);
 
+-- RLS: users can only access their own orders
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY orders_own_data ON orders FOR ALL
+    USING (user_id = current_setting('app.current_user_id')::bigint);
+
 CREATE TABLE order_items
 (
     order_id   bigint         NOT NULL REFERENCES orders (order_id) ON DELETE CASCADE,
@@ -58,6 +70,12 @@ CREATE TABLE order_items
 );
 
 CREATE INDEX ix_order_items_product ON order_items (product_id);
+
+-- RLS: users can only access items of their own orders
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+CREATE POLICY order_items_own_data ON order_items FOR ALL
+    USING (order_id IN (SELECT o.order_id FROM "public"."orders" o
+                        WHERE o.user_id = current_setting('app.current_user_id')::bigint));
 
 -- Categories with self-referencing for hierarchy
 CREATE TABLE categories

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -42,6 +43,9 @@ func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTabl
 	gf.P(")")
 	gf.P()
 
+	// Generate additional SQL statements from file-level options
+	generateAdditionalSQL(gf, f)
+
 	// First pass: generate table code
 	for _, table := range tables {
 		if err := generateTableCode(gf, table); err != nil {
@@ -59,6 +63,28 @@ func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTabl
 	generateConstraintErrors(gf, tables)
 
 	return nil
+}
+
+// generateAdditionalSQL generates a slice of ddl.RawSQL from file-level
+// additional_code options so they can be passed to ddl.SchemaSQL.
+func generateAdditionalSQL(gf *protogen.GeneratedFile, f *protogen.File) {
+	stmts := getAdditionalCode(f)
+	if len(stmts) == 0 {
+		return
+	}
+
+	gf.P("// ============================================================================")
+	gf.P("// Additional SQL Statements (file-level)")
+	gf.P("// ============================================================================")
+	gf.P()
+	gf.P("// AdditionalSQL contains raw SQL statements declared via additional_code")
+	gf.P("// file option. Pass these to ddl.SchemaSQL() alongside table definitions.")
+	gf.P("var AdditionalSQL = []ddl.SchemaSqler{")
+	for _, stmt := range stmts {
+		gf.P("\tddl.RawSQL(", strconv.Quote(stmt), "),")
+	}
+	gf.P("}")
+	gf.P()
 }
 
 // generateConstraintErrors generates constraint-related code for all tables
@@ -337,7 +363,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	if table.Options != nil && len(table.Options.PostStatements) > 0 {
 		gf.P("\t\t\tddl.WithPostStatements[", aliasTypeName, ", ", colAliasTypeName, "](")
 		for _, stmt := range table.Options.PostStatements {
-			gf.P("\t\t\t\t\"", stmt, "\",")
+			gf.P("\t\t\t\t", strconv.Quote(stmt), ",")
 		}
 		gf.P("\t\t\t),")
 	}

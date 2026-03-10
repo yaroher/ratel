@@ -180,6 +180,10 @@ var Orders = func() OrdersTable {
 					OrdersAliasName,
 				).OnColumns(OrdersColumnUserID, OrdersColumnCreatedAtDesc),
 			),
+			ddl.WithPostStatements[OrdersAlias, OrdersColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+				"CREATE POLICY orders_own_data ON {table} FOR ALL USING (user_id = current_setting('app.current_user_id')::bigint)",
+			),
 		),
 		OrderID:   orderIDCol,
 		UserID:    userIDCol,

@@ -41,6 +41,20 @@ func getRatelColumnOptions(field *protogen.Field) *ratelproto.Column {
 	return c
 }
 
+// getAdditionalCode extracts ratel.additional_code file-level option
+func getAdditionalCode(f *protogen.File) []string {
+	opts := f.Desc.Options()
+	if opts == nil {
+		return nil
+	}
+	ext := proto.GetExtension(opts, ratelproto.E_AdditionalCode)
+	if ext == nil {
+		return nil
+	}
+	strs, _ := ext.([]string)
+	return strs
+}
+
 // getRatelRelationOptions extracts ratel.relation option from a field
 func getRatelRelationOptions(field *protogen.Field) *ratelproto.Relation {
 	if field == nil {
