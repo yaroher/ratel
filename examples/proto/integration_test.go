@@ -80,6 +80,9 @@ func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
 
 // TestGeneratedModels tests the generated models from proto with nested embed
 func TestGeneratedModels(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 

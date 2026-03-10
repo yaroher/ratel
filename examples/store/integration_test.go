@@ -80,6 +80,9 @@ func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
 
 // TestFullCycle tests the complete CRUD cycle with relations
 func TestFullCycle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test in short mode")
+	}
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 
