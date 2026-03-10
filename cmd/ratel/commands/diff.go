@@ -23,7 +23,7 @@ var (
 	diffSqlFile      string
 	diffMigrationDir string
 	diffName         string
-	diffPackage      string
+	diffPackages     []string
 	diffTables       []string
 	diffDiscover     bool
 )
@@ -43,6 +43,9 @@ Examples:
   # From Go models with auto-discovery:
   ratel diff -p github.com/myproject/models --discover -d migrations -n add_users
 
+  # From multiple packages:
+  ratel diff -p github.com/myproject/auth,github.com/myproject/store --discover -d migrations -n init
+
 This will create a SQL migration file that can be applied to the database.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runDiff(cmd, args)
@@ -55,7 +58,7 @@ func init() {
 	rootCmd.AddCommand(diffCmd)
 
 	diffCmd.Flags().StringVarP(&diffSqlFile, "sql", "s", "", "SQL schema file to compare against")
-	diffCmd.Flags().StringVarP(&diffPackage, "package", "p", "", "Go package path containing models")
+	diffCmd.Flags().StringSliceVarP(&diffPackages, "package", "p", nil, "Go package path(s) containing models (can be repeated)")
 	diffCmd.Flags().StringSliceVarP(&diffTables, "tables", "t", nil, "Table variable names (e.g., Users,Products)")
 	diffCmd.Flags().BoolVar(&diffDiscover, "discover", false, "Auto-discover tables from source files")
 	diffCmd.Flags().StringVarP(&diffMigrationDir, "dir", "d", "./migrations", "Migration directory for output")
@@ -66,10 +69,10 @@ func init() {
 
 func runDiff(cmd *cobra.Command, _ []string) error {
 	// Validate flags - need either sql file or package
-	if diffSqlFile == "" && diffPackage == "" {
+	if diffSqlFile == "" && len(diffPackages) == 0 {
 		return errors.New("either --sql (-s) or --package (-p) is required")
 	}
-	if diffSqlFile != "" && diffPackage != "" {
+	if diffSqlFile != "" && len(diffPackages) > 0 {
 		return errors.New("cannot use both --sql and --package, choose one")
 	}
 	if diffMigrationDir == "" {
@@ -83,9 +86,9 @@ func runDiff(cmd *cobra.Command, _ []string) error {
 	var sqlFilePath string
 	var cleanupSQL func()
 
-	if diffPackage != "" {
-		// Generate SQL from Go models package
-		tmpFile, err := generateSchemaFromPackage(diffPackage, diffTables, diffDiscover)
+	if len(diffPackages) > 0 {
+		// Generate SQL from Go models package(s)
+		tmpFile, err := generateSchemaFromPackages(diffPackages, diffTables)
 		if err != nil {
 			return fmt.Errorf("failed to generate schema from package: %w", err)
 		}
@@ -250,25 +253,38 @@ func migrateDiff(ctx context.Context, devURL, sqlFilePath, migrationDir, migrati
 	return nil
 }
 
-// generateSchemaFromPackage generates SQL schema from Go models package
+// packageTables holds discovered tables for a specific package
+type packageTables struct {
+	pkg    string
+	tables []string
+}
+
+// generateSchemaFromPackages generates SQL schema from one or more Go model packages
 // and returns path to temporary SQL file
-func generateSchemaFromPackage(pkg string, tables []string, discover bool) (string, error) {
+func generateSchemaFromPackages(packages []string, tables []string) (string, error) {
 	workspaceRoot := mustGetWorkspaceRoot()
 
-	// Auto-discover tables if requested or no tables specified
-	if discover || len(tables) == 0 {
-		discovered, err := discoverTables(pkg, workspaceRoot)
-		if err != nil {
-			return "", fmt.Errorf("failed to discover tables: %w", err)
+	var allPkgTables []packageTables
+
+	if len(tables) > 0 && len(packages) == 1 {
+		// Explicit tables with single package — backward compatible
+		allPkgTables = append(allPkgTables, packageTables{pkg: packages[0], tables: tables})
+	} else {
+		// Discover tables from each package
+		for _, pkg := range packages {
+			discovered, err := discoverTables(pkg, workspaceRoot)
+			if err != nil {
+				return "", fmt.Errorf("failed to discover tables in %s: %w", pkg, err)
+			}
+			if len(discovered) == 0 {
+				return "", fmt.Errorf("no tables discovered in package %s", pkg)
+			}
+			fmt.Printf("Discovered tables in %s: %v\n", pkg, discovered)
+			allPkgTables = append(allPkgTables, packageTables{pkg: pkg, tables: discovered})
 		}
-		if len(discovered) == 0 {
-			return "", fmt.Errorf("no tables discovered in package %s", pkg)
-		}
-		tables = discovered
-		fmt.Printf("Discovered tables: %v\n", tables)
 	}
 
-	if len(tables) == 0 {
+	if len(allPkgTables) == 0 {
 		return "", errors.New("no tables specified")
 	}
 
@@ -281,7 +297,7 @@ func generateSchemaFromPackage(pkg string, tables []string, discover bool) (stri
 	defer os.Remove(tmpGoFileName)
 
 	// Generate the temporary Go program
-	program := generateSchemaProgram(pkg, tables)
+	program := generateMultiPkgSchemaProgram(allPkgTables)
 
 	if _, err := tmpGoFile.WriteString(program); err != nil {
 		tmpGoFile.Close()
