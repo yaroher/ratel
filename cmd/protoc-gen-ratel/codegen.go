@@ -333,6 +333,15 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 		gf.P("\t\t\tddl.WithSchema[", aliasTypeName, ", ", colAliasTypeName, "](\"", tableSchema, "\"),")
 	}
 
+	// Add post-table statements if any
+	if table.Options != nil && len(table.Options.PostStatements) > 0 {
+		gf.P("\t\t\tddl.WithPostStatements[", aliasTypeName, ", ", colAliasTypeName, "](")
+		for _, stmt := range table.Options.PostStatements {
+			gf.P("\t\t\t\t\"", stmt, "\",")
+		}
+		gf.P("\t\t\t),")
+	}
+
 	gf.P("\t\t),")
 
 	// Column fields

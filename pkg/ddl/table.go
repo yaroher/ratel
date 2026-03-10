@@ -29,6 +29,7 @@ type TableDDL[T types.TableAlias, C types.ColumnAlias] struct {
 	primaryKey      []C                  // legacy unnamed pk
 	namedPrimaryKey *NamedConstraint[C]  // named primary key
 	checks          []CheckConstraint    // table-level check constraints
+	postStatements  []string             // raw SQL after CREATE TABLE, {table} replaced with qualified name
 }
 
 type TableOptions[T types.TableAlias, C types.ColumnAlias] func(*TableDDL[T, C])
@@ -79,6 +80,14 @@ func WithTableCheckConstraint[T types.TableAlias, C types.ColumnAlias](name, exp
 			Name: name,
 			Expr: expr,
 		})
+	}
+}
+
+// WithPostStatements adds raw SQL statements to execute after CREATE TABLE.
+// Use {table} placeholder for schema-qualified table name.
+func WithPostStatements[T types.TableAlias, C types.ColumnAlias](stmts ...string) TableOptions[T, C] {
+	return func(ddl *TableDDL[T, C]) {
+		ddl.postStatements = append(ddl.postStatements, stmts...)
 	}
 }
 
@@ -246,6 +255,11 @@ func (c *TableDDL[T, C]) SchemaSql() []string {
 	qn := c.qualifiedName()
 	for _, idx := range c.indexes {
 		statements = append(statements, idx.SchemaSqlFor(qn))
+	}
+
+	// Add post-table statements with {table} placeholder replaced
+	for _, stmt := range c.postStatements {
+		statements = append(statements, strings.ReplaceAll(stmt, "{table}", qn))
 	}
 
 	return statements

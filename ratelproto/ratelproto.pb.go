@@ -43,9 +43,18 @@ type Table struct {
 	// PostgreSQL schema name (default: "public")
 	// When set, generates CREATE SCHEMA IF NOT EXISTS and uses qualified table names
 	// Example: schema: "auth" -> creates table "auth"."users"
-	Schema        *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Schema *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
+	// Raw SQL statements executed after CREATE TABLE.
+	// Use {table} placeholder for schema-qualified table name.
+	// Example: post_statements: [
+	//
+	//	"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+	//	"GRANT ALL ON {table} TO authenticated"
+	//
+	// ]
+	PostStatements []string `protobuf:"bytes,9,rep,name=post_statements,json=postStatements,proto3" json:"post_statements,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Table) Reset() {
@@ -132,6 +141,13 @@ func (x *Table) GetSchema() string {
 		return *x.Schema
 	}
 	return ""
+}
+
+func (x *Table) GetPostStatements() []string {
+	if x != nil {
+		return x.PostStatements
+	}
+	return nil
 }
 
 // Composite unique constraint
@@ -1029,7 +1045,7 @@ var File_ratelproto_proto protoreflect.FileDescriptor
 
 const file_ratelproto_proto_rawDesc = "" +
 	"\n" +
-	"\x10ratelproto.proto\x12\x05ratel\x1a google/protobuf/descriptor.proto\"\xec\x02\n" +
+	"\x10ratelproto.proto\x12\x05ratel\x1a google/protobuf/descriptor.proto\"\x95\x03\n" +
 	"\x05Table\x12\x1a\n" +
 	"\bgenerate\x18\x01 \x01(\bR\bgenerate\x12\"\n" +
 	"\n" +
@@ -1040,7 +1056,8 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\x06unique\x18\x06 \x03(\v2\x17.ratel.UniqueConstraintR\x06unique\x122\n" +
 	"\vprimary_key\x18\a \x01(\v2\x11.ratel.PrimaryKeyR\n" +
 	"primaryKey\x12\x1b\n" +
-	"\x06schema\x18\b \x01(\tH\x01R\x06schema\x88\x01\x01B\r\n" +
+	"\x06schema\x18\b \x01(\tH\x01R\x06schema\x88\x01\x01\x12'\n" +
+	"\x0fpost_statements\x18\t \x03(\tR\x0epostStatementsB\r\n" +
 	"\v_table_nameB\t\n" +
 	"\a_schema\"@\n" +
 	"\x10UniqueConstraint\x12\x12\n" +

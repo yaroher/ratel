@@ -351,6 +351,9 @@ var Users = func() UsersTable {
 				idx1,
 			),
 			ddl.WithSchema[UserAlias, UserColumnAlias]("store"),
+			ddl.WithPostStatements[UserAlias, UserColumnAlias](
+				"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+			),
 		),
 		Id:               idCol,
 		CreatedAt:        createdAtCol,

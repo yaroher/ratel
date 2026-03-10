@@ -80,6 +80,9 @@ message User {
       { columns: ["email"], unique: true },
       { columns: ["is_active", "created_at"] }
     ]
+    post_statements: [
+      "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY"
+    ]
   };
   
   // Embedded BaseEntity (id + timestamps)

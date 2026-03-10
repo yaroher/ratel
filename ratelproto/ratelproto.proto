@@ -133,6 +133,14 @@ message Table {
   // When set, generates CREATE SCHEMA IF NOT EXISTS and uses qualified table names
   // Example: schema: "auth" -> creates table "auth"."users"
   optional string schema = 8;
+
+  // Raw SQL statements executed after CREATE TABLE.
+  // Use {table} placeholder for schema-qualified table name.
+  // Example: post_statements: [
+  //   "ALTER TABLE {table} ENABLE ROW LEVEL SECURITY",
+  //   "GRANT ALL ON {table} TO authenticated"
+  // ]
+  repeated string post_statements = 9;
 }
 
 // Composite unique constraint
