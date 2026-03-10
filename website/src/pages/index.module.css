@@ -34,13 +34,6 @@
   margin-bottom: 32px;
 }
 
-.heroMascot {
-  width: 160px;
-  height: 160px;
-  margin-bottom: 24px;
-  filter: drop-shadow(0 0 40px rgba(233, 69, 96, 0.3));
-}
-
 .heroLogo {
   font-family: 'JetBrains Mono', monospace;
   font-size: 72px;
