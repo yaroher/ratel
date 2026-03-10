@@ -1,0 +1,105 @@
+/* Ratel — Aggressive Dark Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800;900&display=swap');
+
+:root,
+[data-theme='dark'] {
+  /* Core palette */
+  --ifm-background-color: #0a0a0a;
+  --ifm-background-surface-color: #0f0f0f;
+  --ifm-color-primary: #e94560;
+  --ifm-color-primary-dark: #d63550;
+  --ifm-color-primary-darker: #c42a45;
+  --ifm-color-primary-darkest: #a01f37;
+  --ifm-color-primary-light: #ff5a75;
+  --ifm-color-primary-lighter: #ff7a90;
+  --ifm-color-primary-lightest: #ff9aaa;
+
+  /* Text */
+  --ifm-font-color-base: #e0e0e0;
+  --ifm-font-color-secondary: #888;
+  --ifm-heading-color: #fff;
+
+  /* Links */
+  --ifm-link-color: #58a6ff;
+  --ifm-link-hover-color: #79bbff;
+
+  /* Code */
+  --ifm-code-background: #111;
+  --ifm-code-font-size: 90%;
+
+  /* Navbar */
+  --ifm-navbar-background-color: #0a0a0a;
+  --ifm-navbar-shadow: 0 1px 0 rgba(233, 69, 96, 0.1);
+
+  /* Footer */
+  --ifm-footer-background-color: #050505;
+
+  /* Borders */
+  --ifm-toc-border-color: #1a1a1a;
+  --ifm-hr-border-color: #1a1a1a;
+
+  /* Sidebar */
+  --doc-sidebar-width: 280px;
+
+  /* Typography */
+  --ifm-font-family-base: 'Inter', system-ui, -apple-system, sans-serif;
+  --ifm-font-family-monospace: 'JetBrains Mono', 'Fira Code', monospace;
+  --ifm-heading-font-family: 'JetBrains Mono', monospace;
+  --ifm-heading-font-weight: 700;
+}
+
+/* Navbar branding */
+.navbar__title {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  font-size: 18px;
+}
+
+/* Sidebar styling */
+.menu__link {
+  font-size: 14px;
+}
+.menu__link--active:not(.menu__link--sublist) {
+  border-left: 2px solid #e94560;
+  padding-left: 10px;
+}
+
+/* Code blocks */
+.prism-code {
+  background: #0f0f0f !important;
+  border: 1px solid #1a1a1a;
+}
+
+/* Tables */
+table {
+  border-collapse: collapse;
+}
+table th {
+  background: #111;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+table td, table th {
+  border-color: #1a1a1a;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e94560;
+}

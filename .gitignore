@@ -25,3 +25,11 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+# Docusaurus
+website/.docusaurus
+website/build
+website/node_modules
+
+# Superpowers
+.superpowers/

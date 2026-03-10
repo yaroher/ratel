@@ -1,0 +1,321 @@
+/* Hero */
+.hero {
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(233, 69, 96, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(233, 69, 96, 0.08) 0%, transparent 40%),
+    #0a0a0a;
+  padding: 60px 20px;
+  position: relative;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(233, 69, 96, 0.3), transparent);
+}
+
+.heroBadge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e94560;
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  padding: 6px 16px;
+  border-radius: 2px;
+  margin-bottom: 32px;
+}
+
+.heroLogo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 72px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: #fff;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  text-shadow: 0 0 60px rgba(233, 69, 96, 0.3);
+}
+.heroLogoAccent {
+  color: #e94560;
+}
+
+.heroTagline {
+  font-size: 20px;
+  color: #888;
+  max-width: 500px;
+  line-height: 1.6;
+  margin-bottom: 40px;
+}
+
+.heroButtons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.btnPrimary {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btnPrimary:hover {
+  background: #ff5a75;
+  box-shadow: 0 0 30px rgba(233, 69, 96, 0.4);
+  color: #fff;
+  text-decoration: none;
+}
+
+.btnSecondary {
+  background: transparent;
+  color: #e0e0e0;
+  border: 1px solid #333;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btnSecondary:hover {
+  border-color: #e94560;
+  color: #e94560;
+  text-decoration: none;
+}
+
+.installLine {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #1a1a1a;
+  padding: 12px 24px;
+  color: #888;
+}
+.installLinePrompt {
+  color: #e94560;
+}
+
+/* Code preview */
+.codePreview {
+  max-width: 700px;
+  width: 100%;
+  margin-top: 48px;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  overflow: hidden;
+  text-align: left;
+}
+.codeHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #1a1a1a;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #555;
+}
+.codeDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.codeDotR {
+  composes: codeDot;
+  background: #e94560;
+}
+.codeDotY {
+  composes: codeDot;
+  background: #f59e0b;
+}
+.codeDotG {
+  composes: codeDot;
+  background: #10b981;
+}
+.codeBody {
+  padding: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-x: auto;
+  white-space: pre;
+  color: #ccc;
+}
+
+/* Features */
+.features {
+  padding: 100px 20px;
+  background: #0a0a0a;
+}
+.featuresTitle {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #e94560;
+  margin-bottom: 60px;
+}
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.feature {
+  padding: 40px 32px;
+  background: #0f0f0f;
+  border-left: 2px solid transparent;
+  transition: all 0.3s;
+}
+.feature:hover {
+  border-left-color: #e94560;
+  background: #111;
+}
+.featureIcon {
+  font-size: 28px;
+  margin-bottom: 16px;
+}
+.featureTitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.featureDesc {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* Comparison */
+.comparison {
+  padding: 100px 20px;
+  background: linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%);
+}
+.comparisonTitle {
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: #e94560;
+  margin-bottom: 16px;
+}
+.comparisonSub {
+  text-align: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 60px;
+}
+.compareCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.compareCol {
+  background: #0f0f0f;
+  border: 1px solid #1a1a1a;
+  overflow: hidden;
+}
+.compareColHighlight {
+  composes: compareCol;
+  border-color: rgba(233, 69, 96, 0.3);
+}
+.compareLabel {
+  padding: 16px 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #1a1a1a;
+  color: #555;
+}
+.compareLabelHighlight {
+  composes: compareLabel;
+  color: #e94560;
+  background: rgba(233, 69, 96, 0.05);
+}
+.compareCode {
+  padding: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #888;
+  white-space: pre;
+}
+.compareCodeHighlight {
+  composes: compareCode;
+  color: #ccc;
+}
+
+/* CTA */
+.cta {
+  padding: 120px 20px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 100%, rgba(233, 69, 96, 0.1) 0%, transparent 60%),
+    #0a0a0a;
+}
+.ctaTitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+.ctaText {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 40px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heroLogo {
+    font-size: 48px;
+    letter-spacing: 4px;
+  }
+  .heroTagline {
+    font-size: 16px;
+  }
+  .heroButtons {
+    flex-direction: column;
+  }
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+  .compareCols {
+    grid-template-columns: 1fr;
+  }
+  .ctaTitle {
+    font-size: 24px;
+  }
+}
