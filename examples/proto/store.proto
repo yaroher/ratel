@@ -138,7 +138,13 @@ message Profile {
   // Embedded BaseEntity (id + timestamps)
   BaseEntity base = 1 [(goplain.field).embed = true];
   
-  EntityID user_id = 2;  // FK to users.id (unique - one profile per user)
+  EntityID user_id = 2 [(ratel.column) = {
+    constraints: {
+      references_table: "\"store\".\"users\""
+      references_column: "id"
+      on_delete: CASCADE
+    }
+  }];  // FK to users.id (unique - one profile per user)
   
   string bio = 3;
   
@@ -170,7 +176,13 @@ message Category {
     constraints: { unique: true }
   }];
   
-  google.protobuf.Int64Value parent_id = 4;
+  google.protobuf.Int64Value parent_id = 4 [(ratel.column) = {
+    constraints: {
+      references_table: "\"store\".\"categories\""
+      references_column: "id"
+      on_delete: SET_NULL
+    }
+  }];  // nullable self-referencing FK
 }
 
 // ============================================================================
@@ -274,8 +286,14 @@ message Order {
   // Embedded BaseEntity (id + timestamps)
   BaseEntity base = 1 [(goplain.field).embed = true];
   
-  EntityID user_id = 2;  // FK to users.id
-  
+  EntityID user_id = 2 [(ratel.column) = {
+    constraints: {
+      references_table: "\"store\".\"users\""
+      references_column: "id"
+      on_delete: CASCADE
+    }
+  }];  // FK to users.id
+
   string status = 3 [(ratel.column) = {
     constraints: { default_value: "'NEW'" }
   }];
@@ -329,9 +347,21 @@ message OrderItem {
     unique: [{ columns: ["order_id", "product_id"] }]
   };
   
-  EntityID order_id = 1;   // FK to orders.id
+  EntityID order_id = 1 [(ratel.column) = {
+    constraints: {
+      references_table: "\"store\".\"orders\""
+      references_column: "id"
+      on_delete: CASCADE
+    }
+  }];   // FK to orders.id
   int32 line_no = 2;
-  EntityID product_id = 3; // FK to products.id
+  EntityID product_id = 3 [(ratel.column) = {
+    constraints: {
+      references_table: "\"store\".\"products\""
+      references_column: "id"
+      on_delete: RESTRICT
+    }
+  }]; // FK to products.id
   int32 qty = 4;
   double unit_price = 5;
   

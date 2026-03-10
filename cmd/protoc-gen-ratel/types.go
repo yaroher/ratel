@@ -1,12 +1,21 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/yaroher/protoc-gen-go-plain/goplain"
 	"github.com/yaroher/ratel/ratelproto"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+// escapeGoString escapes double quotes and backslashes for embedding in a Go string literal.
+func escapeGoString(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	return s
+}
 
 // referenceActionToSQL converts ReferenceAction enum to SQL string.
 func referenceActionToSQL(action ratelproto.ReferenceAction) string {
@@ -216,26 +225,14 @@ func getSchemaColumnType(col *RatelColumn, msgName string) string {
 	nullable := isFieldNullable(col)
 	alias := msgName + "ColumnAlias"
 
-	kind := col.Field.Desc.Kind()
-	if col.Field.Message != nil && isTypeAlias(col.Field.Message) {
-		if len(col.Field.Message.Fields) > 0 {
-			kind = col.Field.Message.Fields[0].Desc.Kind()
-		}
-	}
-
-	// PK overrides — never nullable
-	if isPK && kind == protoreflect.Int64Kind {
-		return "schema.BigSerialColumnI[" + alias + "]"
-	}
-	if isPK && kind == protoreflect.StringKind {
-		return "schema.TextColumnI[" + alias + "]"
-	}
-
-	// Well-known message types
-	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) {
+	// Well-known message types with special SQL mappings
+	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) && !isWrapperType(col.Field) {
 		fullName := string(col.Field.Message.Desc.FullName())
 		switch fullName {
 		case "google.protobuf.Timestamp":
+			if isPK {
+				return "schema.TimestamptzColumnI[" + alias + "]"
+			}
 			if nullable {
 				return "schema.NullTimestamptzColumnI[" + alias + "]"
 			}
@@ -253,7 +250,23 @@ func getSchemaColumnType(col *RatelColumn, msgName string) string {
 		}
 	}
 
-	// Scalars and wrapper types (wrappers resolved to base kind via isWrapperType)
+	// Resolve kind: for type aliases and wrapper types, use the inner scalar kind
+	kind := col.Field.Desc.Kind()
+	if col.Field.Message != nil && (isTypeAlias(col.Field.Message) || isWrapperType(col.Field)) {
+		if len(col.Field.Message.Fields) > 0 {
+			kind = col.Field.Message.Fields[0].Desc.Kind()
+		}
+	}
+
+	// PK overrides — never nullable
+	if isPK && kind == protoreflect.Int64Kind {
+		return "schema.BigSerialColumnI[" + alias + "]"
+	}
+	if isPK && kind == protoreflect.StringKind {
+		return "schema.TextColumnI[" + alias + "]"
+	}
+
+	// Scalars, wrapper types, and type aliases
 	prefix := "schema."
 	if nullable {
 		prefix = "schema.Null"
@@ -300,13 +313,6 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 		onUpdate = col.Options.Constraints.OnUpdate
 	}
 
-	kind := col.Field.Desc.Kind()
-	if col.Field.Message != nil && isTypeAlias(col.Field.Message) {
-		if len(col.Field.Message.Fields) > 0 {
-			kind = col.Field.Message.Fields[0].Desc.Kind()
-		}
-	}
-
 	// Build options
 	var opts []string
 	if isPK {
@@ -316,13 +322,13 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 		opts = append(opts, "ddl.WithUnique["+msgName+"ColumnAlias]()")
 	}
 	if defaultVal != "" {
-		opts = append(opts, "ddl.WithDefault["+msgName+"ColumnAlias](\""+defaultVal+"\")")
+		opts = append(opts, "ddl.WithDefault["+msgName+"ColumnAlias](\""+escapeGoString(defaultVal)+"\")")
 	}
 	if checkExpr != "" {
-		opts = append(opts, "ddl.WithCheck["+msgName+"ColumnAlias](\""+checkExpr+"\")")
+		opts = append(opts, "ddl.WithCheck["+msgName+"ColumnAlias](\""+escapeGoString(checkExpr)+"\")")
 	}
 	if refTable != "" {
-		opts = append(opts, "ddl.WithReferences["+msgName+"ColumnAlias](\""+refTable+"\", \""+refColumn+"\")")
+		opts = append(opts, "ddl.WithReferences["+msgName+"ColumnAlias](\""+escapeGoString(refTable)+"\", \""+escapeGoString(refColumn)+"\")")
 	}
 	if onDelete != ratelproto.ReferenceAction_NO_ACTION {
 		opts = append(opts, "ddl.WithOnDelete["+msgName+"ColumnAlias](\""+referenceActionToSQL(onDelete)+"\")")
@@ -336,16 +342,8 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 		optStr += ", " + opt
 	}
 
-	// PK overrides — never nullable, must come first
-	if isPK && kind == protoreflect.Int64Kind {
-		return "schema.BigSerialColumn(" + constName + optStr + ")"
-	}
-	if isPK && kind == protoreflect.StringKind {
-		return "schema.TextColumn(" + constName + optStr + ")"
-	}
-
-	// Well-known message types
-	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) {
+	// Well-known message types with special SQL mappings
+	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) && !isWrapperType(col.Field) {
 		fullName := string(col.Field.Message.Desc.FullName())
 		switch fullName {
 		case "google.protobuf.Timestamp":
@@ -364,6 +362,22 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 			}
 			return "schema.JSONColumn(" + constName + optStr + ")"
 		}
+	}
+
+	// Resolve kind: for type aliases and wrapper types, use the inner scalar kind
+	kind := col.Field.Desc.Kind()
+	if col.Field.Message != nil && (isTypeAlias(col.Field.Message) || isWrapperType(col.Field)) {
+		if len(col.Field.Message.Fields) > 0 {
+			kind = col.Field.Message.Fields[0].Desc.Kind()
+		}
+	}
+
+	// PK overrides — never nullable, must come first
+	if isPK && kind == protoreflect.Int64Kind {
+		return "schema.BigSerialColumn(" + constName + optStr + ")"
+	}
+	if isPK && kind == protoreflect.StringKind {
+		return "schema.TextColumn(" + constName + optStr + ")"
 	}
 
 	prefix := "schema."

@@ -442,7 +442,7 @@ type Category struct {
 	Base          *BaseEntity            `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	Slug          string                 `protobuf:"bytes,3,opt,name=slug,proto3" json:"slug,omitempty"`
-	ParentId      *wrapperspb.Int64Value `protobuf:"bytes,4,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	ParentId      *wrapperspb.Int64Value `protobuf:"bytes,4,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"` // nullable self-referencing FK
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -920,21 +920,21 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"created_atB\x05storeJ-ALTER TABLE {table} ENABLE ROW LEVEL SECURITY\x82\xa6\x1d\x02\b\x01B\x15\n" +
 	"\x13_email_confirmed_atB\v\n" +
 	"\t_nicknameB\r\n" +
-	"\v_deleted_at\"\xf1\x01\n" +
+	"\v_deleted_at\"\x90\x02\n" +
 	"\aProfile\x12-\n" +
-	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12(\n" +
-	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDR\x06userId\x12\x10\n" +
+	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12G\n" +
+	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDB\x1d\x9a\xb5\x18\x19\x12\x172\x0f\"store\".\"users\":\x02id@\x01R\x06userId\x12\x10\n" +
 	"\x03bio\x18\x03 \x01(\tR\x03bio\x12\x1d\n" +
 	"\n" +
 	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x120\n" +
 	"\x04user\x18\n" +
 	" \x01(\v2\v.store.UserB\x0f\xa2\xb5\x18\v\"\t\n" +
-	"\auser_idR\x04user:*\x92\xb5\x18 \b\x01\x12\bprofiles*\v\x12\auser_id\x18\x01B\x05store\x82\xa6\x1d\x02\b\x01\"\xc6\x01\n" +
+	"\auser_idR\x04user:*\x92\xb5\x18 \b\x01\x12\bprofiles*\v\x12\auser_id\x18\x01B\x05store\x82\xa6\x1d\x02\b\x01\"\xea\x01\n" +
 	"\bCategory\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
-	"\x04slug\x18\x03 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x04slug\x128\n" +
-	"\tparent_id\x18\x04 \x01(\v2\x1b.google.protobuf.Int64ValueR\bparentId:\x1f\x92\xb5\x18\x15\b\x01\x12\n" +
+	"\x04slug\x18\x03 \x01(\tB\b\x9a\xb5\x18\x04\x12\x02\b\x01R\x04slug\x12\\\n" +
+	"\tparent_id\x18\x04 \x01(\v2\x1b.google.protobuf.Int64ValueB\"\x9a\xb5\x18\x1e\x12\x1c2\x14\"store\".\"categories\":\x02id@\x02R\bparentId:\x1f\x92\xb5\x18\x15\b\x01\x12\n" +
 	"categoriesB\x05store\x82\xa6\x1d\x02\b\x01\"z\n" +
 	"\x03Tag\x12-\n" +
 	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12\x12\n" +
@@ -959,10 +959,10 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\xa2\xb5\x18\x06\x12\x04\x10\x01 \x01R\x04tags:v\x92\xb5\x18l\b\x01\x12\bproducts\"\x16CHECK (stock_qty >= 0)*\x05\x12\x03sku*\n" +
 	"\x12\bcurrency*,\x12\n" +
 	"is_deleted\x12\n" +
-	"created_at\"\x12is_deleted = falseB\x05store\x82\xa6\x1d\x02\b\x01\"\xe5\x03\n" +
+	"created_at\"\x12is_deleted = falseB\x05store\x82\xa6\x1d\x02\b\x01\"\x84\x04\n" +
 	"\x05Order\x12-\n" +
-	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12(\n" +
-	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDR\x06userId\x12%\n" +
+	"\x04base\x18\x01 \x01(\v2\x11.store.BaseEntityB\x06\x82\xa6\x1d\x02 \x01R\x04base\x12G\n" +
+	"\auser_id\x18\x02 \x01(\v2\x0f.store.EntityIDB\x1d\x9a\xb5\x18\x19\x12\x172\x0f\"store\".\"users\":\x02id@\x01R\x06userId\x12%\n" +
 	"\x06status\x18\x03 \x01(\tB\r\x9a\xb5\x18\t\x12\a\x1a\x05'NEW'R\x06status\x124\n" +
 	"\bcurrency\x18\x04 \x01(\tB\x18\x9a\xb5\x18\x14\x12\x122\bcurrency:\x04code@\x04R\bcurrency\x12:\n" +
 	"\x05items\x18\n" +
@@ -973,12 +973,12 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\auser_idR\x04user\x12=\n" +
 	"\x05money\x18\f \x01(\v2\x0f.store.CurrencyB\x16\xa2\xb5\x18\x12\"\x10\n" +
 	"\bcurrency\x12\x04codeR\x05money:y\x92\xb5\x18o\b\x01\x12\x06orders\"9CHECK (status IN ('NEW', 'PAID', 'CANCELLED', 'SHIPPED'))*\t\x12\auser_id*\b\x12\x06status*\f\x12\n" +
-	"created_atB\x05store\x82\xa6\x1d\x02\b\x01\"\x9a\x03\n" +
-	"\tOrderItem\x12*\n" +
-	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDR\aorderId\x12\x17\n" +
-	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12.\n" +
+	"created_atB\x05store\x82\xa6\x1d\x02\b\x01\"\xdc\x03\n" +
+	"\tOrderItem\x12J\n" +
+	"\border_id\x18\x01 \x01(\v2\x0f.store.EntityIDB\x1e\x9a\xb5\x18\x1a\x12\x182\x10\"store\".\"orders\":\x02id@\x01R\aorderId\x12\x17\n" +
+	"\aline_no\x18\x02 \x01(\x05R\x06lineNo\x12P\n" +
 	"\n" +
-	"product_id\x18\x03 \x01(\v2\x0f.store.EntityIDR\tproductId\x12\x10\n" +
+	"product_id\x18\x03 \x01(\v2\x0f.store.EntityIDB \x9a\xb5\x18\x1c\x12\x1a2\x12\"store\".\"products\":\x02id@\x04R\tproductId\x12\x10\n" +
 	"\x03qty\x18\x04 \x01(\x05R\x03qty\x12\x1d\n" +
 	"\n" +
 	"unit_price\x18\x05 \x01(\x01R\tunitPrice\x124\n" +
