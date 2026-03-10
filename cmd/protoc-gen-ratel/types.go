@@ -311,6 +311,10 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 		refColumn = col.Options.Constraints.ReferencesColumn
 		onDelete = col.Options.Constraints.OnDelete
 		onUpdate = col.Options.Constraints.OnUpdate
+		// Build qualified table name from schema + table
+		if refSchema := col.Options.Constraints.ReferencesSchema; refSchema != "" {
+			refTable = `"` + refSchema + `"."` + refTable + `"`
+		}
 	}
 
 	// Build options

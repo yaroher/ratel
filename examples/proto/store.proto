@@ -140,7 +140,8 @@ message Profile {
   
   EntityID user_id = 2 [(ratel.column) = {
     constraints: {
-      references_table: "\"store\".\"users\""
+      references_schema: "store"
+      references_table: "users"
       references_column: "id"
       on_delete: CASCADE
     }
@@ -178,7 +179,8 @@ message Category {
   
   google.protobuf.Int64Value parent_id = 4 [(ratel.column) = {
     constraints: {
-      references_table: "\"store\".\"categories\""
+      references_schema: "store"
+      references_table: "categories"
       references_column: "id"
       on_delete: SET_NULL
     }
@@ -288,7 +290,8 @@ message Order {
   
   EntityID user_id = 2 [(ratel.column) = {
     constraints: {
-      references_table: "\"store\".\"users\""
+      references_schema: "store"
+      references_table: "users"
       references_column: "id"
       on_delete: CASCADE
     }
@@ -349,7 +352,8 @@ message OrderItem {
   
   EntityID order_id = 1 [(ratel.column) = {
     constraints: {
-      references_table: "\"store\".\"orders\""
+      references_schema: "store"
+      references_table: "orders"
       references_column: "id"
       on_delete: CASCADE
     }
@@ -357,7 +361,8 @@ message OrderItem {
   int32 line_no = 2;
   EntityID product_id = 3 [(ratel.column) = {
     constraints: {
-      references_table: "\"store\".\"products\""
+      references_schema: "store"
+      references_table: "products"
       references_column: "id"
       on_delete: RESTRICT
     }

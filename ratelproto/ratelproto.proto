@@ -215,11 +215,13 @@ message Constraint {
   string check = 5;
 
   // Foreign key reference (REFERENCES clause)
-  // Example: references_table: "\"auth\".\"users\"", references_column: "id"
+  // Example: references_table: "users", references_column: "id"
+  // For cross-schema: references_schema: "auth", references_table: "users"
   string references_table = 6;
   string references_column = 7;
   ReferenceAction on_delete = 8;
   ReferenceAction on_update = 9;
+  string references_schema = 10;
 }
 
 // ============================================================================

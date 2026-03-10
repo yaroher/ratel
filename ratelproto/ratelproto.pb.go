@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v5.28.3
-// source: ratelproto.proto
+// source: ratelproto/ratelproto.proto
 
 package ratelproto
 
@@ -62,11 +62,11 @@ func (x ReferenceAction) String() string {
 }
 
 func (ReferenceAction) Descriptor() protoreflect.EnumDescriptor {
-	return file_ratelproto_proto_enumTypes[0].Descriptor()
+	return file_ratelproto_ratelproto_proto_enumTypes[0].Descriptor()
 }
 
 func (ReferenceAction) Type() protoreflect.EnumType {
-	return &file_ratelproto_proto_enumTypes[0]
+	return &file_ratelproto_ratelproto_proto_enumTypes[0]
 }
 
 func (x ReferenceAction) Number() protoreflect.EnumNumber {
@@ -75,7 +75,7 @@ func (x ReferenceAction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReferenceAction.Descriptor instead.
 func (ReferenceAction) EnumDescriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{0}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{0}
 }
 
 type Table struct {
@@ -115,7 +115,7 @@ type Table struct {
 
 func (x *Table) Reset() {
 	*x = Table{}
-	mi := &file_ratelproto_proto_msgTypes[0]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -127,7 +127,7 @@ func (x *Table) String() string {
 func (*Table) ProtoMessage() {}
 
 func (x *Table) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[0]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -140,7 +140,7 @@ func (x *Table) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Table.ProtoReflect.Descriptor instead.
 func (*Table) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{0}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Table) GetGenerate() bool {
@@ -219,7 +219,7 @@ type UniqueConstraint struct {
 
 func (x *UniqueConstraint) Reset() {
 	*x = UniqueConstraint{}
-	mi := &file_ratelproto_proto_msgTypes[1]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -231,7 +231,7 @@ func (x *UniqueConstraint) String() string {
 func (*UniqueConstraint) ProtoMessage() {}
 
 func (x *UniqueConstraint) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[1]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -244,7 +244,7 @@ func (x *UniqueConstraint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UniqueConstraint.ProtoReflect.Descriptor instead.
 func (*UniqueConstraint) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{1}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UniqueConstraint) GetName() string {
@@ -272,7 +272,7 @@ type PrimaryKey struct {
 
 func (x *PrimaryKey) Reset() {
 	*x = PrimaryKey{}
-	mi := &file_ratelproto_proto_msgTypes[2]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -284,7 +284,7 @@ func (x *PrimaryKey) String() string {
 func (*PrimaryKey) ProtoMessage() {}
 
 func (x *PrimaryKey) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[2]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -297,7 +297,7 @@ func (x *PrimaryKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PrimaryKey.ProtoReflect.Descriptor instead.
 func (*PrimaryKey) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{2}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PrimaryKey) GetColumns() []string {
@@ -332,7 +332,7 @@ type Index struct {
 
 func (x *Index) Reset() {
 	*x = Index{}
-	mi := &file_ratelproto_proto_msgTypes[3]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -344,7 +344,7 @@ func (x *Index) String() string {
 func (*Index) ProtoMessage() {}
 
 func (x *Index) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[3]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -357,7 +357,7 @@ func (x *Index) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Index.ProtoReflect.Descriptor instead.
 func (*Index) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{3}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Index) GetName() string {
@@ -427,18 +427,20 @@ type Constraint struct {
 	// Example: check: "id <> ”"  →  CHECK (id <> ”)
 	Check string `protobuf:"bytes,5,opt,name=check,proto3" json:"check,omitempty"`
 	// Foreign key reference (REFERENCES clause)
-	// Example: references_table: "\"auth\".\"users\"", references_column: "id"
+	// Example: references_table: "users", references_column: "id"
+	// For cross-schema: references_schema: "auth", references_table: "users"
 	ReferencesTable  string          `protobuf:"bytes,6,opt,name=references_table,json=referencesTable,proto3" json:"references_table,omitempty"`
 	ReferencesColumn string          `protobuf:"bytes,7,opt,name=references_column,json=referencesColumn,proto3" json:"references_column,omitempty"`
 	OnDelete         ReferenceAction `protobuf:"varint,8,opt,name=on_delete,json=onDelete,proto3,enum=ratel.ReferenceAction" json:"on_delete,omitempty"`
 	OnUpdate         ReferenceAction `protobuf:"varint,9,opt,name=on_update,json=onUpdate,proto3,enum=ratel.ReferenceAction" json:"on_update,omitempty"`
+	ReferencesSchema string          `protobuf:"bytes,10,opt,name=references_schema,json=referencesSchema,proto3" json:"references_schema,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *Constraint) Reset() {
 	*x = Constraint{}
-	mi := &file_ratelproto_proto_msgTypes[4]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +452,7 @@ func (x *Constraint) String() string {
 func (*Constraint) ProtoMessage() {}
 
 func (x *Constraint) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[4]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +465,7 @@ func (x *Constraint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Constraint.ProtoReflect.Descriptor instead.
 func (*Constraint) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{4}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Constraint) GetUnique() bool {
@@ -529,6 +531,13 @@ func (x *Constraint) GetOnUpdate() ReferenceAction {
 	return ReferenceAction_NO_ACTION
 }
 
+func (x *Constraint) GetReferencesSchema() string {
+	if x != nil {
+		return x.ReferencesSchema
+	}
+	return ""
+}
+
 type VirtualColumn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SqlName       string                 `protobuf:"bytes,1,opt,name=sql_name,json=sqlName,proto3" json:"sql_name,omitempty"`
@@ -542,7 +551,7 @@ type VirtualColumn struct {
 
 func (x *VirtualColumn) Reset() {
 	*x = VirtualColumn{}
-	mi := &file_ratelproto_proto_msgTypes[5]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -554,7 +563,7 @@ func (x *VirtualColumn) String() string {
 func (*VirtualColumn) ProtoMessage() {}
 
 func (x *VirtualColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[5]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,7 +576,7 @@ func (x *VirtualColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VirtualColumn.ProtoReflect.Descriptor instead.
 func (*VirtualColumn) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{5}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *VirtualColumn) GetSqlName() string {
@@ -617,7 +626,7 @@ type Column struct {
 
 func (x *Column) Reset() {
 	*x = Column{}
-	mi := &file_ratelproto_proto_msgTypes[6]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -629,7 +638,7 @@ func (x *Column) String() string {
 func (*Column) ProtoMessage() {}
 
 func (x *Column) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[6]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -642,7 +651,7 @@ func (x *Column) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Column.ProtoReflect.Descriptor instead.
 func (*Column) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{6}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Column) GetSkip() bool {
@@ -677,7 +686,7 @@ type OneToMany struct {
 
 func (x *OneToMany) Reset() {
 	*x = OneToMany{}
-	mi := &file_ratelproto_proto_msgTypes[7]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -689,7 +698,7 @@ func (x *OneToMany) String() string {
 func (*OneToMany) ProtoMessage() {}
 
 func (x *OneToMany) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[7]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -702,7 +711,7 @@ func (x *OneToMany) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OneToMany.ProtoReflect.Descriptor instead.
 func (*OneToMany) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{7}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *OneToMany) GetRefName() string {
@@ -753,7 +762,7 @@ type HasOne struct {
 
 func (x *HasOne) Reset() {
 	*x = HasOne{}
-	mi := &file_ratelproto_proto_msgTypes[8]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -765,7 +774,7 @@ func (x *HasOne) String() string {
 func (*HasOne) ProtoMessage() {}
 
 func (x *HasOne) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[8]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -778,7 +787,7 @@ func (x *HasOne) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HasOne.ProtoReflect.Descriptor instead.
 func (*HasOne) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{8}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *HasOne) GetRefName() string {
@@ -830,7 +839,7 @@ type BelongsTo struct {
 
 func (x *BelongsTo) Reset() {
 	*x = BelongsTo{}
-	mi := &file_ratelproto_proto_msgTypes[9]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -842,7 +851,7 @@ func (x *BelongsTo) String() string {
 func (*BelongsTo) ProtoMessage() {}
 
 func (x *BelongsTo) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[9]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -855,7 +864,7 @@ func (x *BelongsTo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BelongsTo.ProtoReflect.Descriptor instead.
 func (*BelongsTo) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{9}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BelongsTo) GetForeignKey() string {
@@ -889,7 +898,7 @@ type ManyToMany struct {
 
 func (x *ManyToMany) Reset() {
 	*x = ManyToMany{}
-	mi := &file_ratelproto_proto_msgTypes[10]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -901,7 +910,7 @@ func (x *ManyToMany) String() string {
 func (*ManyToMany) ProtoMessage() {}
 
 func (x *ManyToMany) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[10]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -914,7 +923,7 @@ func (x *ManyToMany) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManyToMany.ProtoReflect.Descriptor instead.
 func (*ManyToMany) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{10}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ManyToMany) GetPivotTable() *Table {
@@ -967,7 +976,7 @@ type Relation struct {
 
 func (x *Relation) Reset() {
 	*x = Relation{}
-	mi := &file_ratelproto_proto_msgTypes[11]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -979,7 +988,7 @@ func (x *Relation) String() string {
 func (*Relation) ProtoMessage() {}
 
 func (x *Relation) ProtoReflect() protoreflect.Message {
-	mi := &file_ratelproto_proto_msgTypes[11]
+	mi := &file_ratelproto_ratelproto_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -992,7 +1001,7 @@ func (x *Relation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Relation.ProtoReflect.Descriptor instead.
 func (*Relation) Descriptor() ([]byte, []int) {
-	return file_ratelproto_proto_rawDescGZIP(), []int{11}
+	return file_ratelproto_ratelproto_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Relation) GetRelation() isRelation_Relation {
@@ -1066,14 +1075,14 @@ func (*Relation_HasOne) isRelation_Relation() {}
 
 func (*Relation_BelongsTo) isRelation_Relation() {}
 
-var file_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
+var file_ratelproto_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
 		ExtendedType:  (*descriptorpb.FileOptions)(nil),
 		ExtensionType: ([]string)(nil),
 		Field:         50000,
 		Name:          "ratel.additional_code",
 		Tag:           "bytes,50000,rep,name=additional_code",
-		Filename:      "ratelproto.proto",
+		Filename:      "ratelproto/ratelproto.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FileOptions)(nil),
@@ -1081,7 +1090,7 @@ var file_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
 		Field:         50001,
 		Name:          "ratel.virtual_tables",
 		Tag:           "bytes,50001,rep,name=virtual_tables",
-		Filename:      "ratelproto.proto",
+		Filename:      "ratelproto/ratelproto.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.MessageOptions)(nil),
@@ -1089,7 +1098,7 @@ var file_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
 		Field:         50002,
 		Name:          "ratel.table",
 		Tag:           "bytes,50002,opt,name=table",
-		Filename:      "ratelproto.proto",
+		Filename:      "ratelproto/ratelproto.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
@@ -1097,7 +1106,7 @@ var file_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
 		Field:         50003,
 		Name:          "ratel.column",
 		Tag:           "bytes,50003,opt,name=column",
-		Filename:      "ratelproto.proto",
+		Filename:      "ratelproto/ratelproto.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
@@ -1105,37 +1114,37 @@ var file_ratelproto_proto_extTypes = []protoimpl.ExtensionInfo{
 		Field:         50004,
 		Name:          "ratel.relation",
 		Tag:           "bytes,50004,opt,name=relation",
-		Filename:      "ratelproto.proto",
+		Filename:      "ratelproto/ratelproto.proto",
 	},
 }
 
 // Extension fields to descriptorpb.FileOptions.
 var (
 	// repeated string additional_code = 50000;
-	E_AdditionalCode = &file_ratelproto_proto_extTypes[0]
+	E_AdditionalCode = &file_ratelproto_ratelproto_proto_extTypes[0]
 	// repeated ratel.Table virtual_tables = 50001;
-	E_VirtualTables = &file_ratelproto_proto_extTypes[1]
+	E_VirtualTables = &file_ratelproto_ratelproto_proto_extTypes[1]
 )
 
 // Extension fields to descriptorpb.MessageOptions.
 var (
 	// optional ratel.Table table = 50002;
-	E_Table = &file_ratelproto_proto_extTypes[2]
+	E_Table = &file_ratelproto_ratelproto_proto_extTypes[2]
 )
 
 // Extension fields to descriptorpb.FieldOptions.
 var (
 	// optional ratel.Column column = 50003;
-	E_Column = &file_ratelproto_proto_extTypes[3]
+	E_Column = &file_ratelproto_ratelproto_proto_extTypes[3]
 	// optional ratel.Relation relation = 50004;
-	E_Relation = &file_ratelproto_proto_extTypes[4]
+	E_Relation = &file_ratelproto_ratelproto_proto_extTypes[4]
 )
 
-var File_ratelproto_proto protoreflect.FileDescriptor
+var File_ratelproto_ratelproto_proto protoreflect.FileDescriptor
 
-const file_ratelproto_proto_rawDesc = "" +
+const file_ratelproto_ratelproto_proto_rawDesc = "" +
 	"\n" +
-	"\x10ratelproto.proto\x12\x05ratel\x1a google/protobuf/descriptor.proto\"\x95\x03\n" +
+	"\x1bratelproto/ratelproto.proto\x12\x05ratel\x1a google/protobuf/descriptor.proto\"\x95\x03\n" +
 	"\x05Table\x12\x1a\n" +
 	"\bgenerate\x18\x01 \x01(\bR\bgenerate\x12\"\n" +
 	"\n" +
@@ -1166,7 +1175,7 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\vexpressions\x18\a \x03(\tR\vexpressions\x12\x1e\n" +
 	"\n" +
 	"concurrent\x18\b \x01(\bR\n" +
-	"concurrent\"\xd4\x02\n" +
+	"concurrent\"\x81\x03\n" +
 	"\n" +
 	"Constraint\x12\x16\n" +
 	"\x06unique\x18\x01 \x01(\bR\x06unique\x12\x1f\n" +
@@ -1178,7 +1187,9 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\x10references_table\x18\x06 \x01(\tR\x0freferencesTable\x12+\n" +
 	"\x11references_column\x18\a \x01(\tR\x10referencesColumn\x123\n" +
 	"\ton_delete\x18\b \x01(\x0e2\x16.ratel.ReferenceActionR\bonDelete\x123\n" +
-	"\ton_update\x18\t \x01(\x0e2\x16.ratel.ReferenceActionR\bonUpdate\"\xb6\x01\n" +
+	"\ton_update\x18\t \x01(\x0e2\x16.ratel.ReferenceActionR\bonUpdate\x12+\n" +
+	"\x11references_schema\x18\n" +
+	" \x01(\tR\x10referencesSchema\"\xb6\x01\n" +
 	"\rVirtualColumn\x12\x19\n" +
 	"\bsql_name\x18\x01 \x01(\tR\asqlName\x12\x19\n" +
 	"\bsql_type\x18\x02 \x01(\tR\asqlType\x123\n" +
@@ -1239,20 +1250,20 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\brelation\x12\x1d.google.protobuf.FieldOptions\x18Ԇ\x03 \x01(\v2\x0f.ratel.RelationR\brelationB%Z#github.com/yaroher/ratel/ratelprotob\x06proto3"
 
 var (
-	file_ratelproto_proto_rawDescOnce sync.Once
-	file_ratelproto_proto_rawDescData []byte
+	file_ratelproto_ratelproto_proto_rawDescOnce sync.Once
+	file_ratelproto_ratelproto_proto_rawDescData []byte
 )
 
-func file_ratelproto_proto_rawDescGZIP() []byte {
-	file_ratelproto_proto_rawDescOnce.Do(func() {
-		file_ratelproto_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ratelproto_proto_rawDesc), len(file_ratelproto_proto_rawDesc)))
+func file_ratelproto_ratelproto_proto_rawDescGZIP() []byte {
+	file_ratelproto_ratelproto_proto_rawDescOnce.Do(func() {
+		file_ratelproto_ratelproto_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ratelproto_ratelproto_proto_rawDesc), len(file_ratelproto_ratelproto_proto_rawDesc)))
 	})
-	return file_ratelproto_proto_rawDescData
+	return file_ratelproto_ratelproto_proto_rawDescData
 }
 
-var file_ratelproto_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_ratelproto_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_ratelproto_proto_goTypes = []any{
+var file_ratelproto_ratelproto_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_ratelproto_ratelproto_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_ratelproto_ratelproto_proto_goTypes = []any{
 	(ReferenceAction)(0),                // 0: ratel.ReferenceAction
 	(*Table)(nil),                       // 1: ratel.Table
 	(*UniqueConstraint)(nil),            // 2: ratel.UniqueConstraint
@@ -1270,7 +1281,7 @@ var file_ratelproto_proto_goTypes = []any{
 	(*descriptorpb.MessageOptions)(nil), // 14: google.protobuf.MessageOptions
 	(*descriptorpb.FieldOptions)(nil),   // 15: google.protobuf.FieldOptions
 }
-var file_ratelproto_proto_depIdxs = []int32{
+var file_ratelproto_ratelproto_proto_depIdxs = []int32{
 	6,  // 0: ratel.Table.virtual_columns:type_name -> ratel.VirtualColumn
 	4,  // 1: ratel.Table.indexes:type_name -> ratel.Index
 	2,  // 2: ratel.Table.unique:type_name -> ratel.UniqueConstraint
@@ -1300,14 +1311,14 @@ var file_ratelproto_proto_depIdxs = []int32{
 	0,  // [0:13] is the sub-list for field type_name
 }
 
-func init() { file_ratelproto_proto_init() }
-func file_ratelproto_proto_init() {
-	if File_ratelproto_proto != nil {
+func init() { file_ratelproto_ratelproto_proto_init() }
+func file_ratelproto_ratelproto_proto_init() {
+	if File_ratelproto_ratelproto_proto != nil {
 		return
 	}
-	file_ratelproto_proto_msgTypes[0].OneofWrappers = []any{}
-	file_ratelproto_proto_msgTypes[10].OneofWrappers = []any{}
-	file_ratelproto_proto_msgTypes[11].OneofWrappers = []any{
+	file_ratelproto_ratelproto_proto_msgTypes[0].OneofWrappers = []any{}
+	file_ratelproto_ratelproto_proto_msgTypes[10].OneofWrappers = []any{}
+	file_ratelproto_ratelproto_proto_msgTypes[11].OneofWrappers = []any{
 		(*Relation_OneToMany)(nil),
 		(*Relation_ManyToMany)(nil),
 		(*Relation_HasOne)(nil),
@@ -1317,19 +1328,19 @@ func file_ratelproto_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ratelproto_proto_rawDesc), len(file_ratelproto_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ratelproto_ratelproto_proto_rawDesc), len(file_ratelproto_ratelproto_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   12,
 			NumExtensions: 5,
 			NumServices:   0,
 		},
-		GoTypes:           file_ratelproto_proto_goTypes,
-		DependencyIndexes: file_ratelproto_proto_depIdxs,
-		EnumInfos:         file_ratelproto_proto_enumTypes,
-		MessageInfos:      file_ratelproto_proto_msgTypes,
-		ExtensionInfos:    file_ratelproto_proto_extTypes,
+		GoTypes:           file_ratelproto_ratelproto_proto_goTypes,
+		DependencyIndexes: file_ratelproto_ratelproto_proto_depIdxs,
+		EnumInfos:         file_ratelproto_ratelproto_proto_enumTypes,
+		MessageInfos:      file_ratelproto_ratelproto_proto_msgTypes,
+		ExtensionInfos:    file_ratelproto_ratelproto_proto_extTypes,
 	}.Build()
-	File_ratelproto_proto = out.File
-	file_ratelproto_proto_goTypes = nil
-	file_ratelproto_proto_depIdxs = nil
+	File_ratelproto_ratelproto_proto = out.File
+	file_ratelproto_ratelproto_proto_goTypes = nil
+	file_ratelproto_ratelproto_proto_depIdxs = nil
 }
