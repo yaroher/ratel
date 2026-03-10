@@ -85,7 +85,7 @@ type CurrencysTable struct {
 
 // Currencys is the global currency table instance
 var Currencys = func() CurrencysTable {
-	codeCol := schema.TextColumn(CurrencyColumnCode, ddl.WithPrimaryKey[CurrencyColumnAlias]())
+	codeCol := schema.TextColumn(CurrencyColumnCode, ddl.WithPrimaryKey[CurrencyColumnAlias](), ddl.WithCheck[CurrencyColumnAlias]("code <> ''"))
 	nameCol := schema.TextColumn(CurrencyColumnName)
 
 	return CurrencysTable{

@@ -61,7 +61,7 @@ message Currency {
   };
   
   string code = 1 [(ratel.column) = {
-    constraints: { primary_key: true }
+    constraints: { primary_key: true, check: "code <> ''" }
   }];
   
   string name = 2;
