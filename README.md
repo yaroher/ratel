@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="website/static/img/ratel.png" alt="Ratel" width="180"/>
+</p>
+
+<p align="center">
   <img src="website/static/img/ratel-banner.svg" alt="Ratel" width="500"/>
 </p>
 
