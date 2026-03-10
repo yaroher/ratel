@@ -267,6 +267,63 @@ func TestDiffRLS(t *testing.T) {
 	})
 }
 
+// ---- TestDiffAddSchemaWithTables ----
+
+func TestDiffAddSchemaWithTables(t *testing.T) {
+	current := &migrate.SchemaState{
+		Schemas: []migrate.Schema{{Name: "public"}},
+	}
+	desired := &migrate.SchemaState{
+		Schemas: []migrate.Schema{
+			{Name: "public"},
+			{
+				Name: "store",
+				Tables: []migrate.Table{
+					{
+						Name:   "users",
+						Schema: "store",
+						Columns: []migrate.Column{
+							{Name: "id", Type: "bigint", Nullable: false},
+							{Name: "email", Type: "text", Nullable: false},
+						},
+					},
+					{
+						Name:   "orders",
+						Schema: "store",
+						Columns: []migrate.Column{
+							{Name: "id", Type: "bigint", Nullable: false},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	d := newDiffer()
+	changes, err := d.Diff(current, desired)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var addedSchemas []string
+	var addedTables []string
+	for _, c := range changes {
+		switch v := c.(type) {
+		case migrate.AddSchema:
+			addedSchemas = append(addedSchemas, v.S.Name)
+		case migrate.AddTable:
+			addedTables = append(addedTables, v.T.Schema+"."+v.T.Name)
+		}
+	}
+
+	if len(addedSchemas) != 1 || addedSchemas[0] != "store" {
+		t.Errorf("expected AddSchema 'store', got %v", addedSchemas)
+	}
+	if len(addedTables) != 2 {
+		t.Fatalf("expected 2 AddTable changes for tables in new schema, got %d: %v", len(addedTables), addedTables)
+	}
+}
+
 // ---- TestDiffExtensions ----
 
 func TestDiffExtensions(t *testing.T) {

@@ -21,11 +21,15 @@ func (d *Differ) Diff(current, desired *migrate.SchemaState) ([]migrate.Change, 
 	currentSchemas := schemaMap(current.Schemas)
 	desiredSchemas := schemaMap(desired.Schemas)
 
-	// Added schemas
+	// Added schemas — emit AddSchema + diff contents against empty
 	for name, s := range desiredSchemas {
 		if _, ok := currentSchemas[name]; !ok {
 			sc := s
 			changes = append(changes, migrate.AddSchema{S: &sc})
+			// Diff tables/extensions/functions within the new schema against empty
+			changes = append(changes, d.diffTables(nil, sc.Tables)...)
+			changes = append(changes, d.diffExtensions(nil, sc.Extensions)...)
+			changes = append(changes, d.diffFunctions(nil, sc.Functions)...)
 		}
 	}
 

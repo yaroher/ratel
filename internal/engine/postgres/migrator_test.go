@@ -303,6 +303,94 @@ func TestMigratorExtensions(t *testing.T) {
 	assert.Contains(t, sql, "pg_trgm", "generated SQL should reference pg_trgm")
 }
 
+// TestMigratorNonPublicSchema verifies the full inspect → diff → plan flow for
+// tables in non-public schemas. This is a regression test: a bug in the differ
+// caused it to emit AddSchema for new schemas but silently skip all tables,
+// indexes, extensions, and functions within them.
+func TestMigratorNonPublicSchema(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires docker")
+	}
+
+	pool, cleanup := setupTestDB(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	m := NewMigrator(pool)
+
+	// Step 1 — inspect the empty database (only "public" schema exists).
+	emptyState, err := m.InspectRealm(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, emptyState)
+
+	// Step 2 — create a non-public schema with tables, indexes, and RLS.
+	_, err = pool.Exec(ctx, `
+		CREATE SCHEMA IF NOT EXISTS store;
+
+		CREATE TABLE store.users (
+			id   BIGSERIAL PRIMARY KEY,
+			email TEXT NOT NULL UNIQUE
+		);
+		CREATE INDEX idx_store_users_email ON store.users (email);
+
+		CREATE TABLE store.orders (
+			id      BIGSERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL REFERENCES store.users(id) ON DELETE CASCADE,
+			status  TEXT NOT NULL DEFAULT 'NEW'
+		);
+		ALTER TABLE store.orders ENABLE ROW LEVEL SECURITY;
+		CREATE POLICY orders_own ON store.orders FOR ALL
+			USING (user_id = current_setting('app.current_user_id')::bigint);
+	`)
+	require.NoError(t, err)
+
+	// Step 3 — inspect the desired state.
+	desiredState, err := m.InspectRealm(ctx)
+	require.NoError(t, err)
+	require.NotNil(t, desiredState)
+
+	// Verify inspector sees the "store" schema with both tables.
+	var storeSchema *migrate.Schema
+	for i := range desiredState.Schemas {
+		if desiredState.Schemas[i].Name == "store" {
+			storeSchema = &desiredState.Schemas[i]
+		}
+	}
+	require.NotNil(t, storeSchema, "inspector should find 'store' schema")
+	assert.Len(t, storeSchema.Tables, 2, "store schema should have 2 tables")
+
+	// Step 4 — diff empty → desired.
+	changes, err := m.Diff(emptyState, desiredState)
+	require.NoError(t, err)
+
+	// Verify we get AddSchema + AddTable for both tables.
+	var addedSchemas []string
+	var addedTables []string
+	for _, c := range changes {
+		switch v := c.(type) {
+		case migrate.AddSchema:
+			addedSchemas = append(addedSchemas, v.S.Name)
+		case migrate.AddTable:
+			addedTables = append(addedTables, v.T.Schema+"."+v.T.Name)
+		}
+	}
+	assert.Contains(t, addedSchemas, "store", "diff should emit AddSchema for 'store'")
+	assert.Contains(t, addedTables, "store.users", "diff should emit AddTable for store.users")
+	assert.Contains(t, addedTables, "store.orders", "diff should emit AddTable for store.orders")
+
+	// Step 5 — plan and verify generated SQL includes the tables.
+	plan, err := m.Plan(ctx, "init", changes)
+	require.NoError(t, err)
+	require.NotNil(t, plan)
+
+	sql := allSQL(plan)
+	assert.Contains(t, sql, "CREATE SCHEMA", "plan should contain CREATE SCHEMA")
+	assert.Contains(t, sql, "store", "plan should reference 'store' schema")
+	assert.Contains(t, sql, "CREATE TABLE", "plan should contain CREATE TABLE")
+	assert.Contains(t, sql, "users", "plan SQL should include users table")
+	assert.Contains(t, sql, "orders", "plan SQL should include orders table")
+}
+
 // TestMigratorLock verifies that the advisory locking mechanism works without
 // deadlock for a single caller.
 func TestMigratorLock(t *testing.T) {
