@@ -270,8 +270,10 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	isUnique := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.Unique
 	nullable := isFieldNullable(col)
 	defaultVal := ""
+	checkExpr := ""
 	if col.Options != nil && col.Options.Constraints != nil {
 		defaultVal = col.Options.Constraints.DefaultValue
+		checkExpr = col.Options.Constraints.Check
 	}
 
 	kind := col.Field.Desc.Kind()
@@ -291,6 +293,9 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	}
 	if defaultVal != "" {
 		opts = append(opts, "ddl.WithDefault["+msgName+"ColumnAlias](\""+defaultVal+"\")")
+	}
+	if checkExpr != "" {
+		opts = append(opts, "ddl.WithCheck["+msgName+"ColumnAlias](\""+checkExpr+"\")")
 	}
 
 	optStr := ""

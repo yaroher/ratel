@@ -350,7 +350,10 @@ type Constraint struct {
 	PrimaryKey   bool                   `protobuf:"varint,2,opt,name=primary_key,json=primaryKey,proto3" json:"primary_key,omitempty"`
 	DefaultValue string                 `protobuf:"bytes,3,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
 	// Raw SQL constraint (overrides above if set)
-	Raw           string `protobuf:"bytes,4,opt,name=raw,proto3" json:"raw,omitempty"`
+	Raw string `protobuf:"bytes,4,opt,name=raw,proto3" json:"raw,omitempty"`
+	// CHECK expression, combinable with other constraints
+	// Example: check: "id <> ”"  →  CHECK (id <> ”)
+	Check         string `protobuf:"bytes,5,opt,name=check,proto3" json:"check,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -409,6 +412,13 @@ func (x *Constraint) GetDefaultValue() string {
 func (x *Constraint) GetRaw() string {
 	if x != nil {
 		return x.Raw
+	}
+	return ""
+}
+
+func (x *Constraint) GetCheck() string {
+	if x != nil {
+		return x.Check
 	}
 	return ""
 }
@@ -1049,14 +1059,15 @@ const file_ratelproto_proto_rawDesc = "" +
 	"\vexpressions\x18\a \x03(\tR\vexpressions\x12\x1e\n" +
 	"\n" +
 	"concurrent\x18\b \x01(\bR\n" +
-	"concurrent\"|\n" +
+	"concurrent\"\x92\x01\n" +
 	"\n" +
 	"Constraint\x12\x16\n" +
 	"\x06unique\x18\x01 \x01(\bR\x06unique\x12\x1f\n" +
 	"\vprimary_key\x18\x02 \x01(\bR\n" +
 	"primaryKey\x12#\n" +
 	"\rdefault_value\x18\x03 \x01(\tR\fdefaultValue\x12\x10\n" +
-	"\x03raw\x18\x04 \x01(\tR\x03raw\"\xb6\x01\n" +
+	"\x03raw\x18\x04 \x01(\tR\x03raw\x12\x14\n" +
+	"\x05check\x18\x05 \x01(\tR\x05check\"\xb6\x01\n" +
 	"\rVirtualColumn\x12\x19\n" +
 	"\bsql_name\x18\x01 \x01(\tR\asqlName\x12\x19\n" +
 	"\bsql_type\x18\x02 \x01(\tR\asqlType\x123\n" +

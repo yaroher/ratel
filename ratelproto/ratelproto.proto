@@ -192,6 +192,10 @@ message Constraint {
 
   // Raw SQL constraint (overrides above if set)
   string raw = 4;
+
+  // CHECK expression, combinable with other constraints
+  // Example: check: "id <> ''"  →  CHECK (id <> '')
+  string check = 5;
 }
 
 // ============================================================================
