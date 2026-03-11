@@ -432,6 +432,9 @@ ORDER BY conname
 		if err := rows.Scan(&name, &expr, &noInherit); err != nil {
 			return nil, err
 		}
+		// pg_get_constraintdef returns "CHECK (expr)" — strip the CHECK keyword
+		// so the planner can wrap it consistently.
+		expr = stripCheckPrefix(expr)
 		checks = append(checks, migrate.Check{
 			Name:      name,
 			Expr:      expr,
@@ -439,4 +442,13 @@ ORDER BY conname
 		})
 	}
 	return checks, rows.Err()
+}
+
+// stripCheckPrefix removes the leading "CHECK " from pg_get_constraintdef output
+// so that Check.Expr contains only the expression (e.g. "((id <> ”::text))").
+func stripCheckPrefix(s string) string {
+	if after, ok := strings.CutPrefix(s, "CHECK "); ok {
+		return after
+	}
+	return s
 }
