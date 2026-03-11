@@ -324,6 +324,74 @@ func TestDiffAddSchemaWithTables(t *testing.T) {
 	}
 }
 
+// ---- TestDiffAddTablesTopologicalOrder ----
+
+func TestDiffAddTablesTopologicalOrder(t *testing.T) {
+	// refresh_tokens → sessions → users: tables must be created in dependency order.
+	current := stateWithTables()
+	desired := stateWithTables(
+		// Deliberately listed in wrong order to verify sorting.
+		migrate.Table{
+			Name:   "refresh_tokens",
+			Schema: "public",
+			Columns: []migrate.Column{
+				{Name: "id", Type: "text", Nullable: false},
+				{Name: "session_id", Type: "text", Nullable: false},
+			},
+			ForeignKeys: []migrate.ForeignKey{
+				{Name: "fk_session", Columns: []string{"session_id"}, RefTable: "sessions", RefSchema: "public", RefColumns: []string{"id"}},
+			},
+		},
+		migrate.Table{
+			Name:   "users",
+			Schema: "public",
+			Columns: []migrate.Column{
+				{Name: "id", Type: "text", Nullable: false},
+			},
+		},
+		migrate.Table{
+			Name:   "sessions",
+			Schema: "public",
+			Columns: []migrate.Column{
+				{Name: "id", Type: "text", Nullable: false},
+				{Name: "user_id", Type: "text", Nullable: false},
+			},
+			ForeignKeys: []migrate.ForeignKey{
+				{Name: "fk_user", Columns: []string{"user_id"}, RefTable: "users", RefSchema: "public", RefColumns: []string{"id"}},
+			},
+		},
+	)
+
+	d := newDiffer()
+	changes, err := d.Diff(current, desired)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var order []string
+	for _, c := range changes {
+		if at, ok := c.(migrate.AddTable); ok {
+			order = append(order, at.T.Name)
+		}
+	}
+
+	if len(order) != 3 {
+		t.Fatalf("expected 3 AddTable, got %d: %v", len(order), order)
+	}
+
+	// users must come before sessions, sessions before refresh_tokens
+	pos := make(map[string]int)
+	for i, name := range order {
+		pos[name] = i
+	}
+	if pos["users"] >= pos["sessions"] {
+		t.Errorf("users (pos %d) must come before sessions (pos %d), got order: %v", pos["users"], pos["sessions"], order)
+	}
+	if pos["sessions"] >= pos["refresh_tokens"] {
+		t.Errorf("sessions (pos %d) must come before refresh_tokens (pos %d), got order: %v", pos["sessions"], pos["refresh_tokens"], order)
+	}
+}
+
 // ---- TestDiffExtensions ----
 
 func TestDiffExtensions(t *testing.T) {

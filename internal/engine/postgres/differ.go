@@ -76,20 +76,30 @@ func (d *Differ) diffTables(current, desired []migrate.Table) []migrate.Change {
 	curMap := tableMap(current)
 	desMap := tableMap(desired)
 
-	// Added tables
+	// Added tables — collect first, then sort by FK dependencies.
+	var added []migrate.Table
 	for name, t := range desMap {
 		if _, ok := curMap[name]; !ok {
-			tc := t
-			changes = append(changes, migrate.AddTable{T: &tc})
+			added = append(added, t)
 		}
 	}
+	sortTablesByFK(added)
+	for i := range added {
+		tc := added[i]
+		changes = append(changes, migrate.AddTable{T: &tc})
+	}
 
-	// Dropped tables
+	// Dropped tables (reverse dependency order — drop dependents first)
+	var dropped []migrate.Table
 	for name, t := range curMap {
 		if _, ok := desMap[name]; !ok {
-			tc := t
-			changes = append(changes, migrate.DropTable{T: &tc})
+			dropped = append(dropped, t)
 		}
+	}
+	sortTablesByFK(dropped)
+	for i := len(dropped) - 1; i >= 0; i-- {
+		tc := dropped[i]
+		changes = append(changes, migrate.DropTable{T: &tc})
 	}
 
 	// Modified tables
@@ -111,6 +121,65 @@ func (d *Differ) diffTables(current, desired []migrate.Table) []migrate.Change {
 	}
 
 	return changes
+}
+
+// sortTablesByFK sorts tables in topological order based on foreign key
+// dependencies (Kahn's algorithm). Tables that are referenced by others come
+// first so that CREATE TABLE statements execute in a valid order.
+func sortTablesByFK(tables []migrate.Table) {
+	if len(tables) <= 1 {
+		return
+	}
+
+	// Build name → index mapping.
+	idx := make(map[string]int, len(tables))
+	for i, t := range tables {
+		idx[t.Name] = i
+	}
+
+	// Calculate in-degree: how many tables within this set reference each table.
+	inDeg := make([]int, len(tables))
+	deps := make(map[int][]int) // dependency index → dependent indexes
+	for i, t := range tables {
+		for _, fk := range t.ForeignKeys {
+			if j, ok := idx[fk.RefTable]; ok && j != i {
+				inDeg[i]++
+				deps[j] = append(deps[j], i)
+			}
+		}
+	}
+
+	// Kahn's algorithm.
+	var queue []int
+	for i, d := range inDeg {
+		if d == 0 {
+			queue = append(queue, i)
+		}
+	}
+
+	sorted := make([]migrate.Table, 0, len(tables))
+	for len(queue) > 0 {
+		cur := queue[0]
+		queue = queue[1:]
+		sorted = append(sorted, tables[cur])
+		for _, dep := range deps[cur] {
+			inDeg[dep]--
+			if inDeg[dep] == 0 {
+				queue = append(queue, dep)
+			}
+		}
+	}
+
+	// If there's a cycle, append remaining tables in original order.
+	if len(sorted) < len(tables) {
+		for i, t := range tables {
+			if inDeg[i] > 0 {
+				sorted = append(sorted, t)
+			}
+		}
+	}
+
+	copy(tables, sorted)
 }
 
 func tableMap(tables []migrate.Table) map[string]migrate.Table {
