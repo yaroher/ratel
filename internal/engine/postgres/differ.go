@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/yaroher/ratel/pkg/migrate"
@@ -33,10 +34,14 @@ func (d *Differ) Diff(current, desired *migrate.SchemaState) ([]migrate.Change, 
 		}
 	}
 
-	// Dropped schemas
+	// Dropped schemas — emit content drops first, then DropSchema
 	for name, s := range currentSchemas {
 		if _, ok := desiredSchemas[name]; !ok {
 			sc := s
+			// Drop contents before dropping the schema itself
+			changes = append(changes, d.diffFunctions(sc.Functions, nil)...)
+			changes = append(changes, d.diffExtensions(sc.Extensions, nil)...)
+			changes = append(changes, d.diffTables(sc.Tables, nil)...)
 			changes = append(changes, migrate.DropSchema{S: &sc})
 		}
 	}
@@ -76,13 +81,14 @@ func (d *Differ) diffTables(current, desired []migrate.Table) []migrate.Change {
 	curMap := tableMap(current)
 	desMap := tableMap(desired)
 
-	// Added tables — collect first, then sort by FK dependencies.
+	// Added tables — collect, sort alphabetically for determinism, then by FK deps.
 	var added []migrate.Table
 	for name, t := range desMap {
 		if _, ok := curMap[name]; !ok {
 			added = append(added, t)
 		}
 	}
+	sort.Slice(added, func(i, j int) bool { return added[i].Name < added[j].Name })
 	sortTablesByFK(added)
 	for i := range added {
 		tc := added[i]
@@ -96,6 +102,7 @@ func (d *Differ) diffTables(current, desired []migrate.Table) []migrate.Change {
 			dropped = append(dropped, t)
 		}
 	}
+	sort.Slice(dropped, func(i, j int) bool { return dropped[i].Name < dropped[j].Name })
 	sortTablesByFK(dropped)
 	for i := len(dropped) - 1; i >= 0; i-- {
 		tc := dropped[i]

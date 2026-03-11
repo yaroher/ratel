@@ -324,6 +324,51 @@ func TestDiffAddSchemaWithTables(t *testing.T) {
 	}
 }
 
+// ---- TestDiffDropSchemaWithContents ----
+
+func TestDiffDropSchemaWithContents(t *testing.T) {
+	current := &migrate.SchemaState{
+		Schemas: []migrate.Schema{
+			{Name: "public"},
+			{
+				Name: "auth",
+				Tables: []migrate.Table{
+					{Name: "users", Schema: "auth", Columns: []migrate.Column{{Name: "id", Type: "text"}}},
+					{Name: "sessions", Schema: "auth", Columns: []migrate.Column{{Name: "id", Type: "text"}}},
+				},
+			},
+		},
+	}
+	desired := &migrate.SchemaState{
+		Schemas: []migrate.Schema{{Name: "public"}},
+	}
+
+	d := newDiffer()
+	changes, err := d.Diff(current, desired)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Expect: DropTable for both tables BEFORE DropSchema
+	var order []string
+	for _, c := range changes {
+		switch v := c.(type) {
+		case migrate.DropTable:
+			order = append(order, "drop_table:"+v.T.Name)
+		case migrate.DropSchema:
+			order = append(order, "drop_schema:"+v.S.Name)
+		}
+	}
+
+	if len(order) != 3 {
+		t.Fatalf("expected 3 changes (2 DropTable + 1 DropSchema), got %d: %v", len(order), order)
+	}
+	// DropSchema must be last
+	if order[len(order)-1] != "drop_schema:auth" {
+		t.Errorf("DropSchema should be last, got order: %v", order)
+	}
+}
+
 // ---- TestDiffAddTablesTopologicalOrder ----
 
 func TestDiffAddTablesTopologicalOrder(t *testing.T) {
