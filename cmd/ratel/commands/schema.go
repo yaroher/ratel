@@ -74,7 +74,8 @@ func runSchema(cmd *cobra.Command, args []string) {
 	defer os.Remove(tmpFileName)
 
 	// Generate the temporary Go program
-	program := generateSchemaProgram(schemaInputPkg, tables)
+	hasAdditional := discoverAdditionalSQL(schemaInputPkg, workspaceRoot)
+	program := generateSchemaProgram(schemaInputPkg, tables, hasAdditional)
 
 	if _, err := tmpFile.WriteString(program); err != nil {
 		tmpFile.Close()
@@ -106,7 +107,7 @@ func runSchema(cmd *cobra.Command, args []string) {
 	fmt.Printf("Generated %s with %d table(s)\n", schemaOutputFile, len(tables))
 }
 
-func generateSchemaProgram(pkg string, tables []string) string {
+func generateSchemaProgram(pkg string, tables []string, hasAdditionalSQL bool) string {
 	var tableArgs strings.Builder
 	for i, t := range tables {
 		if i > 0 {
@@ -114,6 +115,11 @@ func generateSchemaProgram(pkg string, tables []string) string {
 		}
 		tableArgs.WriteString("models.")
 		tableArgs.WriteString(t)
+	}
+
+	var additionalBlock string
+	if hasAdditionalSQL {
+		additionalBlock = "\tsqlers = append(sqlers, models.AdditionalSQL...)\n"
 	}
 
 	return fmt.Sprintf(`//go:build ignore
@@ -130,9 +136,11 @@ import (
 )
 
 func main() {
-	statements, err := ddl.SchemaSortedStatements(
+	sqlers := []ddl.SchemaSqler{
 		%s,
-	)
+	}
+%s
+	statements, err := ddl.SchemaSortedStatements(sqlers...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %%v\n", err)
 		os.Exit(1)
@@ -143,7 +151,7 @@ func main() {
 	fmt.Println()
 	fmt.Println(strings.Join(statements, ";\n") + ";")
 }
-`, pkg, tableArgs.String())
+`, pkg, tableArgs.String(), additionalBlock)
 }
 
 // generateMultiPkgSchemaProgram generates a Go program that imports multiple
@@ -151,6 +159,7 @@ func main() {
 func generateMultiPkgSchemaProgram(pkgTables []packageTables) string {
 	var imports strings.Builder
 	var tableArgs strings.Builder
+	var additionalBlock strings.Builder
 
 	for i, pt := range pkgTables {
 		alias := fmt.Sprintf("pkg%d", i)
@@ -160,6 +169,9 @@ func generateMultiPkgSchemaProgram(pkgTables []packageTables) string {
 				tableArgs.WriteString(",\n\t\t")
 			}
 			fmt.Fprintf(&tableArgs, "%s.%s", alias, t)
+		}
+		if pt.hasAdditionalSQL {
+			fmt.Fprintf(&additionalBlock, "\tsqlers = append(sqlers, %s.AdditionalSQL...)\n", alias)
 		}
 	}
 
@@ -176,9 +188,11 @@ import (
 )
 
 func main() {
-	statements, err := ddl.SchemaSortedStatements(
+	sqlers := []ddl.SchemaSqler{
 		%s,
-	)
+	}
+%s
+	statements, err := ddl.SchemaSortedStatements(sqlers...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %%v\n", err)
 		os.Exit(1)
@@ -189,7 +203,35 @@ func main() {
 	fmt.Println()
 	fmt.Println(strings.Join(statements, ";\n") + ";")
 }
-`, imports.String(), tableArgs.String())
+`, imports.String(), tableArgs.String(), additionalBlock.String())
+}
+
+// discoverAdditionalSQL checks whether the package exports an AdditionalSQL variable.
+func discoverAdditionalSQL(pkg, workspaceRoot string) bool {
+	pkgDir, err := findPackageDir(pkg, workspaceRoot)
+	if err != nil {
+		return false
+	}
+
+	files, err := filepath.Glob(filepath.Join(pkgDir, "*.go"))
+	if err != nil {
+		return false
+	}
+
+	pattern := regexp.MustCompile(`var\s+AdditionalSQL\s*=`)
+	for _, file := range files {
+		if strings.HasSuffix(file, "_test.go") {
+			continue
+		}
+		content, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+		if pattern.Match(content) {
+			return true
+		}
+	}
+	return false
 }
 
 func discoverTables(pkg, workspaceRoot string) ([]string, error) {
@@ -239,8 +281,7 @@ func findPackageDir(pkg, workspaceRoot string) (string, error) {
 	// Check if package is relative to workspace
 	// e.g., github.com/yaroher/ratel/examples/proto -> examples/proto
 	modPath := getModulePath(workspaceRoot)
-	if modPath != "" && strings.HasPrefix(pkg, modPath) {
-		relPath := strings.TrimPrefix(pkg, modPath)
+	if relPath, ok := strings.CutPrefix(pkg, modPath); modPath != "" && ok {
 		relPath = strings.TrimPrefix(relPath, "/")
 		pkgDir := filepath.Join(workspaceRoot, relPath)
 		if _, err := os.Stat(pkgDir); err == nil {
@@ -259,10 +300,9 @@ func getModulePath(dir string) string {
 	}
 
 	// Extract module path from go.mod
-	lines := strings.Split(string(content), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "module ") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "module "))
+	for line := range strings.SplitSeq(string(content), "\n") {
+		if mod, ok := strings.CutPrefix(line, "module "); ok {
+			return strings.TrimSpace(mod)
 		}
 	}
 	return ""

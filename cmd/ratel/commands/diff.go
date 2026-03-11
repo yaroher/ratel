@@ -466,8 +466,9 @@ func writeMigrationFile(dir, name string, plan *ratelMigrate.Plan) error {
 
 // packageTables holds discovered tables for a specific package
 type packageTables struct {
-	pkg    string
-	tables []string
+	pkg              string
+	tables           []string
+	hasAdditionalSQL bool
 }
 
 // generateSchemaFromPackages generates SQL schema from one or more Go model packages
@@ -479,7 +480,8 @@ func generateSchemaFromPackages(packages []string, tables []string) (string, err
 
 	if len(tables) > 0 && len(packages) == 1 {
 		// Explicit tables with single package — backward compatible
-		allPkgTables = append(allPkgTables, packageTables{pkg: packages[0], tables: tables})
+		hasAdditional := discoverAdditionalSQL(packages[0], workspaceRoot)
+		allPkgTables = append(allPkgTables, packageTables{pkg: packages[0], tables: tables, hasAdditionalSQL: hasAdditional})
 	} else {
 		// Discover tables from each package
 		for _, pkg := range packages {
@@ -490,8 +492,9 @@ func generateSchemaFromPackages(packages []string, tables []string) (string, err
 			if len(discovered) == 0 {
 				return "", fmt.Errorf("no tables discovered in package %s", pkg)
 			}
+			hasAdditional := discoverAdditionalSQL(pkg, workspaceRoot)
 			fmt.Printf("Discovered tables in %s: %v\n", pkg, discovered)
-			allPkgTables = append(allPkgTables, packageTables{pkg: pkg, tables: discovered})
+			allPkgTables = append(allPkgTables, packageTables{pkg: pkg, tables: discovered, hasAdditionalSQL: hasAdditional})
 		}
 	}
 

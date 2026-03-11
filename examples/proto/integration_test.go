@@ -57,7 +57,7 @@ func setupTestDB(t *testing.T) (*pgxpool.Pool, func()) {
 
 // createSchema creates all tables in the database
 func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
-	statements := ddl.SchemaStatements(
+	sqlers := []ddl.SchemaSqler{
 		Currencys,
 		Users,
 		Profiles, // Profile depends on Users
@@ -66,7 +66,9 @@ func createSchema(t *testing.T, ctx context.Context, db *pgxpool.Pool) {
 		Products,
 		Orders,
 		OrderItems,
-	)
+	}
+	sqlers = append(sqlers, AdditionalSQL...)
+	statements := ddl.SchemaStatements(sqlers...)
 
 	for _, stmt := range statements {
 		t.Logf("Executing: %s", stmt)
