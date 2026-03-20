@@ -1,9 +1,12 @@
 package ratelcast
 
 import (
+	"encoding/json"
 	"time"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -130,4 +133,28 @@ func NullableDurationToDurationPb(d *time.Duration) *durationpb.Duration {
 		return nil
 	}
 	return durationpb.New(*d)
+}
+
+// StructToRawMessage converts *structpb.Struct to json.RawMessage via JSON marshaling
+func StructToRawMessage(s *structpb.Struct) json.RawMessage {
+	if s == nil {
+		return nil
+	}
+	data, err := protojson.Marshal(s)
+	if err != nil {
+		return nil
+	}
+	return data
+}
+
+// RawMessageToStruct converts json.RawMessage to *structpb.Struct via JSON unmarshaling
+func RawMessageToStruct(data json.RawMessage) *structpb.Struct {
+	if len(data) == 0 {
+		return nil
+	}
+	s := &structpb.Struct{}
+	if err := protojson.Unmarshal(data, s); err != nil {
+		return nil
+	}
+	return s
 }

@@ -6,11 +6,14 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/yaroher/protoc-gen-go-plain/generator"
 	"google.golang.org/protobuf/compiler/protogen"
 )
 
 // generateRatelFile generates the _ratel.pb.go file
-func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTable) error {
+func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTable, gen *generator.Generator) error {
+	_ = gen // used in generateConverter via messageHasCasterFields
+
 	filename := f.GeneratedFilenamePrefix + "_ratel.pb.go"
 	gf := p.NewGeneratedFile(filename, f.GoImportPath)
 
@@ -48,7 +51,7 @@ func generateRatelFile(p *protogen.Plugin, f *protogen.File, tables []*RatelTabl
 
 	// First pass: generate table code
 	for _, table := range tables {
-		if err := generateTableCode(gf, table); err != nil {
+		if err := generateTableCode(gf, table, gen); err != nil {
 			return err
 		}
 	}
@@ -156,7 +159,7 @@ func constraintErrorMessage(c *ConstraintInfo) string {
 }
 
 // generateTableCode generates code for a single table
-func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
+func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *generator.Generator) error {
 	msgName := table.Message.GoIdent.GoName
 	tableName := getTableName(table)
 	tableSchema := getTableSchema(table)
@@ -385,20 +388,48 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable) error {
 	gf.P()
 
 	// 12. Generate Converter for repository
-	generateConverter(gf, table)
+	generateConverter(gf, table, gen)
 
 	return nil
 }
 
 // generateConverter generates the Converter struct for proto <-> scanner conversion
-func generateConverter(gf *protogen.GeneratedFile, table *RatelTable) {
+func generateConverter(gf *protogen.GeneratedFile, table *RatelTable, gen *generator.Generator) {
 	msgName := table.Message.GoIdent.GoName
 	scannerTypeName := msgName + "Scanner"
 
+	// Check if message has caster fields (fields requiring parameter-based casters)
+	hasCasters := messageHasCasterFields(table.Message, gen)
+
 	gf.P("// ", msgName, "Converter provides conversion between ", msgName, " and ", scannerTypeName)
-	gf.P("var ", msgName, "Converter = repository.Converter[*", scannerTypeName, ", *", msgName, "]{")
-	gf.P("\tToScanner: (*", msgName, ").IntoPlain,")
-	gf.P("\tToProto:   (*", scannerTypeName, ").IntoPb,")
-	gf.P("}")
+	if hasCasters {
+		// Generate with casters struct
+		castersTypeName := scannerTypeName + "Casters"
+		gf.P("func ", msgName, "ConverterWith(c *", castersTypeName, ") repository.Converter[*", scannerTypeName, ", *", msgName, "] {")
+		gf.P("\treturn repository.Converter[*", scannerTypeName, ", *", msgName, "]{")
+		gf.P("\t\tToScanner: func(pb *", msgName, ") *", scannerTypeName, " { return pb.IntoPlain(c) },")
+		gf.P("\t\tToProto:   func(p *", scannerTypeName, ") *", msgName, " { return p.IntoPb(c) },")
+		gf.P("\t}")
+		gf.P("}")
+	} else {
+		gf.P("var ", msgName, "Converter = repository.Converter[*", scannerTypeName, ", *", msgName, "]{")
+		gf.P("\tToScanner: (*", msgName, ").IntoPlain,")
+		gf.P("\tToProto:   (*", scannerTypeName, ").IntoPb,")
+		gf.P("}")
+	}
 	gf.P()
+}
+
+// messageHasCasterFields checks if a message has parameter-based caster fields
+// (fields requiring casters that are NOT covered by existing/pre-defined casters).
+// Uses the IR already built by go-plain during Generate().
+func messageHasCasterFields(msg *protogen.Message, gen *generator.Generator) bool {
+	if gen == nil {
+		return false
+	}
+	irMsg := gen.GetIRMessage(msg)
+	if irMsg == nil {
+		return false
+	}
+	return len(gen.CollectCasterFields(irMsg)) > 0
 }

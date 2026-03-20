@@ -33,11 +33,11 @@ func Generate(p *protogen.Plugin) error {
 	}
 
 	// Generate ratel-specific files
-	return generateRatelFiles(p)
+	return generateRatelFiles(p, g)
 }
 
 // generateRatelFiles generates ratel-specific code
-func generateRatelFiles(p *protogen.Plugin) error {
+func generateRatelFiles(p *protogen.Plugin, gen *generator.Generator) error {
 	for _, f := range p.Files {
 		if !f.Generate {
 			continue
@@ -50,7 +50,7 @@ func generateRatelFiles(p *protogen.Plugin) error {
 		}
 
 		// Generate ratel file
-		if err := generateRatelFile(p, f, tables); err != nil {
+		if err := generateRatelFile(p, f, tables, gen); err != nil {
 			return err
 		}
 	}

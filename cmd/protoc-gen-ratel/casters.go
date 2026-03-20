@@ -230,6 +230,40 @@ func getRatelCasters() []*generator.ExistingCaster {
 			},
 			IsFunc: true,
 		},
+		// *structpb.Struct -> json.RawMessage
+		{
+			SourceType: generator.GoType{
+				Name:       "Struct",
+				ImportPath: "google.golang.org/protobuf/types/known/structpb",
+				IsPointer:  true,
+			},
+			TargetType: generator.GoType{
+				Name:       "RawMessage",
+				ImportPath: "encoding/json",
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "StructToRawMessage",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
+		// json.RawMessage -> *structpb.Struct
+		{
+			SourceType: generator.GoType{
+				Name:       "RawMessage",
+				ImportPath: "encoding/json",
+			},
+			TargetType: generator.GoType{
+				Name:       "Struct",
+				ImportPath: "google.golang.org/protobuf/types/known/structpb",
+				IsPointer:  true,
+			},
+			CasterIdent: generator.GoIdent{
+				Name:       "RawMessageToStruct",
+				ImportPath: "github.com/yaroher/ratel/pkg/ratelcast",
+			},
+			IsFunc: true,
+		},
 	}
 }
 
