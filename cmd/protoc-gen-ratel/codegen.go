@@ -185,7 +185,7 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 	// 3. Generate column alias constants
 	gf.P("const (")
 	for _, col := range table.Columns {
-		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
+		constName := columnConstName(col, msgName)
 		gf.P("\t", constName, " ", colAliasTypeName, " = \"", col.SQLName, "\"")
 	}
 	gf.P(")")
@@ -195,14 +195,16 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 	// Here we only generate methods that extend the Scanner for ratel
 	scannerTypeName := msgName + "Scanner"
 
-	// 4. Generate GetTarget method
+	// 4. Generate GetTarget method (skip virtual columns — no Go field)
 	gf.P("func (s *", scannerTypeName, ") GetTarget(col string) func() any {")
 	gf.P("\tswitch ", colAliasTypeName, "(col) {")
 	for _, col := range table.Columns {
-		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.GoName
+		if col.IsVirtual {
+			continue
+		}
+		constName := columnConstName(col, msgName)
 		gf.P("\tcase ", constName, ":")
-		gf.P("\t\treturn func() any { return &s.", fieldName, " }")
+		gf.P("\t\treturn func() any { return &s.", col.GoName, " }")
 	}
 	gf.P("\tdefault:")
 	gf.P("\t\tpanic(\"unknown field: \" + col)")
@@ -210,14 +212,16 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 	gf.P("}")
 	gf.P()
 
-	// 5. Generate GetSetter method
+	// 5. Generate GetSetter method (skip virtual columns)
 	gf.P("func (s *", scannerTypeName, ") GetSetter(f ", colAliasTypeName, ") func() set.ValueSetter[", colAliasTypeName, "] {")
 	gf.P("\tswitch f {")
 	for _, col := range table.Columns {
-		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.GoName
+		if col.IsVirtual {
+			continue
+		}
+		constName := columnConstName(col, msgName)
 		gf.P("\tcase ", constName, ":")
-		gf.P("\t\treturn func() set.ValueSetter[", colAliasTypeName, "] { return set.NewSetter(f, &s.", fieldName, ") }")
+		gf.P("\t\treturn func() set.ValueSetter[", colAliasTypeName, "] { return set.NewSetter(f, &s.", col.GoName, ") }")
 	}
 	gf.P("\tdefault:")
 	gf.P("\t\tpanic(\"unknown field: \" + string(f))")
@@ -225,14 +229,16 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 	gf.P("}")
 	gf.P()
 
-	// 6. Generate GetValue method
+	// 6. Generate GetValue method (skip virtual columns)
 	gf.P("func (s *", scannerTypeName, ") GetValue(f ", colAliasTypeName, ") func() any {")
 	gf.P("\tswitch f {")
 	for _, col := range table.Columns {
-		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		fieldName := col.GoName
+		if col.IsVirtual {
+			continue
+		}
+		constName := columnConstName(col, msgName)
 		gf.P("\tcase ", constName, ":")
-		gf.P("\t\treturn func() any { return s.", fieldName, " }")
+		gf.P("\t\treturn func() any { return s.", col.GoName, " }")
 	}
 	gf.P("\tdefault:")
 	gf.P("\t\tpanic(\"unknown field: \" + string(f))")
@@ -253,9 +259,11 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 	gf.P("type ", tableStructName, " struct {")
 	gf.P("\t*schema.Table[", aliasTypeName, ", ", colAliasTypeName, ", *", scannerTypeName, "]")
 	for _, col := range table.Columns {
-		fieldName := col.GoName
+		if col.IsVirtual {
+			continue // Virtual columns have no typed Go accessor
+		}
 		colType := getSchemaColumnType(col, msgName)
-		gf.P("\t", fieldName, " ", colType)
+		gf.P("\t", col.GoName, " ", colType)
 	}
 	gf.P("}")
 	gf.P()
@@ -267,10 +275,15 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 
 	// Column variable declarations
 	for _, col := range table.Columns {
-		fieldName := strcase.ToLowerCamel(col.GoName) + "Col"
-		constName := msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
-		constructor := getSchemaColumnConstructor(col, constName, msgName)
-		gf.P("\t", fieldName, " := ", constructor)
+		varName := strcase.ToLowerCamel(col.GoName) + "Col"
+		constName := columnConstName(col, msgName)
+		if col.IsVirtual {
+			constructor := getVirtualColumnConstructor(col, constName, msgName)
+			gf.P("\t", varName, " := ", constructor)
+		} else {
+			constructor := getSchemaColumnConstructor(col, constName, msgName)
+			gf.P("\t", varName, " := ", constructor)
+		}
 	}
 	gf.P()
 
@@ -373,10 +386,13 @@ func generateTableCode(gf *protogen.GeneratedFile, table *RatelTable, gen *gener
 
 	gf.P("\t\t),")
 
-	// Column fields
+	// Column fields (skip virtual — not in struct)
 	for _, col := range table.Columns {
-		fieldName := strcase.ToLowerCamel(col.GoName) + "Col"
-		gf.P("\t\t", col.GoName, ": ", fieldName, ",")
+		if col.IsVirtual {
+			continue
+		}
+		varName := strcase.ToLowerCamel(col.GoName) + "Col"
+		gf.P("\t\t", col.GoName, ": ", varName, ",")
 	}
 	gf.P("\t}")
 	gf.P("}()")

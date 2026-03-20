@@ -1580,6 +1580,125 @@ var UserSettingsConverter = repository.Converter[*UserSettingsScanner, *UserSett
 	ToProto:   (*UserSettingsScanner).IntoPb,
 }
 
+// AuditLogAlias is the table alias type for the audit_logs table
+type AuditLogAlias string
+
+func (a AuditLogAlias) String() string { return string(a) }
+
+const AuditLogAliasName AuditLogAlias = "audit_logs"
+
+// AuditLogColumnAlias represents column names for the audit_logs table
+type AuditLogColumnAlias string
+
+func (c AuditLogColumnAlias) String() string { return string(c) }
+
+const (
+	AuditLogColumnId          AuditLogColumnAlias = "id"
+	AuditLogColumnAction      AuditLogColumnAlias = "action"
+	AuditLogColumnEntityType  AuditLogColumnAlias = "entity_type"
+	AuditLogColumnEntityId    AuditLogColumnAlias = "entity_id"
+	AuditLogColumnDbCreatedAt AuditLogColumnAlias = "db_created_at"
+	AuditLogColumnDbUpdatedAt AuditLogColumnAlias = "db_updated_at"
+)
+
+func (s *AuditLogScanner) GetTarget(col string) func() any {
+	switch AuditLogColumnAlias(col) {
+	case AuditLogColumnId:
+		return func() any { return &s.Id }
+	case AuditLogColumnAction:
+		return func() any { return &s.Action }
+	case AuditLogColumnEntityType:
+		return func() any { return &s.EntityType }
+	case AuditLogColumnEntityId:
+		return func() any { return &s.EntityId }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSetter[AuditLogColumnAlias] {
+	switch f {
+	case AuditLogColumnId:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case AuditLogColumnAction:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Action) }
+	case AuditLogColumnEntityType:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityType) }
+	case AuditLogColumnEntityId:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityId) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
+	switch f {
+	case AuditLogColumnId:
+		return func() any { return s.Id }
+	case AuditLogColumnAction:
+		return func() any { return s.Action }
+	case AuditLogColumnEntityType:
+		return func() any { return s.EntityType }
+	case AuditLogColumnEntityId:
+		return func() any { return s.EntityId }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the audit_logs table
+func (s *AuditLogScanner) Relations() []exec.RelationLoader[*AuditLogScanner] {
+	return nil
+}
+
+// AuditLogsTable represents the audit_logs table with its columns
+type AuditLogsTable struct {
+	*schema.Table[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner]
+	Id         schema.BigSerialColumnI[AuditLogColumnAlias]
+	Action     schema.TextColumnI[AuditLogColumnAlias]
+	EntityType schema.TextColumnI[AuditLogColumnAlias]
+	EntityId   schema.BigIntColumnI[AuditLogColumnAlias]
+}
+
+// AuditLogs is the global audit_logs table instance
+var AuditLogs = func() AuditLogsTable {
+	idCol := schema.BigSerialColumn(AuditLogColumnId, ddl.WithPrimaryKey[AuditLogColumnAlias]())
+	actionCol := schema.TextColumn(AuditLogColumnAction, ddl.WithNotNull[AuditLogColumnAlias]())
+	entityTypeCol := schema.TextColumn(AuditLogColumnEntityType, ddl.WithNotNull[AuditLogColumnAlias]())
+	entityIdCol := schema.BigIntColumn(AuditLogColumnEntityId, ddl.WithNotNull[AuditLogColumnAlias]())
+	dbCreatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbCreatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
+	dbUpdatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbUpdatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
+
+	return AuditLogsTable{
+		Table: schema.NewTable[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner](
+			AuditLogAliasName,
+			func() *AuditLogScanner { return &AuditLogScanner{} },
+			[]*ddl.ColumnDDL[AuditLogColumnAlias]{
+				idCol.DDL(),
+				actionCol.DDL(),
+				entityTypeCol.DDL(),
+				entityIdCol.DDL(),
+				dbCreatedAtCol.DDL(),
+				dbUpdatedAtCol.DDL(),
+			},
+			ddl.WithSchema[AuditLogAlias, AuditLogColumnAlias]("store"),
+		),
+		Id:         idCol,
+		Action:     actionCol,
+		EntityType: entityTypeCol,
+		EntityId:   entityIdCol,
+	}
+}()
+
+// AuditLogsRef is a reference to the audit_logs table for relations
+var AuditLogsRef schema.RelationTableAlias[AuditLogAlias] = AuditLogs.Table
+
+// AuditLogConverter provides conversion between AuditLog and AuditLogScanner
+var AuditLogConverter = repository.Converter[*AuditLogScanner, *AuditLog]{
+	ToScanner: (*AuditLog).IntoPlain,
+	ToProto:   (*AuditLogScanner).IntoPb,
+}
+
 // UserPreferencesAlias is the table alias type for the user_preferences table
 type UserPreferencesAlias string
 
@@ -1822,6 +1941,7 @@ const (
 	OrderItemConstraintCheck               = "order_items_check"
 	OrderItemConstraintCheck1              = "order_items_check1"
 	UserSettingsConstraintPkey             = "user_settings_pkey"
+	AuditLogConstraintPkey                 = "audit_logs_pkey"
 	UserPreferencesConstraintPkey          = "user_preferences_pkey"
 )
 
@@ -1850,6 +1970,7 @@ var (
 	ErrOrderItemCheck                  = errors.New("check constraint violated: order_items_check")
 	ErrOrderItemCheck1                 = errors.New("check constraint violated: order_items_check1")
 	ErrUserSettingsPrimaryKey          = errors.New("primary key constraint violated: user_settings_pkey")
+	ErrAuditLogPrimaryKey              = errors.New("primary key constraint violated: audit_logs_pkey")
 	ErrUserPreferencesPrimaryKey       = errors.New("primary key constraint violated: user_preferences_pkey")
 )
 
@@ -1955,6 +2076,11 @@ func IsOrderItemCheck1Error(err error) bool {
 // IsUserSettingsPrimaryKeyError checks if the error is a primary_key constraint violation on user_settings
 func IsUserSettingsPrimaryKeyError(err error) bool {
 	return sqlerr.IsConstraintNamed(err, UserSettingsConstraintPkey)
+}
+
+// IsAuditLogPrimaryKeyError checks if the error is a primary_key constraint violation on audit_logs
+func IsAuditLogPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, AuditLogConstraintPkey)
 }
 
 // IsUserPreferencesPrimaryKeyError checks if the error is a primary_key constraint violation on user_preferences

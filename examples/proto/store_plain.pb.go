@@ -824,6 +824,42 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 	return pb
 }
 
+// Тест: virtual_columns — колонки без proto field, только DDL
+type AuditLogScanner struct {
+	Id         int64  `json:"id"`
+	Action     string `json:"action"`
+	EntityType string `json:"entityType"`
+	EntityId   int64  `json:"entityId"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *AuditLog) IntoPlain() *AuditLogScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &AuditLogScanner{}
+
+	p.Id = pb.Id
+	p.Action = pb.Action
+	p.EntityType = pb.EntityType
+	p.EntityId = pb.EntityId
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *AuditLogScanner) IntoPb() *AuditLog {
+	if p == nil {
+		return nil
+	}
+	pb := &AuditLog{}
+
+	pb.Id = p.Id
+	pb.Action = p.Action
+	pb.EntityType = p.EntityType
+	pb.EntityId = p.EntityId
+	return pb
+}
+
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
 type AppearanceSettingsScanner struct {
 	SelectedTheme []byte `json:"selectedTheme"` // origin: serialized, empath: selected_theme

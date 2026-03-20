@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/yaroher/protoc-gen-go-plain/goplain"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
@@ -411,6 +412,108 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 		return prefix + "DoublePrecisionColumn(" + constName + optStr + ")"
 	case protoreflect.BytesKind:
 		return prefix + "ByteaColumn(" + constName + optStr + ")"
+	default:
+		return prefix + "TextColumn(" + constName + optStr + ")"
+	}
+}
+
+// columnConstName returns the Go constant name for a column (works for both regular and virtual).
+func columnConstName(col *RatelColumn, msgName string) string {
+	if col.IsVirtual {
+		return msgName + "Column" + strcase.ToCamel(col.SQLName)
+	}
+	return msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))
+}
+
+// getVirtualColumnConstructor returns the schema column constructor call for a virtual column.
+func getVirtualColumnConstructor(col *RatelColumn, constName string, msgName string) string {
+	vc := col.VirtualDef
+	alias := msgName + "ColumnAlias"
+
+	// Build options from constraints
+	var opts []string
+	if vc.Constraints != nil {
+		if vc.Constraints.PrimaryKey {
+			opts = append(opts, "ddl.WithPrimaryKey["+alias+"]()")
+		}
+		if vc.Constraints.Unique {
+			opts = append(opts, "ddl.WithUnique["+alias+"]()")
+		}
+		if vc.Constraints.DefaultValue != "" {
+			opts = append(opts, "ddl.WithDefault["+alias+"](\""+escapeGoString(vc.Constraints.DefaultValue)+"\")")
+		}
+		if vc.Constraints.Check != "" {
+			opts = append(opts, "ddl.WithCheck["+alias+"](\""+escapeGoString(vc.Constraints.Check)+"\")")
+		}
+		if vc.Constraints.ReferencesTable != "" {
+			refTable := vc.Constraints.ReferencesTable
+			if vc.Constraints.ReferencesSchema != "" {
+				refTable = `"` + vc.Constraints.ReferencesSchema + `"."` + refTable + `"`
+			}
+			opts = append(opts, "ddl.WithReferences["+alias+"](\""+escapeGoString(refTable)+"\", \""+escapeGoString(vc.Constraints.ReferencesColumn)+"\")")
+		}
+		if vc.Constraints.OnDelete != ratelproto.ReferenceAction_NO_ACTION {
+			opts = append(opts, "ddl.WithOnDelete["+alias+"](\""+referenceActionToSQL(vc.Constraints.OnDelete)+"\")")
+		}
+		if vc.Constraints.OnUpdate != ratelproto.ReferenceAction_NO_ACTION {
+			opts = append(opts, "ddl.WithOnUpdate["+alias+"](\""+referenceActionToSQL(vc.Constraints.OnUpdate)+"\")")
+		}
+	}
+	if !vc.IsNullable {
+		opts = append(opts, "ddl.WithNotNull["+alias+"]()")
+	}
+
+	optStr := ""
+	for _, opt := range opts {
+		optStr += ", " + opt
+	}
+
+	// Map SQL type string to schema constructor
+	prefix := "schema."
+	if vc.IsNullable {
+		prefix = "schema.Null"
+	}
+
+	sqlType := strings.ToUpper(vc.SqlType)
+	switch {
+	case sqlType == "BIGINT" || sqlType == "INT8":
+		return prefix + "BigIntColumn(" + constName + optStr + ")"
+	case sqlType == "INTEGER" || sqlType == "INT" || sqlType == "INT4":
+		return prefix + "IntegerColumn(" + constName + optStr + ")"
+	case sqlType == "SMALLINT" || sqlType == "INT2":
+		return prefix + "SmallIntColumn(" + constName + optStr + ")"
+	case sqlType == "BIGSERIAL" || sqlType == "SERIAL8":
+		return "schema.BigSerialColumn(" + constName + optStr + ")"
+	case sqlType == "SERIAL" || sqlType == "SERIAL4":
+		return "schema.SerialColumn(" + constName + optStr + ")"
+	case sqlType == "TEXT":
+		return prefix + "TextColumn(" + constName + optStr + ")"
+	case strings.HasPrefix(sqlType, "VARCHAR"):
+		return prefix + "TextColumn(" + constName + optStr + ")"
+	case sqlType == "BOOLEAN" || sqlType == "BOOL":
+		return prefix + "BooleanColumn(" + constName + optStr + ")"
+	case sqlType == "REAL" || sqlType == "FLOAT4":
+		return prefix + "RealColumn(" + constName + optStr + ")"
+	case sqlType == "DOUBLE PRECISION" || sqlType == "FLOAT8":
+		return prefix + "DoublePrecisionColumn(" + constName + optStr + ")"
+	case sqlType == "TIMESTAMPTZ" || sqlType == "TIMESTAMP WITH TIME ZONE":
+		return prefix + "TimestamptzColumn(" + constName + optStr + ")"
+	case sqlType == "TIMESTAMP" || sqlType == "TIMESTAMP WITHOUT TIME ZONE":
+		return prefix + "TimestampColumn(" + constName + optStr + ")"
+	case sqlType == "DATE":
+		return prefix + "DateColumn(" + constName + optStr + ")"
+	case sqlType == "INTERVAL":
+		return prefix + "IntervalColumn(" + constName + optStr + ")"
+	case sqlType == "UUID":
+		return prefix + "UUIDColumn(" + constName + optStr + ")"
+	case sqlType == "JSONB":
+		return prefix + "JSONBColumn(" + constName + optStr + ")"
+	case sqlType == "JSON":
+		return prefix + "JSONColumn(" + constName + optStr + ")"
+	case sqlType == "BYTEA":
+		return prefix + "ByteaColumn(" + constName + optStr + ")"
+	case sqlType == "NUMERIC" || strings.HasPrefix(sqlType, "NUMERIC("):
+		return prefix + "BigIntColumn(" + constName + optStr + ")" // fallback
 	default:
 		return prefix + "TextColumn(" + constName + optStr + ")"
 	}

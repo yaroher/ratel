@@ -433,6 +433,36 @@ message UserSettings {
   ThemeConfig theme = 3 [(goplain.field).serialize = true];
 }
 
+// Тест: virtual_columns — колонки без proto field, только DDL
+message AuditLog {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "audit_logs"
+    schema: "store"
+    virtual_columns: [
+      {
+        sql_name: "db_created_at"
+        sql_type: "TIMESTAMPTZ"
+        constraints: { default_value: "now()" }
+      },
+      {
+        sql_name: "db_updated_at"
+        sql_type: "TIMESTAMPTZ"
+        constraints: { default_value: "now()" }
+      }
+    ]
+  };
+
+  int64 id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+
+  string action = 2;
+  string entity_type = 3;
+  int64 entity_id = 4;
+}
+
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
 message AppearanceSettings {
   option (goplain.message).generate = true;

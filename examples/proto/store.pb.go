@@ -996,6 +996,75 @@ func (x *UserSettings) GetTheme() *ThemeConfig {
 	return nil
 }
 
+// Тест: virtual_columns — колонки без proto field, только DDL
+type AuditLog struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action        string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	EntityType    string                 `protobuf:"bytes,3,opt,name=entity_type,json=entityType,proto3" json:"entity_type,omitempty"`
+	EntityId      int64                  `protobuf:"varint,4,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditLog) Reset() {
+	*x = AuditLog{}
+	mi := &file_examples_proto_store_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditLog) ProtoMessage() {}
+
+func (x *AuditLog) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditLog.ProtoReflect.Descriptor instead.
+func (*AuditLog) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AuditLog) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AuditLog) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AuditLog) GetEntityType() string {
+	if x != nil {
+		return x.EntityType
+	}
+	return ""
+}
+
+func (x *AuditLog) GetEntityId() int64 {
+	if x != nil {
+		return x.EntityId
+	}
+	return 0
+}
+
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
 type AppearanceSettings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1007,7 +1076,7 @@ type AppearanceSettings struct {
 
 func (x *AppearanceSettings) Reset() {
 	*x = AppearanceSettings{}
-	mi := &file_examples_proto_store_proto_msgTypes[13]
+	mi := &file_examples_proto_store_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1019,7 +1088,7 @@ func (x *AppearanceSettings) String() string {
 func (*AppearanceSettings) ProtoMessage() {}
 
 func (x *AppearanceSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[13]
+	mi := &file_examples_proto_store_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1032,7 +1101,7 @@ func (x *AppearanceSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppearanceSettings.ProtoReflect.Descriptor instead.
 func (*AppearanceSettings) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{13}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AppearanceSettings) GetSelectedTheme() *ThemeConfig {
@@ -1061,7 +1130,7 @@ type UserPreferences struct {
 
 func (x *UserPreferences) Reset() {
 	*x = UserPreferences{}
-	mi := &file_examples_proto_store_proto_msgTypes[14]
+	mi := &file_examples_proto_store_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1073,7 +1142,7 @@ func (x *UserPreferences) String() string {
 func (*UserPreferences) ProtoMessage() {}
 
 func (x *UserPreferences) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[14]
+	mi := &file_examples_proto_store_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1086,7 +1155,7 @@ func (x *UserPreferences) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserPreferences.ProtoReflect.Descriptor instead.
 func (*UserPreferences) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{14}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UserPreferences) GetId() int64 {
@@ -1231,7 +1300,16 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\fUserSettings\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x123\n" +
 	"\auser_id\x18\x02 \x01(\x03B\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x120\n" +
-	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +
+	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\xe9\x01\n" +
+	"\bAuditLog\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x16\n" +
+	"\x06action\x18\x02 \x01(\tR\x06action\x12\x1f\n" +
+	"\ventity_type\x18\x03 \x01(\tR\n" +
+	"entityType\x12\x1b\n" +
+	"\tentity_id\x18\x04 \x01(\x03R\bentityId:m\x92\xb5\x18c\b\x01\x12\n" +
+	"audit_logs\x1a%\n" +
+	"\rdb_created_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()\x1a%\n" +
+	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +
 	"\x12AppearanceSettings\x12A\n" +
 	"\x0eselected_theme\x18\x01 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\rselectedTheme\x12A\n" +
 	"\x0efallback_theme\x18\x02 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\rfallbackTheme:\x06\x82\xa6\x1d\x02\b\x01\"\xae\x01\n" +
@@ -1254,7 +1332,7 @@ func file_examples_proto_store_proto_rawDescGZIP() []byte {
 	return file_examples_proto_store_proto_rawDescData
 }
 
-var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_examples_proto_store_proto_goTypes = []any{
 	(*EntityID)(nil),              // 0: store.EntityID
 	(*Timestamps)(nil),            // 1: store.Timestamps
@@ -1269,26 +1347,27 @@ var file_examples_proto_store_proto_goTypes = []any{
 	(*OrderItem)(nil),             // 10: store.OrderItem
 	(*ThemeConfig)(nil),           // 11: store.ThemeConfig
 	(*UserSettings)(nil),          // 12: store.UserSettings
-	(*AppearanceSettings)(nil),    // 13: store.AppearanceSettings
-	(*UserPreferences)(nil),       // 14: store.UserPreferences
-	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
-	(*wrapperspb.Int64Value)(nil), // 16: google.protobuf.Int64Value
+	(*AuditLog)(nil),              // 13: store.AuditLog
+	(*AppearanceSettings)(nil),    // 14: store.AppearanceSettings
+	(*UserPreferences)(nil),       // 15: store.UserPreferences
+	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil), // 17: google.protobuf.Int64Value
 }
 var file_examples_proto_store_proto_depIdxs = []int32{
-	15, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
-	15, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
+	16, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
+	16, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: store.BaseEntity.id:type_name -> store.EntityID
 	1,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
 	2,  // 4: store.User.base:type_name -> store.BaseEntity
-	15, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
-	15, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
+	16, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
+	16, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
 	9,  // 7: store.User.orders:type_name -> store.Order
 	5,  // 8: store.User.profile:type_name -> store.Profile
 	2,  // 9: store.Profile.base:type_name -> store.BaseEntity
 	0,  // 10: store.Profile.user_id:type_name -> store.EntityID
 	4,  // 11: store.Profile.user:type_name -> store.User
 	2,  // 12: store.Category.base:type_name -> store.BaseEntity
-	16, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	17, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
 	2,  // 14: store.Tag.base:type_name -> store.BaseEntity
 	2,  // 15: store.Product.base:type_name -> store.BaseEntity
 	6,  // 16: store.Product.categories:type_name -> store.Category
@@ -1305,7 +1384,7 @@ var file_examples_proto_store_proto_depIdxs = []int32{
 	11, // 27: store.UserSettings.theme:type_name -> store.ThemeConfig
 	11, // 28: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
 	11, // 29: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
-	13, // 30: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
+	14, // 30: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
 	31, // [31:31] is the sub-list for method output_type
 	31, // [31:31] is the sub-list for method input_type
 	31, // [31:31] is the sub-list for extension type_name
@@ -1325,7 +1404,7 @@ func file_examples_proto_store_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_examples_proto_store_proto_rawDesc), len(file_examples_proto_store_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

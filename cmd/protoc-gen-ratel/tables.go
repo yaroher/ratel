@@ -27,6 +27,8 @@ type RatelColumn struct {
 	GoName     string // Override for embedded fields
 	IsSkipped  bool
 	IsEmbedded bool // True if this column comes from an embedded message
+	IsVirtual  bool // True if this is a virtual column (no proto field, DDL-only)
+	VirtualDef *ratelproto.VirtualColumn
 }
 
 // RatelRelation represents a relation in a ratel table
@@ -92,6 +94,20 @@ func collectRatelTables(f *protogen.File) []*RatelTable {
 			col.GoType = computeGoType(col)
 
 			if !col.IsSkipped {
+				table.Columns = append(table.Columns, col)
+			}
+		}
+
+		// Add virtual columns from table options
+		if tableOpts.VirtualColumns != nil {
+			for _, vc := range tableOpts.VirtualColumns {
+				col := &RatelColumn{
+					SQLName:    vc.SqlName,
+					SQLType:    vc.SqlType,
+					GoName:     strcase.ToCamel(vc.SqlName),
+					IsVirtual:  true,
+					VirtualDef: vc,
+				}
 				table.Columns = append(table.Columns, col)
 			}
 		}
