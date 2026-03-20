@@ -35,6 +35,7 @@ message User {
 | `generate` | bool | false | Enable code generation |
 | `table_name` | string | snake_case(MessageName) | SQL table name |
 | `schema` | string | "" (public) | PostgreSQL schema |
+| `virtual_columns` | repeated VirtualColumn | [] | Columns without proto field |
 | `indexes` | repeated Index | [] | Table indexes |
 | `unique` | repeated UniqueColumns | [] | Composite unique constraints |
 | `primary_key` | PrimaryKeyColumns | - | Composite primary key |
@@ -65,6 +66,43 @@ message User {
 | Field | Type | Description |
 |-------|------|-------------|
 | `columns` | repeated string | Column names for composite PK |
+
+### VirtualColumn
+
+Columns that exist in the database but have no corresponding proto field. Ratel automatically adds them to the Scanner struct, DDL, column constants, and query accessors.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sql_name` | string | Column name in SQL |
+| `sql_type` | string | SQL type (e.g., `TEXT`, `BIGINT`, `TIMESTAMPTZ`) |
+| `constraints` | Constraint | Column constraints (default, check, references, etc.) |
+| `is_nullable` | bool | Whether column allows NULL |
+| `is_array` | bool | Whether column is an array type |
+
+```protobuf
+message User {
+  option (ratel.table) = {
+    generate: true
+    table_name: "users"
+    virtual_columns: [
+      { sql_name: "password_hash", sql_type: "TEXT" },
+      { sql_name: "db_created_at", sql_type: "TIMESTAMPTZ", constraints: { default_value: "now()" } }
+    ]
+  };
+
+  int64 id = 1;
+  string email = 2;
+}
+```
+
+Generated code includes:
+- Scanner field: `PasswordHash string`, `DbCreatedAt string`
+- Chainable setter: `scanner.WithPasswordHash("hash")`
+- Column constant: `UserColumnPasswordHash`
+- Typed accessor: `Users.PasswordHash` (TextColumnI)
+- DDL column in CREATE TABLE
+- Included in `AllSetters()`, `GetTarget()`, `GetSetter()`, `GetValue()`
+- Skipped in `IntoPlain()` / `IntoPb()` (no proto field)
 
 ## additional_code (File Option)
 

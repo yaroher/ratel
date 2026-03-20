@@ -160,7 +160,7 @@ All built-in type overrides (Timestamp, Duration, Int64Value, Struct) have exist
 
 ### Serialized Fields
 
-For message fields with `(goplain.field).serialize = true`, the value is stored as `[]byte` in the Scanner using `proto.Marshal` / `proto.Unmarshal`. This works for any protobuf message type:
+For message fields with `(goplain.field).serialize = true`, the value is stored as `[]byte` in the Scanner using `proto.Marshal` / `proto.Unmarshal`. This works for any protobuf message type, including fields inside embedded messages:
 
 ```protobuf
 message ThemeSettings {
@@ -169,6 +169,93 @@ message ThemeSettings {
 ```
 
 Generated Scanner field: `SelectedUiTheme []byte`, stored as `BYTEA` in PostgreSQL.
+
+## Virtual Columns
+
+Virtual columns are database columns without a corresponding proto field. They exist in the DB schema and Scanner, but not in the protobuf message. Common use cases: `password_hash`, audit timestamps managed by triggers, computed fields.
+
+### Declaration
+
+Define virtual columns in `ratel.table.virtual_columns`:
+
+```protobuf
+message User {
+  option (ratel.table) = {
+    generate: true
+    table_name: "users"
+    virtual_columns: [
+      { sql_name: "password_hash", sql_type: "TEXT" },
+      { sql_name: "db_created_at", sql_type: "TIMESTAMPTZ",
+        constraints: { default_value: "now()" } }
+    ]
+  };
+
+  int64 id = 1;
+  string email = 2;
+}
+```
+
+No need to declare anything in `goplain.message` — ratel injects virtual fields into the Scanner automatically.
+
+### What Gets Generated
+
+Virtual columns are full participants in the generated code:
+
+| Feature | Included | Notes |
+|---------|----------|-------|
+| Scanner struct field | Yes | `PasswordHash string` |
+| `With*` chainable setter | Yes | `scanner.WithPasswordHash(v)` |
+| Column constant | Yes | `UserColumnPasswordHash` |
+| Table struct accessor | Yes | `Users.PasswordHash` |
+| DDL (CREATE TABLE) | Yes | With type, constraints |
+| `GetTarget` / `GetSetter` / `GetValue` | Yes | |
+| `AllSetters()` | Yes | |
+| `IntoPlain()` / `IntoPb()` | Skipped | No proto field to convert |
+
+### Usage
+
+```go
+// Convert proto to scanner, set virtual field, insert
+scanner := user.IntoPlain().WithPasswordHash(hashedPassword)
+insert := tbl.Insert().From(scanner.AllSetters()...)
+
+// Or set after conversion
+scanner := user.IntoPlain()
+scanner.PasswordHash = hashedPassword
+```
+
+### SQL Type Mapping
+
+Virtual column `sql_type` maps to Scanner Go type:
+
+| SQL Type | Go Type in Scanner |
+|----------|-------------------|
+| `TEXT`, `VARCHAR` | `string` |
+| `BIGINT`, `INT8` | `int64` |
+| `INTEGER`, `INT4` | `int32` |
+| `BOOLEAN`, `BOOL` | `bool` |
+| `REAL`, `FLOAT4` | `float32` |
+| `DOUBLE PRECISION` | `float64` |
+| `BYTEA` | `[]byte` |
+| Everything else (`TIMESTAMPTZ`, `JSONB`, `UUID`, ...) | `string` |
+
+## AllSetters
+
+Every Scanner gets an `AllSetters()` method that returns all column values as setters, ready for `Insert().From()` or `Update().Set()`:
+
+```go
+// Instead of manually listing every field:
+insert := tbl.Insert().From(
+    tbl.Id.Set(id),
+    tbl.Email.Set(email),
+    tbl.Name.Set(name),
+)
+
+// Use AllSetters:
+insert := tbl.Insert().From(scanner.AllSetters()...)
+```
+
+`AllSetters()` includes all columns — both regular and virtual. It returns `[]set.ValueSetter[ColumnAlias]`.
 
 ## Available Column Constructors (Go)
 
