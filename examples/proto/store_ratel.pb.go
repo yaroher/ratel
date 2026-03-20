@@ -82,6 +82,13 @@ func (s *CurrencyScanner) GetValue(f CurrencyColumnAlias) func() any {
 	}
 }
 
+func (s *CurrencyScanner) AllSetters() []set.ValueSetter[CurrencyColumnAlias] {
+	return []set.ValueSetter[CurrencyColumnAlias]{
+		set.NewSetter[CurrencyColumnAlias](CurrencyColumnCode, s.Code),
+		set.NewSetter[CurrencyColumnAlias](CurrencyColumnName, s.Name),
+	}
+}
+
 // Relations returns the relation loaders for the currency table
 func (s *CurrencyScanner) Relations() []exec.RelationLoader[*CurrencyScanner] {
 	return nil
@@ -218,6 +225,20 @@ func (s *UserScanner) GetValue(f UserColumnAlias) func() any {
 		return func() any { return s.DeletedAt }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *UserScanner) AllSetters() []set.ValueSetter[UserColumnAlias] {
+	return []set.ValueSetter[UserColumnAlias]{
+		set.NewSetter[UserColumnAlias](UserColumnId, s.Id),
+		set.NewSetter[UserColumnAlias](UserColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[UserColumnAlias](UserColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[UserColumnAlias](UserColumnEmail, s.Email),
+		set.NewSetter[UserColumnAlias](UserColumnFullName, s.FullName),
+		set.NewSetter[UserColumnAlias](UserColumnIsActive, s.IsActive),
+		set.NewSetter[UserColumnAlias](UserColumnEmailConfirmedAt, s.EmailConfirmedAt),
+		set.NewSetter[UserColumnAlias](UserColumnNickname, s.Nickname),
+		set.NewSetter[UserColumnAlias](UserColumnDeletedAt, s.DeletedAt),
 	}
 }
 
@@ -467,6 +488,17 @@ func (s *ProfileScanner) GetValue(f ProfileColumnAlias) func() any {
 	}
 }
 
+func (s *ProfileScanner) AllSetters() []set.ValueSetter[ProfileColumnAlias] {
+	return []set.ValueSetter[ProfileColumnAlias]{
+		set.NewSetter[ProfileColumnAlias](ProfileColumnId, s.Id),
+		set.NewSetter[ProfileColumnAlias](ProfileColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[ProfileColumnAlias](ProfileColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[ProfileColumnAlias](ProfileColumnUserId, s.UserId),
+		set.NewSetter[ProfileColumnAlias](ProfileColumnBio, s.Bio),
+		set.NewSetter[ProfileColumnAlias](ProfileColumnAvatarUrl, s.AvatarUrl),
+	}
+}
+
 // Relations returns the relation loaders for the profiles table
 func (s *ProfileScanner) Relations() []exec.RelationLoader[*ProfileScanner] {
 	return []exec.RelationLoader[*ProfileScanner]{
@@ -653,6 +685,17 @@ func (s *CategoryScanner) GetValue(f CategoryColumnAlias) func() any {
 	}
 }
 
+func (s *CategoryScanner) AllSetters() []set.ValueSetter[CategoryColumnAlias] {
+	return []set.ValueSetter[CategoryColumnAlias]{
+		set.NewSetter[CategoryColumnAlias](CategoryColumnId, s.Id),
+		set.NewSetter[CategoryColumnAlias](CategoryColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[CategoryColumnAlias](CategoryColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[CategoryColumnAlias](CategoryColumnName, s.Name),
+		set.NewSetter[CategoryColumnAlias](CategoryColumnSlug, s.Slug),
+		set.NewSetter[CategoryColumnAlias](CategoryColumnParentId, s.ParentId),
+	}
+}
+
 // Relations returns the relation loaders for the categories table
 func (s *CategoryScanner) Relations() []exec.RelationLoader[*CategoryScanner] {
 	return nil
@@ -778,6 +821,16 @@ func (s *TagScanner) GetValue(f TagColumnAlias) func() any {
 		return func() any { return s.Slug }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *TagScanner) AllSetters() []set.ValueSetter[TagColumnAlias] {
+	return []set.ValueSetter[TagColumnAlias]{
+		set.NewSetter[TagColumnAlias](TagColumnId, s.Id),
+		set.NewSetter[TagColumnAlias](TagColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[TagColumnAlias](TagColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[TagColumnAlias](TagColumnName, s.Name),
+		set.NewSetter[TagColumnAlias](TagColumnSlug, s.Slug),
 	}
 }
 
@@ -929,6 +982,20 @@ func (s *ProductScanner) GetValue(f ProductColumnAlias) func() any {
 		return func() any { return s.IsDeleted }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *ProductScanner) AllSetters() []set.ValueSetter[ProductColumnAlias] {
+	return []set.ValueSetter[ProductColumnAlias]{
+		set.NewSetter[ProductColumnAlias](ProductColumnId, s.Id),
+		set.NewSetter[ProductColumnAlias](ProductColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[ProductColumnAlias](ProductColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[ProductColumnAlias](ProductColumnSku, s.Sku),
+		set.NewSetter[ProductColumnAlias](ProductColumnName, s.Name),
+		set.NewSetter[ProductColumnAlias](ProductColumnPrice, s.Price),
+		set.NewSetter[ProductColumnAlias](ProductColumnCurrency, s.Currency),
+		set.NewSetter[ProductColumnAlias](ProductColumnStockQty, s.StockQty),
+		set.NewSetter[ProductColumnAlias](ProductColumnIsDeleted, s.IsDeleted),
 	}
 }
 
@@ -1086,6 +1153,17 @@ func (s *OrderScanner) GetValue(f OrderColumnAlias) func() any {
 		return func() any { return s.Currency }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *OrderScanner) AllSetters() []set.ValueSetter[OrderColumnAlias] {
+	return []set.ValueSetter[OrderColumnAlias]{
+		set.NewSetter[OrderColumnAlias](OrderColumnId, s.Id),
+		set.NewSetter[OrderColumnAlias](OrderColumnCreatedAt, s.CreatedAt),
+		set.NewSetter[OrderColumnAlias](OrderColumnUpdatedAt, s.UpdatedAt),
+		set.NewSetter[OrderColumnAlias](OrderColumnUserId, s.UserId),
+		set.NewSetter[OrderColumnAlias](OrderColumnStatus, s.Status),
+		set.NewSetter[OrderColumnAlias](OrderColumnCurrency, s.Currency),
 	}
 }
 
@@ -1346,6 +1424,16 @@ func (s *OrderItemScanner) GetValue(f OrderItemColumnAlias) func() any {
 	}
 }
 
+func (s *OrderItemScanner) AllSetters() []set.ValueSetter[OrderItemColumnAlias] {
+	return []set.ValueSetter[OrderItemColumnAlias]{
+		set.NewSetter[OrderItemColumnAlias](OrderItemColumnOrderId, s.OrderId),
+		set.NewSetter[OrderItemColumnAlias](OrderItemColumnLineNo, s.LineNo),
+		set.NewSetter[OrderItemColumnAlias](OrderItemColumnProductId, s.ProductId),
+		set.NewSetter[OrderItemColumnAlias](OrderItemColumnQty, s.Qty),
+		set.NewSetter[OrderItemColumnAlias](OrderItemColumnUnitPrice, s.UnitPrice),
+	}
+}
+
 // Relations returns the relation loaders for the order_items table
 func (s *OrderItemScanner) Relations() []exec.RelationLoader[*OrderItemScanner] {
 	return []exec.RelationLoader[*OrderItemScanner]{
@@ -1535,6 +1623,14 @@ func (s *UserSettingsScanner) GetValue(f UserSettingsColumnAlias) func() any {
 	}
 }
 
+func (s *UserSettingsScanner) AllSetters() []set.ValueSetter[UserSettingsColumnAlias] {
+	return []set.ValueSetter[UserSettingsColumnAlias]{
+		set.NewSetter[UserSettingsColumnAlias](UserSettingsColumnId, s.Id),
+		set.NewSetter[UserSettingsColumnAlias](UserSettingsColumnUserId, s.UserId),
+		set.NewSetter[UserSettingsColumnAlias](UserSettingsColumnTheme, s.Theme),
+	}
+}
+
 // Relations returns the relation loaders for the user_settings table
 func (s *UserSettingsScanner) Relations() []exec.RelationLoader[*UserSettingsScanner] {
 	return nil
@@ -1611,6 +1707,10 @@ func (s *AuditLogScanner) GetTarget(col string) func() any {
 		return func() any { return &s.EntityType }
 	case AuditLogColumnEntityId:
 		return func() any { return &s.EntityId }
+	case AuditLogColumnDbCreatedAt:
+		return func() any { return &s.DbCreatedAt }
+	case AuditLogColumnDbUpdatedAt:
+		return func() any { return &s.DbUpdatedAt }
 	default:
 		panic("unknown field: " + col)
 	}
@@ -1626,6 +1726,10 @@ func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSette
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityType) }
 	case AuditLogColumnEntityId:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityId) }
+	case AuditLogColumnDbCreatedAt:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DbCreatedAt) }
+	case AuditLogColumnDbUpdatedAt:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DbUpdatedAt) }
 	default:
 		panic("unknown field: " + string(f))
 	}
@@ -1641,8 +1745,23 @@ func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 		return func() any { return s.EntityType }
 	case AuditLogColumnEntityId:
 		return func() any { return s.EntityId }
+	case AuditLogColumnDbCreatedAt:
+		return func() any { return s.DbCreatedAt }
+	case AuditLogColumnDbUpdatedAt:
+		return func() any { return s.DbUpdatedAt }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *AuditLogScanner) AllSetters() []set.ValueSetter[AuditLogColumnAlias] {
+	return []set.ValueSetter[AuditLogColumnAlias]{
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnId, s.Id),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnAction, s.Action),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityType, s.EntityType),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityId, s.EntityId),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbCreatedAt, s.DbCreatedAt),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbUpdatedAt, s.DbUpdatedAt),
 	}
 }
 
@@ -1654,10 +1773,12 @@ func (s *AuditLogScanner) Relations() []exec.RelationLoader[*AuditLogScanner] {
 // AuditLogsTable represents the audit_logs table with its columns
 type AuditLogsTable struct {
 	*schema.Table[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner]
-	Id         schema.BigSerialColumnI[AuditLogColumnAlias]
-	Action     schema.TextColumnI[AuditLogColumnAlias]
-	EntityType schema.TextColumnI[AuditLogColumnAlias]
-	EntityId   schema.BigIntColumnI[AuditLogColumnAlias]
+	Id          schema.BigSerialColumnI[AuditLogColumnAlias]
+	Action      schema.TextColumnI[AuditLogColumnAlias]
+	EntityType  schema.TextColumnI[AuditLogColumnAlias]
+	EntityId    schema.BigIntColumnI[AuditLogColumnAlias]
+	DbCreatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
+	DbUpdatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
 }
 
 // AuditLogs is the global audit_logs table instance
@@ -1683,10 +1804,12 @@ var AuditLogs = func() AuditLogsTable {
 			},
 			ddl.WithSchema[AuditLogAlias, AuditLogColumnAlias]("store"),
 		),
-		Id:         idCol,
-		Action:     actionCol,
-		EntityType: entityTypeCol,
-		EntityId:   entityIdCol,
+		Id:          idCol,
+		Action:      actionCol,
+		EntityType:  entityTypeCol,
+		EntityId:    entityIdCol,
+		DbCreatedAt: dbCreatedAtCol,
+		DbUpdatedAt: dbUpdatedAtCol,
 	}
 }()
 
@@ -1760,6 +1883,15 @@ func (s *UserPreferencesScanner) GetValue(f UserPreferencesColumnAlias) func() a
 		return func() any { return s.FallbackTheme }
 	default:
 		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *UserPreferencesScanner) AllSetters() []set.ValueSetter[UserPreferencesColumnAlias] {
+	return []set.ValueSetter[UserPreferencesColumnAlias]{
+		set.NewSetter[UserPreferencesColumnAlias](UserPreferencesColumnId, s.Id),
+		set.NewSetter[UserPreferencesColumnAlias](UserPreferencesColumnUserId, s.UserId),
+		set.NewSetter[UserPreferencesColumnAlias](UserPreferencesColumnSelectedTheme, s.SelectedTheme),
+		set.NewSetter[UserPreferencesColumnAlias](UserPreferencesColumnFallbackTheme, s.FallbackTheme),
 	}
 }
 

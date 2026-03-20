@@ -826,10 +826,12 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLogScanner struct {
-	Id         int64  `json:"id"`
-	Action     string `json:"action"`
-	EntityType string `json:"entityType"`
-	EntityId   int64  `json:"entityId"`
+	Id          int64  `json:"id"`
+	Action      string `json:"action"`
+	EntityType  string `json:"entityType"`
+	EntityId    int64  `json:"entityId"`
+	DbCreatedAt string `json:"dbCreatedAt"` // origin: virtual, empath: virtual
+	DbUpdatedAt string `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -843,6 +845,8 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	p.Action = pb.Action
 	p.EntityType = pb.EntityType
 	p.EntityId = pb.EntityId
+	// DbCreatedAt is virtual, no source in protobuf
+	// DbUpdatedAt is virtual, no source in protobuf
 	return p
 }
 
@@ -857,7 +861,21 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 	pb.Action = p.Action
 	pb.EntityType = p.EntityType
 	pb.EntityId = p.EntityId
+	// DbCreatedAt is virtual, skipping
+	// DbUpdatedAt is virtual, skipping
 	return pb
+}
+
+// WithDbCreatedAt sets the virtual field DbCreatedAt
+func (p *AuditLogScanner) WithDbCreatedAt(v string) *AuditLogScanner {
+	p.DbCreatedAt = v
+	return p
+}
+
+// WithDbUpdatedAt sets the virtual field DbUpdatedAt
+func (p *AuditLogScanner) WithDbUpdatedAt(v string) *AuditLogScanner {
+	p.DbUpdatedAt = v
+	return p
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct

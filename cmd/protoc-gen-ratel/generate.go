@@ -1,8 +1,13 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/yaroher/protoc-gen-go-plain/generator"
+	"github.com/yaroher/protoc-gen-go-plain/goplain"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/proto"
+	typepb "google.golang.org/protobuf/types/known/typepb"
 )
 
 // Generate is the main entry point for the protoc-gen-ratel plugin
@@ -16,6 +21,10 @@ func Generate(p *protogen.Plugin) error {
 	settings.JSONJX = false
 	settings.JXPB = false
 	settings.GeneratePool = false
+
+	// Inject virtual_columns from ratel.table as virtual_fields into goplain options
+	// so go-plain adds them to the Scanner struct automatically
+	injectVirtualFields(p)
 
 	// Create generator with ratel-specific options
 	g, err := generator.NewGenerator(p, settings,
@@ -56,4 +65,68 @@ func generateRatelFiles(p *protogen.Plugin, gen *generator.Generator) error {
 	}
 
 	return nil
+}
+
+// injectVirtualFields reads ratel.table.virtual_columns and injects them as
+// goplain.message.virtual_fields so go-plain adds them to the Scanner struct.
+func injectVirtualFields(p *protogen.Plugin) {
+	for _, f := range p.Files {
+		if !f.Generate {
+			continue
+		}
+		for _, msg := range f.Messages {
+			tableOpts := getRatelTableOptions(msg)
+			if tableOpts == nil || len(tableOpts.VirtualColumns) == 0 {
+				continue
+			}
+
+			// Convert virtual_columns to typepb.Field entries
+			var vfields []*typepb.Field
+			for _, vc := range tableOpts.VirtualColumns {
+				vfields = append(vfields, &typepb.Field{
+					Name: vc.SqlName,
+					Kind: sqlTypeToFieldKind(vc.SqlType),
+				})
+			}
+
+			// Get existing goplain message options and append virtual fields
+			msgOpts := msg.Desc.Options()
+			if msgOpts == nil {
+				continue
+			}
+			ext := proto.GetExtension(msgOpts, goplain.E_Message)
+			if ext == nil {
+				continue
+			}
+			goplainOpts, ok := ext.(*goplain.MessageOptions)
+			if !ok || goplainOpts == nil {
+				continue
+			}
+			goplainOpts.VirtualFields = append(goplainOpts.VirtualFields, vfields...)
+		}
+	}
+}
+
+// sqlTypeToFieldKind maps SQL type string to protobuf Field.Kind for virtual fields.
+func sqlTypeToFieldKind(sqlType string) typepb.Field_Kind {
+	upper := strings.ToUpper(sqlType)
+	switch {
+	case upper == "BIGINT" || upper == "INT8" || upper == "BIGSERIAL" || upper == "SERIAL8":
+		return typepb.Field_TYPE_INT64
+	case upper == "INTEGER" || upper == "INT" || upper == "INT4" || upper == "SERIAL" || upper == "SERIAL4":
+		return typepb.Field_TYPE_INT32
+	case upper == "SMALLINT" || upper == "INT2":
+		return typepb.Field_TYPE_INT32
+	case upper == "BOOLEAN" || upper == "BOOL":
+		return typepb.Field_TYPE_BOOL
+	case upper == "REAL" || upper == "FLOAT4":
+		return typepb.Field_TYPE_FLOAT
+	case upper == "DOUBLE PRECISION" || upper == "FLOAT8":
+		return typepb.Field_TYPE_DOUBLE
+	case upper == "BYTEA":
+		return typepb.Field_TYPE_BYTES
+	default:
+		// TEXT, VARCHAR, TIMESTAMPTZ, JSONB, UUID, etc. → string in Scanner
+		return typepb.Field_TYPE_STRING
+	}
 }

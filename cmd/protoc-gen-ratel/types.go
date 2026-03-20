@@ -417,6 +417,49 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	}
 }
 
+// getVirtualSchemaColumnType returns the schema column type for a virtual column.
+func getVirtualSchemaColumnType(col *RatelColumn, msgName string) string {
+	alias := msgName + "ColumnAlias"
+	prefix := "schema."
+	if col.VirtualDef != nil && col.VirtualDef.IsNullable {
+		prefix = "schema.Null"
+	}
+
+	sqlType := strings.ToUpper(col.SQLType)
+	switch {
+	case sqlType == "BIGINT" || sqlType == "INT8" || sqlType == "BIGSERIAL" || sqlType == "SERIAL8":
+		return prefix + "BigIntColumnI[" + alias + "]"
+	case sqlType == "INTEGER" || sqlType == "INT" || sqlType == "INT4" || sqlType == "SERIAL" || sqlType == "SERIAL4":
+		return prefix + "IntegerColumnI[" + alias + "]"
+	case sqlType == "SMALLINT" || sqlType == "INT2":
+		return prefix + "SmallIntColumnI[" + alias + "]"
+	case sqlType == "BOOLEAN" || sqlType == "BOOL":
+		return prefix + "BooleanColumnI[" + alias + "]"
+	case sqlType == "REAL" || sqlType == "FLOAT4":
+		return prefix + "RealColumnI[" + alias + "]"
+	case sqlType == "DOUBLE PRECISION" || sqlType == "FLOAT8":
+		return prefix + "DoublePrecisionColumnI[" + alias + "]"
+	case sqlType == "TIMESTAMPTZ" || sqlType == "TIMESTAMP WITH TIME ZONE":
+		return prefix + "TimestamptzColumnI[" + alias + "]"
+	case sqlType == "TIMESTAMP" || sqlType == "TIMESTAMP WITHOUT TIME ZONE":
+		return prefix + "TimestampColumnI[" + alias + "]"
+	case sqlType == "DATE":
+		return prefix + "DateColumnI[" + alias + "]"
+	case sqlType == "INTERVAL":
+		return prefix + "IntervalColumnI[" + alias + "]"
+	case sqlType == "UUID":
+		return prefix + "UUIDColumnI[" + alias + "]"
+	case sqlType == "JSONB":
+		return prefix + "JSONBColumnI[" + alias + "]"
+	case sqlType == "JSON":
+		return prefix + "JSONColumnI[" + alias + "]"
+	case sqlType == "BYTEA":
+		return prefix + "ByteaColumnI[" + alias + "]"
+	default:
+		return prefix + "TextColumnI[" + alias + "]"
+	}
+}
+
 // columnConstName returns the Go constant name for a column (works for both regular and virtual).
 func columnConstName(col *RatelColumn, msgName string) string {
 	if col.IsVirtual {
