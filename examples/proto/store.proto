@@ -398,3 +398,63 @@ message OrderItem {
     belongs_to: { foreign_key: "product_id" }
   }];
 }
+
+// ============================================================================
+// Settings - тест serialize = true на message полях
+// ============================================================================
+message ThemeConfig {
+  string primary_color = 1;
+  string font_family = 2;
+}
+
+// Тест: serialize = true на message поле (прямое — не embedded)
+message UserSettings {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "user_settings"
+    schema: "store"
+  };
+
+  int64 id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+
+  int64 user_id = 2 [(ratel.column) = {
+    constraints: {
+      references_schema: "store"
+      references_table: "users"
+      references_column: "id"
+      on_delete: CASCADE
+    }
+  }];
+
+  // serialize = true: message -> []byte via proto.Marshal/Unmarshal
+  ThemeConfig theme = 3 [(goplain.field).serialize = true];
+}
+
+// Тест: serialize = true на message поле ВНУТРИ embedded struct
+message AppearanceSettings {
+  option (goplain.message).generate = true;
+
+  ThemeConfig selected_theme = 1 [(goplain.field).serialize = true];
+  ThemeConfig fallback_theme = 2 [(goplain.field).serialize = true];
+}
+
+message UserPreferences {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "user_preferences"
+    schema: "store"
+  };
+
+  int64 id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+
+  int64 user_id = 2;
+
+  // embed с serialize полями внутри
+  AppearanceSettings appearance = 3 [(goplain.field).embed = true];
+}

@@ -5,6 +5,7 @@ package storepb
 
 import (
 	ratelcast "github.com/yaroher/ratel/pkg/ratelcast"
+	proto "google.golang.org/protobuf/proto"
 	time "time"
 )
 
@@ -775,6 +776,165 @@ func (p *OrderItemScanner) IntoPb() *OrderItem {
 	}
 	if p.Product != nil {
 		pb.Product = p.Product.IntoPb()
+	}
+	return pb
+}
+
+// Тест: serialize = true на message поле (прямое — не embedded)
+type UserSettingsScanner struct {
+	Id     int64  `json:"id"`
+	UserId int64  `json:"userId"`
+	Theme  []byte `json:"theme"` // origin: serialized, empath: theme
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *UserSettings) IntoPlain() *UserSettingsScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &UserSettingsScanner{}
+
+	p.Id = pb.Id
+	p.UserId = pb.UserId
+	// Theme serialized from theme
+	if pb.Theme != nil {
+		if data, err := proto.Marshal(pb.Theme); err == nil {
+			p.Theme = data
+		}
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *UserSettingsScanner) IntoPb() *UserSettings {
+	if p == nil {
+		return nil
+	}
+	pb := &UserSettings{}
+
+	pb.Id = p.Id
+	pb.UserId = p.UserId
+	// Theme deserialize -> theme
+	if len(p.Theme) > 0 {
+		var msg ThemeConfig
+		if err := proto.Unmarshal(p.Theme, &msg); err == nil {
+			pb.Theme = &msg
+		}
+	}
+	return pb
+}
+
+// Тест: serialize = true на message поле ВНУТРИ embedded struct
+type AppearanceSettingsScanner struct {
+	SelectedTheme []byte `json:"selectedTheme"` // origin: serialized, empath: selected_theme
+	FallbackTheme []byte `json:"fallbackTheme"` // origin: serialized, empath: fallback_theme
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *AppearanceSettings) IntoPlain() *AppearanceSettingsScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &AppearanceSettingsScanner{}
+
+	// SelectedTheme serialized from selected_theme
+	if pb.SelectedTheme != nil {
+		if data, err := proto.Marshal(pb.SelectedTheme); err == nil {
+			p.SelectedTheme = data
+		}
+	}
+	// FallbackTheme serialized from fallback_theme
+	if pb.FallbackTheme != nil {
+		if data, err := proto.Marshal(pb.FallbackTheme); err == nil {
+			p.FallbackTheme = data
+		}
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *AppearanceSettingsScanner) IntoPb() *AppearanceSettings {
+	if p == nil {
+		return nil
+	}
+	pb := &AppearanceSettings{}
+
+	// SelectedTheme deserialize -> selected_theme
+	if len(p.SelectedTheme) > 0 {
+		var msg ThemeConfig
+		if err := proto.Unmarshal(p.SelectedTheme, &msg); err == nil {
+			pb.SelectedTheme = &msg
+		}
+	}
+	// FallbackTheme deserialize -> fallback_theme
+	if len(p.FallbackTheme) > 0 {
+		var msg ThemeConfig
+		if err := proto.Unmarshal(p.FallbackTheme, &msg); err == nil {
+			pb.FallbackTheme = &msg
+		}
+	}
+	return pb
+}
+
+type UserPreferencesScanner struct {
+	Id            int64  `json:"id"`
+	UserId        int64  `json:"userId"`
+	SelectedTheme []byte `json:"selectedTheme"` // origin: serialized, empath: selected_theme
+	FallbackTheme []byte `json:"fallbackTheme"` // origin: serialized, empath: fallback_theme
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *UserPreferences) IntoPlain() *UserPreferencesScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &UserPreferencesScanner{}
+
+	p.Id = pb.Id
+	p.UserId = pb.UserId
+	// SelectedTheme serialized from selected_theme
+	if pb.GetAppearance() != nil && pb.GetAppearance().GetSelectedTheme() != nil {
+		if data, err := proto.Marshal(pb.GetAppearance().GetSelectedTheme()); err == nil {
+			p.SelectedTheme = data
+		}
+	}
+	// FallbackTheme serialized from fallback_theme
+	if pb.GetAppearance() != nil && pb.GetAppearance().GetFallbackTheme() != nil {
+		if data, err := proto.Marshal(pb.GetAppearance().GetFallbackTheme()); err == nil {
+			p.FallbackTheme = data
+		}
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *UserPreferencesScanner) IntoPb() *UserPreferences {
+	if p == nil {
+		return nil
+	}
+	pb := &UserPreferences{}
+
+	pb.Id = p.Id
+	pb.UserId = p.UserId
+	// SelectedTheme deserialize -> selected_theme
+	if len(p.SelectedTheme) > 0 {
+		var msg ThemeConfig
+		if err := proto.Unmarshal(p.SelectedTheme, &msg); err == nil {
+			if pb.Appearance == nil {
+				pb.Appearance = &AppearanceSettings{}
+			}
+			pb.Appearance.SelectedTheme = &msg
+		}
+	}
+	// FallbackTheme deserialize -> fallback_theme
+	if len(p.FallbackTheme) > 0 {
+		var msg ThemeConfig
+		if err := proto.Unmarshal(p.FallbackTheme, &msg); err == nil {
+			if pb.Appearance == nil {
+				pb.Appearance = &AppearanceSettings{}
+			}
+			pb.Appearance.FallbackTheme = &msg
+		}
 	}
 	return pb
 }

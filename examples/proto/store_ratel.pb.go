@@ -1478,6 +1478,221 @@ var OrderItemConverter = repository.Converter[*OrderItemScanner, *OrderItem]{
 	ToProto:   (*OrderItemScanner).IntoPb,
 }
 
+// UserSettingsAlias is the table alias type for the user_settings table
+type UserSettingsAlias string
+
+func (a UserSettingsAlias) String() string { return string(a) }
+
+const UserSettingsAliasName UserSettingsAlias = "user_settings"
+
+// UserSettingsColumnAlias represents column names for the user_settings table
+type UserSettingsColumnAlias string
+
+func (c UserSettingsColumnAlias) String() string { return string(c) }
+
+const (
+	UserSettingsColumnId     UserSettingsColumnAlias = "id"
+	UserSettingsColumnUserId UserSettingsColumnAlias = "user_id"
+	UserSettingsColumnTheme  UserSettingsColumnAlias = "theme"
+)
+
+func (s *UserSettingsScanner) GetTarget(col string) func() any {
+	switch UserSettingsColumnAlias(col) {
+	case UserSettingsColumnId:
+		return func() any { return &s.Id }
+	case UserSettingsColumnUserId:
+		return func() any { return &s.UserId }
+	case UserSettingsColumnTheme:
+		return func() any { return &s.Theme }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *UserSettingsScanner) GetSetter(f UserSettingsColumnAlias) func() set.ValueSetter[UserSettingsColumnAlias] {
+	switch f {
+	case UserSettingsColumnId:
+		return func() set.ValueSetter[UserSettingsColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case UserSettingsColumnUserId:
+		return func() set.ValueSetter[UserSettingsColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case UserSettingsColumnTheme:
+		return func() set.ValueSetter[UserSettingsColumnAlias] { return set.NewSetter(f, &s.Theme) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *UserSettingsScanner) GetValue(f UserSettingsColumnAlias) func() any {
+	switch f {
+	case UserSettingsColumnId:
+		return func() any { return s.Id }
+	case UserSettingsColumnUserId:
+		return func() any { return s.UserId }
+	case UserSettingsColumnTheme:
+		return func() any { return s.Theme }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the user_settings table
+func (s *UserSettingsScanner) Relations() []exec.RelationLoader[*UserSettingsScanner] {
+	return nil
+}
+
+// UserSettingssTable represents the user_settings table with its columns
+type UserSettingssTable struct {
+	*schema.Table[UserSettingsAlias, UserSettingsColumnAlias, *UserSettingsScanner]
+	Id     schema.BigSerialColumnI[UserSettingsColumnAlias]
+	UserId schema.BigIntColumnI[UserSettingsColumnAlias]
+	Theme  schema.TextColumnI[UserSettingsColumnAlias]
+}
+
+// UserSettingss is the global user_settings table instance
+var UserSettingss = func() UserSettingssTable {
+	idCol := schema.BigSerialColumn(UserSettingsColumnId, ddl.WithPrimaryKey[UserSettingsColumnAlias]())
+	userIdCol := schema.BigIntColumn(UserSettingsColumnUserId, ddl.WithReferences[UserSettingsColumnAlias]("\"store\".\"users\"", "id"), ddl.WithOnDelete[UserSettingsColumnAlias]("CASCADE"), ddl.WithNotNull[UserSettingsColumnAlias]())
+	themeCol := schema.TextColumn(UserSettingsColumnTheme, ddl.WithNotNull[UserSettingsColumnAlias]())
+
+	return UserSettingssTable{
+		Table: schema.NewTable[UserSettingsAlias, UserSettingsColumnAlias, *UserSettingsScanner](
+			UserSettingsAliasName,
+			func() *UserSettingsScanner { return &UserSettingsScanner{} },
+			[]*ddl.ColumnDDL[UserSettingsColumnAlias]{
+				idCol.DDL(),
+				userIdCol.DDL(),
+				themeCol.DDL(),
+			},
+			ddl.WithSchema[UserSettingsAlias, UserSettingsColumnAlias]("store"),
+		),
+		Id:     idCol,
+		UserId: userIdCol,
+		Theme:  themeCol,
+	}
+}()
+
+// UserSettingssRef is a reference to the user_settings table for relations
+var UserSettingssRef schema.RelationTableAlias[UserSettingsAlias] = UserSettingss.Table
+
+// UserSettingsConverter provides conversion between UserSettings and UserSettingsScanner
+var UserSettingsConverter = repository.Converter[*UserSettingsScanner, *UserSettings]{
+	ToScanner: (*UserSettings).IntoPlain,
+	ToProto:   (*UserSettingsScanner).IntoPb,
+}
+
+// UserPreferencesAlias is the table alias type for the user_preferences table
+type UserPreferencesAlias string
+
+func (a UserPreferencesAlias) String() string { return string(a) }
+
+const UserPreferencesAliasName UserPreferencesAlias = "user_preferences"
+
+// UserPreferencesColumnAlias represents column names for the user_preferences table
+type UserPreferencesColumnAlias string
+
+func (c UserPreferencesColumnAlias) String() string { return string(c) }
+
+const (
+	UserPreferencesColumnId            UserPreferencesColumnAlias = "id"
+	UserPreferencesColumnUserId        UserPreferencesColumnAlias = "user_id"
+	UserPreferencesColumnSelectedTheme UserPreferencesColumnAlias = "selected_theme"
+	UserPreferencesColumnFallbackTheme UserPreferencesColumnAlias = "fallback_theme"
+)
+
+func (s *UserPreferencesScanner) GetTarget(col string) func() any {
+	switch UserPreferencesColumnAlias(col) {
+	case UserPreferencesColumnId:
+		return func() any { return &s.Id }
+	case UserPreferencesColumnUserId:
+		return func() any { return &s.UserId }
+	case UserPreferencesColumnSelectedTheme:
+		return func() any { return &s.SelectedTheme }
+	case UserPreferencesColumnFallbackTheme:
+		return func() any { return &s.FallbackTheme }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *UserPreferencesScanner) GetSetter(f UserPreferencesColumnAlias) func() set.ValueSetter[UserPreferencesColumnAlias] {
+	switch f {
+	case UserPreferencesColumnId:
+		return func() set.ValueSetter[UserPreferencesColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case UserPreferencesColumnUserId:
+		return func() set.ValueSetter[UserPreferencesColumnAlias] { return set.NewSetter(f, &s.UserId) }
+	case UserPreferencesColumnSelectedTheme:
+		return func() set.ValueSetter[UserPreferencesColumnAlias] { return set.NewSetter(f, &s.SelectedTheme) }
+	case UserPreferencesColumnFallbackTheme:
+		return func() set.ValueSetter[UserPreferencesColumnAlias] { return set.NewSetter(f, &s.FallbackTheme) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *UserPreferencesScanner) GetValue(f UserPreferencesColumnAlias) func() any {
+	switch f {
+	case UserPreferencesColumnId:
+		return func() any { return s.Id }
+	case UserPreferencesColumnUserId:
+		return func() any { return s.UserId }
+	case UserPreferencesColumnSelectedTheme:
+		return func() any { return s.SelectedTheme }
+	case UserPreferencesColumnFallbackTheme:
+		return func() any { return s.FallbackTheme }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+// Relations returns the relation loaders for the user_preferences table
+func (s *UserPreferencesScanner) Relations() []exec.RelationLoader[*UserPreferencesScanner] {
+	return nil
+}
+
+// UserPreferencessTable represents the user_preferences table with its columns
+type UserPreferencessTable struct {
+	*schema.Table[UserPreferencesAlias, UserPreferencesColumnAlias, *UserPreferencesScanner]
+	Id            schema.BigSerialColumnI[UserPreferencesColumnAlias]
+	UserId        schema.BigIntColumnI[UserPreferencesColumnAlias]
+	SelectedTheme schema.TextColumnI[UserPreferencesColumnAlias]
+	FallbackTheme schema.TextColumnI[UserPreferencesColumnAlias]
+}
+
+// UserPreferencess is the global user_preferences table instance
+var UserPreferencess = func() UserPreferencessTable {
+	idCol := schema.BigSerialColumn(UserPreferencesColumnId, ddl.WithPrimaryKey[UserPreferencesColumnAlias]())
+	userIdCol := schema.BigIntColumn(UserPreferencesColumnUserId, ddl.WithNotNull[UserPreferencesColumnAlias]())
+	selectedThemeCol := schema.TextColumn(UserPreferencesColumnSelectedTheme, ddl.WithNotNull[UserPreferencesColumnAlias]())
+	fallbackThemeCol := schema.TextColumn(UserPreferencesColumnFallbackTheme, ddl.WithNotNull[UserPreferencesColumnAlias]())
+
+	return UserPreferencessTable{
+		Table: schema.NewTable[UserPreferencesAlias, UserPreferencesColumnAlias, *UserPreferencesScanner](
+			UserPreferencesAliasName,
+			func() *UserPreferencesScanner { return &UserPreferencesScanner{} },
+			[]*ddl.ColumnDDL[UserPreferencesColumnAlias]{
+				idCol.DDL(),
+				userIdCol.DDL(),
+				selectedThemeCol.DDL(),
+				fallbackThemeCol.DDL(),
+			},
+			ddl.WithSchema[UserPreferencesAlias, UserPreferencesColumnAlias]("store"),
+		),
+		Id:            idCol,
+		UserId:        userIdCol,
+		SelectedTheme: selectedThemeCol,
+		FallbackTheme: fallbackThemeCol,
+	}
+}()
+
+// UserPreferencessRef is a reference to the user_preferences table for relations
+var UserPreferencessRef schema.RelationTableAlias[UserPreferencesAlias] = UserPreferencess.Table
+
+// UserPreferencesConverter provides conversion between UserPreferences and UserPreferencesScanner
+var UserPreferencesConverter = repository.Converter[*UserPreferencesScanner, *UserPreferences]{
+	ToScanner: (*UserPreferences).IntoPlain,
+	ToProto:   (*UserPreferencesScanner).IntoPb,
+}
+
 // ============================================================================
 // User Relations
 // ============================================================================
@@ -1606,6 +1821,8 @@ const (
 	OrderItemConstraintPkey                = "order_items_pkey"
 	OrderItemConstraintCheck               = "order_items_check"
 	OrderItemConstraintCheck1              = "order_items_check1"
+	UserSettingsConstraintPkey             = "user_settings_pkey"
+	UserPreferencesConstraintPkey          = "user_preferences_pkey"
 )
 
 // ============================================================================
@@ -1632,6 +1849,8 @@ var (
 	ErrOrderItemPrimaryKey             = errors.New("primary key constraint violated: order_items_pkey")
 	ErrOrderItemCheck                  = errors.New("check constraint violated: order_items_check")
 	ErrOrderItemCheck1                 = errors.New("check constraint violated: order_items_check1")
+	ErrUserSettingsPrimaryKey          = errors.New("primary key constraint violated: user_settings_pkey")
+	ErrUserPreferencesPrimaryKey       = errors.New("primary key constraint violated: user_preferences_pkey")
 )
 
 // ============================================================================
@@ -1731,4 +1950,14 @@ func IsOrderItemCheckError(err error) bool {
 // IsOrderItemCheck1Error checks if the error is a check constraint violation on order_items
 func IsOrderItemCheck1Error(err error) bool {
 	return sqlerr.IsConstraintNamed(err, OrderItemConstraintCheck1)
+}
+
+// IsUserSettingsPrimaryKeyError checks if the error is a primary_key constraint violation on user_settings
+func IsUserSettingsPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, UserSettingsConstraintPkey)
+}
+
+// IsUserPreferencesPrimaryKeyError checks if the error is a primary_key constraint violation on user_preferences
+func IsUserPreferencesPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, UserPreferencesConstraintPkey)
 }
