@@ -461,6 +461,10 @@ message AuditLog {
   string action = 2;
   string entity_type = 3;
   int64 entity_id = 4;
+
+  // repeated scalar → TEXT[] in PostgreSQL
+  repeated string tags = 5;
+  repeated int64 related_ids = 6;
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct

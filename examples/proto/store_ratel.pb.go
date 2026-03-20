@@ -1693,6 +1693,8 @@ const (
 	AuditLogColumnAction      AuditLogColumnAlias = "action"
 	AuditLogColumnEntityType  AuditLogColumnAlias = "entity_type"
 	AuditLogColumnEntityId    AuditLogColumnAlias = "entity_id"
+	AuditLogColumnTags        AuditLogColumnAlias = "tags"
+	AuditLogColumnRelatedIds  AuditLogColumnAlias = "related_ids"
 	AuditLogColumnDbCreatedAt AuditLogColumnAlias = "db_created_at"
 	AuditLogColumnDbUpdatedAt AuditLogColumnAlias = "db_updated_at"
 )
@@ -1707,6 +1709,10 @@ func (s *AuditLogScanner) GetTarget(col string) func() any {
 		return func() any { return &s.EntityType }
 	case AuditLogColumnEntityId:
 		return func() any { return &s.EntityId }
+	case AuditLogColumnTags:
+		return func() any { return &s.Tags }
+	case AuditLogColumnRelatedIds:
+		return func() any { return &s.RelatedIds }
 	case AuditLogColumnDbCreatedAt:
 		return func() any { return &s.DbCreatedAt }
 	case AuditLogColumnDbUpdatedAt:
@@ -1726,6 +1732,10 @@ func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSette
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityType) }
 	case AuditLogColumnEntityId:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.EntityId) }
+	case AuditLogColumnTags:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Tags) }
+	case AuditLogColumnRelatedIds:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.RelatedIds) }
 	case AuditLogColumnDbCreatedAt:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DbCreatedAt) }
 	case AuditLogColumnDbUpdatedAt:
@@ -1745,6 +1755,10 @@ func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 		return func() any { return s.EntityType }
 	case AuditLogColumnEntityId:
 		return func() any { return s.EntityId }
+	case AuditLogColumnTags:
+		return func() any { return s.Tags }
+	case AuditLogColumnRelatedIds:
+		return func() any { return s.RelatedIds }
 	case AuditLogColumnDbCreatedAt:
 		return func() any { return s.DbCreatedAt }
 	case AuditLogColumnDbUpdatedAt:
@@ -1760,6 +1774,8 @@ func (s *AuditLogScanner) AllSetters() []set.ValueSetter[AuditLogColumnAlias] {
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnAction, s.Action),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityType, s.EntityType),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityId, s.EntityId),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnTags, s.Tags),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnRelatedIds, s.RelatedIds),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbCreatedAt, s.DbCreatedAt),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbUpdatedAt, s.DbUpdatedAt),
 	}
@@ -1777,6 +1793,8 @@ type AuditLogsTable struct {
 	Action      schema.TextColumnI[AuditLogColumnAlias]
 	EntityType  schema.TextColumnI[AuditLogColumnAlias]
 	EntityId    schema.BigIntColumnI[AuditLogColumnAlias]
+	Tags        schema.TextArrayColumnI[AuditLogColumnAlias]
+	RelatedIds  schema.BigIntArrayColumnI[AuditLogColumnAlias]
 	DbCreatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
 	DbUpdatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
 }
@@ -1787,6 +1805,8 @@ var AuditLogs = func() AuditLogsTable {
 	actionCol := schema.TextColumn(AuditLogColumnAction, ddl.WithNotNull[AuditLogColumnAlias]())
 	entityTypeCol := schema.TextColumn(AuditLogColumnEntityType, ddl.WithNotNull[AuditLogColumnAlias]())
 	entityIdCol := schema.BigIntColumn(AuditLogColumnEntityId, ddl.WithNotNull[AuditLogColumnAlias]())
+	tagsCol := schema.TextArrayColumn(AuditLogColumnTags, ddl.WithNotNull[AuditLogColumnAlias]())
+	relatedIdsCol := schema.BigIntArrayColumn(AuditLogColumnRelatedIds, ddl.WithNotNull[AuditLogColumnAlias]())
 	dbCreatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbCreatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
 	dbUpdatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbUpdatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
 
@@ -1799,6 +1819,8 @@ var AuditLogs = func() AuditLogsTable {
 				actionCol.DDL(),
 				entityTypeCol.DDL(),
 				entityIdCol.DDL(),
+				tagsCol.DDL(),
+				relatedIdsCol.DDL(),
 				dbCreatedAtCol.DDL(),
 				dbUpdatedAtCol.DDL(),
 			},
@@ -1808,6 +1830,8 @@ var AuditLogs = func() AuditLogsTable {
 		Action:      actionCol,
 		EntityType:  entityTypeCol,
 		EntityId:    entityIdCol,
+		Tags:        tagsCol,
+		RelatedIds:  relatedIdsCol,
 		DbCreatedAt: dbCreatedAtCol,
 		DbUpdatedAt: dbUpdatedAtCol,
 	}

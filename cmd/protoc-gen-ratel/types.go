@@ -70,6 +70,15 @@ func computeGoType(col *RatelColumn) string {
 
 // protoFieldToSQLType converts a protobuf field to SQL type
 func protoFieldToSQLType(field *protogen.Field) string {
+	baseType := protoFieldToBaseSQLType(field)
+	if field.Desc.IsList() {
+		return baseType + "[]"
+	}
+	return baseType
+}
+
+// protoFieldToBaseSQLType returns the base SQL type without array suffix.
+func protoFieldToBaseSQLType(field *protogen.Field) string {
 	// Check for well-known types first
 	if field.Message != nil {
 		fullName := string(field.Message.Desc.FullName())
@@ -225,7 +234,31 @@ func protoKindToGoType(kind protoreflect.Kind) string {
 func getSchemaColumnType(col *RatelColumn, msgName string) string {
 	isPK := col.Options != nil && col.Options.Constraints != nil && col.Options.Constraints.PrimaryKey
 	nullable := isFieldNullable(col)
+	isArray := col.Field.Desc.IsList()
 	alias := msgName + "ColumnAlias"
+
+	// Repeated (array) fields
+	if isArray {
+		kind := col.Field.Desc.Kind()
+		switch kind {
+		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
+			protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+			return "schema.IntegerArrayColumnI[" + alias + "]"
+		case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind,
+			protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+			return "schema.BigIntArrayColumnI[" + alias + "]"
+		case protoreflect.BoolKind:
+			return "schema.BooleanArrayColumnI[" + alias + "]"
+		case protoreflect.FloatKind:
+			return "schema.RealArrayColumnI[" + alias + "]"
+		case protoreflect.DoubleKind:
+			return "schema.DoublePrecisionArrayColumnI[" + alias + "]"
+		case protoreflect.BytesKind:
+			return "schema.ByteaArrayColumnI[" + alias + "]"
+		default:
+			return "schema.TextArrayColumnI[" + alias + "]"
+		}
+	}
 
 	// Well-known message types with special SQL mappings
 	if col.Field.Message != nil && !isTypeAlias(col.Field.Message) && !isWrapperType(col.Field) {
@@ -349,6 +382,29 @@ func getSchemaColumnConstructor(col *RatelColumn, constName string, msgName stri
 	optStr := ""
 	for _, opt := range opts {
 		optStr += ", " + opt
+	}
+
+	// Repeated (array) fields
+	if col.Field.Desc.IsList() {
+		kind := col.Field.Desc.Kind()
+		switch kind {
+		case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind,
+			protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
+			return "schema.IntegerArrayColumn(" + constName + optStr + ")"
+		case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind,
+			protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
+			return "schema.BigIntArrayColumn(" + constName + optStr + ")"
+		case protoreflect.BoolKind:
+			return "schema.BooleanArrayColumn(" + constName + optStr + ")"
+		case protoreflect.FloatKind:
+			return "schema.RealArrayColumn(" + constName + optStr + ")"
+		case protoreflect.DoubleKind:
+			return "schema.DoublePrecisionArrayColumn(" + constName + optStr + ")"
+		case protoreflect.BytesKind:
+			return "schema.ByteaArrayColumn(" + constName + optStr + ")"
+		default:
+			return "schema.TextArrayColumn(" + constName + optStr + ")"
+		}
 	}
 
 	// Well-known message types with special SQL mappings

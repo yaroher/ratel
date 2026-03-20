@@ -45,6 +45,27 @@ Wrapper types map to nullable columns:
 | `google.protobuf.StringValue` | `*string` | `TEXT NULL` | `NullTextColumn` |
 | `google.protobuf.BytesValue` | `[]byte` | `BYTEA NULL` | `NullByteaColumn` |
 
+### Array Types (repeated)
+
+Repeated scalar fields map to PostgreSQL array columns:
+
+| Proto Type | Go Type | SQL Type | Column Constructor |
+|-----------|---------|----------|-------------------|
+| `repeated string` | `[]string` | `TEXT[]` | `TextArrayColumn` |
+| `repeated int32` | `[]int32` | `INTEGER[]` | `IntegerArrayColumn` |
+| `repeated int64` | `[]int64` | `BIGINT[]` | `BigIntArrayColumn` |
+| `repeated bool` | `[]bool` | `BOOLEAN[]` | `BooleanArrayColumn` |
+| `repeated float` | `[]float32` | `REAL[]` | `RealArrayColumn` |
+| `repeated double` | `[]float64` | `DOUBLE PRECISION[]` | `DoublePrecisionArrayColumn` |
+| `repeated bytes` | `[][]byte` | `BYTEA[]` | `ByteaArrayColumn` |
+
+```protobuf
+message Product {
+  repeated string tags = 5;        // → TEXT[] NOT NULL
+  repeated int64 category_ids = 6; // → BIGINT[] NOT NULL
+}
+```
+
 ### Serial Types
 
 Primary key fields with integer types automatically use serial variants:

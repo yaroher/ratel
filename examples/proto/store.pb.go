@@ -998,11 +998,14 @@ func (x *UserSettings) GetTheme() *ThemeConfig {
 
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLog struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Action        string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
-	EntityType    string                 `protobuf:"bytes,3,opt,name=entity_type,json=entityType,proto3" json:"entity_type,omitempty"`
-	EntityId      int64                  `protobuf:"varint,4,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Action     string                 `protobuf:"bytes,2,opt,name=action,proto3" json:"action,omitempty"`
+	EntityType string                 `protobuf:"bytes,3,opt,name=entity_type,json=entityType,proto3" json:"entity_type,omitempty"`
+	EntityId   int64                  `protobuf:"varint,4,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	// repeated scalar → TEXT[] in PostgreSQL
+	Tags          []string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	RelatedIds    []int64  `protobuf:"varint,6,rep,packed,name=related_ids,json=relatedIds,proto3" json:"related_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1063,6 +1066,20 @@ func (x *AuditLog) GetEntityId() int64 {
 		return x.EntityId
 	}
 	return 0
+}
+
+func (x *AuditLog) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *AuditLog) GetRelatedIds() []int64 {
+	if x != nil {
+		return x.RelatedIds
+	}
+	return nil
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
@@ -1300,13 +1317,16 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\fUserSettings\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x123\n" +
 	"\auser_id\x18\x02 \x01(\x03B\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x120\n" +
-	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\xe9\x01\n" +
+	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\x9e\x02\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12\x1f\n" +
 	"\ventity_type\x18\x03 \x01(\tR\n" +
 	"entityType\x12\x1b\n" +
-	"\tentity_id\x18\x04 \x01(\x03R\bentityId:m\x92\xb5\x18c\b\x01\x12\n" +
+	"\tentity_id\x18\x04 \x01(\x03R\bentityId\x12\x12\n" +
+	"\x04tags\x18\x05 \x03(\tR\x04tags\x12\x1f\n" +
+	"\vrelated_ids\x18\x06 \x03(\x03R\n" +
+	"relatedIds:m\x92\xb5\x18c\b\x01\x12\n" +
 	"audit_logs\x1a%\n" +
 	"\rdb_created_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()\x1a%\n" +
 	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +

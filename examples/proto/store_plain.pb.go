@@ -826,12 +826,14 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLogScanner struct {
-	Id          int64  `json:"id"`
-	Action      string `json:"action"`
-	EntityType  string `json:"entityType"`
-	EntityId    int64  `json:"entityId"`
-	DbCreatedAt string `json:"dbCreatedAt"` // origin: virtual, empath: virtual
-	DbUpdatedAt string `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
+	Id          int64    `json:"id"`
+	Action      string   `json:"action"`
+	EntityType  string   `json:"entityType"`
+	EntityId    int64    `json:"entityId"`
+	Tags        []string `json:"tags"`
+	RelatedIds  []int64  `json:"relatedIds"`
+	DbCreatedAt string   `json:"dbCreatedAt"` // origin: virtual, empath: virtual
+	DbUpdatedAt string   `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -845,6 +847,8 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	p.Action = pb.Action
 	p.EntityType = pb.EntityType
 	p.EntityId = pb.EntityId
+	p.Tags = pb.Tags
+	p.RelatedIds = pb.RelatedIds
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
 	return p
@@ -861,6 +865,8 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 	pb.Action = p.Action
 	pb.EntityType = p.EntityType
 	pb.EntityId = p.EntityId
+	pb.Tags = p.Tags
+	pb.RelatedIds = p.RelatedIds
 	// DbCreatedAt is virtual, skipping
 	// DbUpdatedAt is virtual, skipping
 	return pb

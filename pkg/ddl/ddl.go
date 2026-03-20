@@ -40,4 +40,18 @@ func Numeric(precision, scale int) Datatype {
 	return datatype(fmt.Sprintf("NUMERIC(%d, %d)", precision, scale))
 }
 
-func Array(d Datatype) Datatype { return datatype(fmt.Sprintf("ARRAY[%s]", d)) }
+func Array(d Datatype) Datatype { return datatype(fmt.Sprintf("%s[]", d)) }
+
+// Array datatypes for PostgreSQL
+var (
+	TEXT_ARRAY        = Array(TEXT)
+	INTEGER_ARRAY     = Array(INTEGER)
+	BIGINT_ARRAY      = Array(BIGINT)
+	BOOLEAN_ARRAY     = Array(BOOLEAN)
+	REAL_ARRAY        = Array(REAL)
+	DOUBLE_ARRAY      = Array(DOUBLE)
+	BYTEA_ARRAY       = Array(BYTEA)
+	TIMESTAMPTZ_ARRAY = Array(TIMESTAMPTZ)
+	UUID_ARRAY        = Array(UUID)
+	JSONB_ARRAY       = Array(JSONB)
+)

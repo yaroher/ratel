@@ -404,3 +404,118 @@ type NullJSONColumnI[C types.ColumnAlias] interface {
 func NullJSONColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) NullJSONColumnI[C] {
 	return newColumn[[]byte, C](alias, ddl2.JSON, append(options, ddl2.WithNullable[C]())...)
 }
+
+// JSONB
+
+type JSONBColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]byte, C]
+	clause2.JsonOperand[C]
+}
+
+func JSONBColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) JSONBColumnI[C] {
+	return newColumn[[]byte, C](alias, ddl2.JSONB, options...)
+}
+
+type NullJSONBColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]byte, C]
+	clause2.JsonOperand[C]
+	clause2.IsNullOperand[C]
+}
+
+func NullJSONBColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) NullJSONBColumnI[C] {
+	return newColumn[[]byte, C](alias, ddl2.JSONB, append(options, ddl2.WithNullable[C]())...)
+}
+
+// ============================================================================
+// Array Types
+// ============================================================================
+
+// TEXT[]
+
+type TextArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]string, C]
+}
+
+func TextArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) TextArrayColumnI[C] {
+	return newColumn[[]string, C](alias, ddl2.TEXT_ARRAY, options...)
+}
+
+// INTEGER[]
+
+type IntegerArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]int32, C]
+}
+
+func IntegerArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) IntegerArrayColumnI[C] {
+	return newColumn[[]int32, C](alias, ddl2.INTEGER_ARRAY, options...)
+}
+
+// BIGINT[]
+
+type BigIntArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]int64, C]
+}
+
+func BigIntArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) BigIntArrayColumnI[C] {
+	return newColumn[[]int64, C](alias, ddl2.BIGINT_ARRAY, options...)
+}
+
+// BOOLEAN[]
+
+type BooleanArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]bool, C]
+}
+
+func BooleanArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) BooleanArrayColumnI[C] {
+	return newColumn[[]bool, C](alias, ddl2.BOOLEAN_ARRAY, options...)
+}
+
+// REAL[]
+
+type RealArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]float32, C]
+}
+
+func RealArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) RealArrayColumnI[C] {
+	return newColumn[[]float32, C](alias, ddl2.REAL_ARRAY, options...)
+}
+
+// DOUBLE PRECISION[]
+
+type DoublePrecisionArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[]float64, C]
+}
+
+func DoublePrecisionArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) DoublePrecisionArrayColumnI[C] {
+	return newColumn[[]float64, C](alias, ddl2.DOUBLE_ARRAY, options...)
+}
+
+// BYTEA[]
+
+type ByteaArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[[][]byte, C]
+}
+
+func ByteaArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) ByteaArrayColumnI[C] {
+	return newColumn[[][]byte, C](alias, ddl2.BYTEA_ARRAY, options...)
+}
+
+// UUID[]
+
+type UuidArrayColumnI[C types.ColumnAlias] interface {
+	ddlAbles[C]
+	set2.SetterColumn[pgtype.FlatArray[pgtype.UUID], C]
+}
+
+func UuidArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) UuidArrayColumnI[C] {
+	return newColumn[pgtype.FlatArray[pgtype.UUID], C](alias, ddl2.UUID_ARRAY, options...)
+}
