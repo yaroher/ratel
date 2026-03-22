@@ -64,10 +64,10 @@ func (f *ColumnDML[V, C]) InRaw(sql string, args ...any) Clause[C] {
 }
 
 func (f *ColumnDML[V, C]) Any(vals ...V) Clause[C] {
-	return &FieldClause[C]{Field: f.fieldAlias, Operator: "= ANY", Right: &SliceExprClause[C]{Values: vals}}
+	return &FieldClause[C]{Field: f.fieldAlias, Operator: "= ANY", Right: &ArrayParamExprClause[C]{Values: vals}}
 }
 func (f *ColumnDML[V, C]) NotAny(vals ...V) Clause[C] {
-	return &FieldClause[C]{Field: f.fieldAlias, Operator: "!= ALL", Right: &SliceExprClause[C]{Values: vals}}
+	return &FieldClause[C]{Field: f.fieldAlias, Operator: "!= ALL", Right: &ArrayParamExprClause[C]{Values: vals}}
 }
 func (f *ColumnDML[V, C]) AnyOf(query types.Query) Clause[C] {
 	return &FieldClause[C]{Field: f.fieldAlias, Operator: "= ANY", Right: &SubQueryExprClause[C]{Query: query}}
@@ -139,21 +139,21 @@ func (f *ColumnDML[V, C]) ARRAYContains(vals ...V) Clause[C] {
 	return &FieldClause[C]{
 		Field:    f.fieldAlias,
 		Operator: "@>",
-		Right:    &SliceExprClause[C]{Values: vals},
+		Right:    &ArrayParamExprClause[C]{Values: vals},
 	}
 }
 func (f *ColumnDML[V, C]) ARRAYContainedBy(vals ...V) Clause[C] {
 	return &FieldClause[C]{
 		Field:    f.fieldAlias,
 		Operator: "<@",
-		Right:    &SliceExprClause[C]{Values: vals},
+		Right:    &ArrayParamExprClause[C]{Values: vals},
 	}
 }
 func (f *ColumnDML[V, C]) ARRAYOverlap(vals ...V) Clause[C] {
 	return &FieldClause[C]{
 		Field:    f.fieldAlias,
 		Operator: "&&",
-		Right:    &SliceExprClause[C]{Values: vals},
+		Right:    &ArrayParamExprClause[C]{Values: vals},
 	}
 }
 func (f *ColumnDML[V, C]) ARRAYContainsRaw(sql string, args ...any) Clause[C] {
@@ -249,14 +249,14 @@ func (f *ColumnDML[V, C]) JSONHasAnyKey(keys ...string) Clause[C] {
 	return &FieldClause[C]{
 		Field:    f.fieldAlias,
 		Operator: "?|",
-		Right:    &SliceExprClause[C]{Values: keys},
+		Right:    &ArrayParamExprClause[C]{Values: keys},
 	}
 }
 func (f *ColumnDML[V, C]) JSONHasAllKeys(keys ...string) Clause[C] {
 	return &FieldClause[C]{
 		Field:    f.fieldAlias,
 		Operator: "?&",
-		Right:    &SliceExprClause[C]{Values: keys},
+		Right:    &ArrayParamExprClause[C]{Values: keys},
 	}
 }
 func (f *ColumnDML[V, C]) JSONJsonPathQuery(path string) Clause[C] {

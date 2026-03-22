@@ -40,6 +40,26 @@ func (e *SliceExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, param
 		panic("SliceExprClause expects slice")
 	}
 	buf.WriteByte('(')
+	for i := 0; i < rv.Len(); i++ {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteByte('$')
+		buf.WriteString(strconv.Itoa(*paramIndex))
+		*paramIndex++
+		*args = append(*args, rv.Index(i).Interface())
+	}
+	buf.WriteByte(')')
+}
+
+// ArrayParamExprClause passes the entire slice as a single parameter for
+// PostgreSQL array operators (@>, <@, &&) and ANY/ALL.
+type ArrayParamExprClause[C types.ColumnAlias] struct {
+	Values any // slice
+}
+
+func (e *ArrayParamExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, paramIndex *int, args *[]any) {
+	buf.WriteByte('(')
 	buf.WriteByte('$')
 	buf.WriteString(strconv.Itoa(*paramIndex))
 	*paramIndex++

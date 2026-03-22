@@ -172,6 +172,45 @@ func TestCorrelatedExistsOfMultipleConditions(t *testing.T) {
 	}
 }
 
+// TestInExpandsParameters verifies that .In() generates separate $N placeholders
+// per element, not a single parameter with the whole slice.
+func TestInExpandsParameters(t *testing.T) {
+	query := Orders.SelectAll().Where(
+		Orders.Status.In("OPEN", "IN_PROGRESS", "PAID"),
+	)
+
+	sql, args := query.Build()
+	t.Logf("SQL: %s", sql)
+	t.Logf("Args: %v", args)
+
+	assertContains(t, sql, "orders.status IN ($1, $2, $3)")
+	if len(args) != 3 {
+		t.Fatalf("expected 3 args, got %d: %v", len(args), args)
+	}
+	if args[0] != "OPEN" || args[1] != "IN_PROGRESS" || args[2] != "PAID" {
+		t.Errorf("expected individual string args, got %v", args)
+	}
+}
+
+// TestInWithOtherClauses verifies parameter indices are correct when In is combined with other clauses.
+func TestInWithOtherClauses(t *testing.T) {
+	query := Users.SelectAll().Where(
+		Users.IsActive.Eq(true),
+		Users.Id.In(int64(1), int64(2)),
+		Users.Email.Like("%@example.com"),
+	)
+
+	sql, args := query.Build()
+	t.Logf("SQL: %s", sql)
+
+	assertContains(t, sql, "users.is_active = $1")
+	assertContains(t, sql, "users.id IN ($2, $3)")
+	assertContains(t, sql, "users.email LIKE")
+	if len(args) != 4 {
+		t.Fatalf("expected 4 args, got %d: %v", len(args), args)
+	}
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {
