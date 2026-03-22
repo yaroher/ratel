@@ -191,6 +191,8 @@ func (pb *User) IntoPlain() *UserScanner {
 				p.Orders[i] = *v.IntoPlain()
 			}
 		}
+	} else {
+		p.Orders = []OrderScanner{}
 	}
 	if pb.Profile != nil {
 		p.Profile = pb.Profile.IntoPlain()
@@ -538,6 +540,8 @@ func (pb *Product) IntoPlain() *ProductScanner {
 				p.Categories[i] = *v.IntoPlain()
 			}
 		}
+	} else {
+		p.Categories = []CategoryScanner{}
 	}
 	if len(pb.Tags) > 0 {
 		p.Tags = make([]TagScanner, len(pb.Tags))
@@ -546,6 +550,8 @@ func (pb *Product) IntoPlain() *ProductScanner {
 				p.Tags[i] = *v.IntoPlain()
 			}
 		}
+	} else {
+		p.Tags = []TagScanner{}
 	}
 	return p
 }
@@ -650,6 +656,8 @@ func (pb *Order) IntoPlain() *OrderScanner {
 				p.Items[i] = *v.IntoPlain()
 			}
 		}
+	} else {
+		p.Items = []OrderItemScanner{}
 	}
 	if pb.User != nil {
 		p.User = pb.User.IntoPlain()
@@ -847,8 +855,16 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	p.Action = pb.Action
 	p.EntityType = pb.EntityType
 	p.EntityId = pb.EntityId
-	p.Tags = pb.Tags
-	p.RelatedIds = pb.RelatedIds
+	if len(pb.Tags) > 0 {
+		p.Tags = pb.Tags
+	} else {
+		p.Tags = []string{}
+	}
+	if len(pb.RelatedIds) > 0 {
+		p.RelatedIds = pb.RelatedIds
+	} else {
+		p.RelatedIds = []int64{}
+	}
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
 	return p
