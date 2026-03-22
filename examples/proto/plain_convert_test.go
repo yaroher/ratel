@@ -166,3 +166,59 @@ func TestIntoPbEnumFromString(t *testing.T) {
 		})
 	}
 }
+
+// TestIntoPlainRepeatedEnumAsString verifies repeated enum → []string conversion.
+func TestIntoPlainRepeatedEnumAsString(t *testing.T) {
+	pb := &AuditLog{
+		Id:     1,
+		Action: "test",
+		AffectedLevels: []AuditSeverity{
+			AuditSeverity_AUDIT_SEVERITY_LOW,
+			AuditSeverity_AUDIT_SEVERITY_CRITICAL,
+		},
+	}
+	plain := pb.IntoPlain()
+
+	if len(plain.AffectedLevels) != 2 {
+		t.Fatalf("expected 2 affected levels, got %d", len(plain.AffectedLevels))
+	}
+	if plain.AffectedLevels[0] != "AUDIT_SEVERITY_LOW" {
+		t.Errorf("AffectedLevels[0] = %q, want AUDIT_SEVERITY_LOW", plain.AffectedLevels[0])
+	}
+	if plain.AffectedLevels[1] != "AUDIT_SEVERITY_CRITICAL" {
+		t.Errorf("AffectedLevels[1] = %q, want AUDIT_SEVERITY_CRITICAL", plain.AffectedLevels[1])
+	}
+}
+
+// TestIntoPlainRepeatedEnumEmpty verifies empty repeated enum → non-nil []string.
+func TestIntoPlainRepeatedEnumEmpty(t *testing.T) {
+	pb := &AuditLog{Id: 1, Action: "test"}
+	plain := pb.IntoPlain()
+
+	if plain.AffectedLevels == nil {
+		t.Error("AffectedLevels is nil, expected empty non-nil slice")
+	}
+	if len(plain.AffectedLevels) != 0 {
+		t.Errorf("expected empty AffectedLevels, got %v", plain.AffectedLevels)
+	}
+}
+
+// TestIntoPbRepeatedEnumFromString verifies []string → repeated enum conversion.
+func TestIntoPbRepeatedEnumFromString(t *testing.T) {
+	plain := &AuditLogScanner{
+		Id:             1,
+		Action:         "test",
+		AffectedLevels: []string{"AUDIT_SEVERITY_MEDIUM", "AUDIT_SEVERITY_HIGH"},
+	}
+	pb := plain.IntoPb()
+
+	if len(pb.AffectedLevels) != 2 {
+		t.Fatalf("expected 2 affected levels, got %d", len(pb.AffectedLevels))
+	}
+	if pb.AffectedLevels[0] != AuditSeverity_AUDIT_SEVERITY_MEDIUM {
+		t.Errorf("AffectedLevels[0] = %v, want MEDIUM", pb.AffectedLevels[0])
+	}
+	if pb.AffectedLevels[1] != AuditSeverity_AUDIT_SEVERITY_HIGH {
+		t.Errorf("AffectedLevels[1] = %v, want HIGH", pb.AffectedLevels[1])
+	}
+}

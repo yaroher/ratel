@@ -477,6 +477,9 @@ message AuditLog {
 
   // enum field → TEXT in PostgreSQL, scanner should use string
   AuditSeverity severity = 7;
+
+  // repeated enum field → TEXT[] in PostgreSQL, scanner should use []string
+  repeated AuditSeverity affected_levels = 8;
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct

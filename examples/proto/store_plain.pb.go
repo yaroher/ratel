@@ -834,15 +834,16 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLogScanner struct {
-	Id          int64    `json:"id"`
-	Action      string   `json:"action"`
-	EntityType  string   `json:"entityType"`
-	EntityId    int64    `json:"entityId"`
-	Tags        []string `json:"tags"`
-	RelatedIds  []int64  `json:"relatedIds"`
-	Severity    string   `json:"severity"`
-	DbCreatedAt string   `json:"dbCreatedAt"` // origin: virtual, empath: virtual
-	DbUpdatedAt string   `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
+	Id             int64    `json:"id"`
+	Action         string   `json:"action"`
+	EntityType     string   `json:"entityType"`
+	EntityId       int64    `json:"entityId"`
+	Tags           []string `json:"tags"`
+	RelatedIds     []int64  `json:"relatedIds"`
+	Severity       string   `json:"severity"`
+	AffectedLevels []string `json:"affectedLevels"`
+	DbCreatedAt    string   `json:"dbCreatedAt"` // origin: virtual, empath: virtual
+	DbUpdatedAt    string   `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -867,6 +868,14 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 		p.RelatedIds = []int64{}
 	}
 	p.Severity = pb.Severity.String()
+	if len(pb.AffectedLevels) > 0 {
+		p.AffectedLevels = make([]string, len(pb.AffectedLevels))
+		for i, v := range pb.AffectedLevels {
+			p.AffectedLevels[i] = v.String()
+		}
+	} else {
+		p.AffectedLevels = []string{}
+	}
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
 	return p
@@ -886,6 +895,12 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 	pb.Tags = p.Tags
 	pb.RelatedIds = p.RelatedIds
 	pb.Severity = AuditSeverity(AuditSeverity_value[p.Severity])
+	if len(p.AffectedLevels) > 0 {
+		pb.AffectedLevels = make([]AuditSeverity, len(p.AffectedLevels))
+		for i, v := range p.AffectedLevels {
+			pb.AffectedLevels[i] = AuditSeverity(AuditSeverity_value[v])
+		}
+	}
 	// DbCreatedAt is virtual, skipping
 	// DbUpdatedAt is virtual, skipping
 	return pb

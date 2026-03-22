@@ -1063,9 +1063,11 @@ type AuditLog struct {
 	Tags       []string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
 	RelatedIds []int64  `protobuf:"varint,6,rep,packed,name=related_ids,json=relatedIds,proto3" json:"related_ids,omitempty"`
 	// enum field → TEXT in PostgreSQL, scanner should use string
-	Severity      AuditSeverity `protobuf:"varint,7,opt,name=severity,proto3,enum=store.AuditSeverity" json:"severity,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Severity AuditSeverity `protobuf:"varint,7,opt,name=severity,proto3,enum=store.AuditSeverity" json:"severity,omitempty"`
+	// repeated enum field → TEXT[] in PostgreSQL, scanner should use []string
+	AffectedLevels []AuditSeverity `protobuf:"varint,8,rep,packed,name=affected_levels,json=affectedLevels,proto3,enum=store.AuditSeverity" json:"affected_levels,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AuditLog) Reset() {
@@ -1145,6 +1147,13 @@ func (x *AuditLog) GetSeverity() AuditSeverity {
 		return x.Severity
 	}
 	return AuditSeverity_AUDIT_SEVERITY_UNSPECIFIED
+}
+
+func (x *AuditLog) GetAffectedLevels() []AuditSeverity {
+	if x != nil {
+		return x.AffectedLevels
+	}
+	return nil
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
@@ -1382,7 +1391,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\fUserSettings\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x123\n" +
 	"\auser_id\x18\x02 \x01(\x03B\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x120\n" +
-	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\xd0\x02\n" +
+	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\x8f\x03\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12\x1f\n" +
@@ -1392,7 +1401,8 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\x04tags\x18\x05 \x03(\tR\x04tags\x12\x1f\n" +
 	"\vrelated_ids\x18\x06 \x03(\x03R\n" +
 	"relatedIds\x120\n" +
-	"\bseverity\x18\a \x01(\x0e2\x14.store.AuditSeverityR\bseverity:m\x92\xb5\x18c\b\x01\x12\n" +
+	"\bseverity\x18\a \x01(\x0e2\x14.store.AuditSeverityR\bseverity\x12=\n" +
+	"\x0faffected_levels\x18\b \x03(\x0e2\x14.store.AuditSeverityR\x0eaffectedLevels:m\x92\xb5\x18c\b\x01\x12\n" +
 	"audit_logs\x1a%\n" +
 	"\rdb_created_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()\x1a%\n" +
 	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +
@@ -1477,14 +1487,15 @@ var file_examples_proto_store_proto_depIdxs = []int32{
 	9,  // 26: store.OrderItem.product:type_name -> store.Product
 	12, // 27: store.UserSettings.theme:type_name -> store.ThemeConfig
 	0,  // 28: store.AuditLog.severity:type_name -> store.AuditSeverity
-	12, // 29: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
-	12, // 30: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
-	15, // 31: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	0,  // 29: store.AuditLog.affected_levels:type_name -> store.AuditSeverity
+	12, // 30: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
+	12, // 31: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
+	15, // 32: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
+	33, // [33:33] is the sub-list for method output_type
+	33, // [33:33] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
