@@ -5,7 +5,7 @@ package storepb
 
 import (
 	ratelcast "github.com/yaroher/ratel/pkg/ratelcast"
-	proto "google.golang.org/protobuf/proto"
+	protojson "google.golang.org/protobuf/encoding/protojson"
 	time "time"
 )
 
@@ -806,7 +806,7 @@ func (pb *UserSettings) IntoPlain() *UserSettingsScanner {
 	p.UserId = pb.UserId
 	// Theme serialized from theme
 	if pb.Theme != nil {
-		if data, err := proto.Marshal(pb.Theme); err == nil {
+		if data, err := protojson.Marshal(pb.Theme); err == nil {
 			p.Theme = data
 		}
 	} else {
@@ -827,7 +827,7 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 	// Theme deserialize -> theme
 	if len(p.Theme) > 0 {
 		var msg ThemeConfig
-		if err := proto.Unmarshal(p.Theme, &msg); err == nil {
+		if err := protojson.Unmarshal(p.Theme, &msg); err == nil {
 			pb.Theme = &msg
 		}
 	}
@@ -948,7 +948,7 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	}
 	// CreateActionCreateAction serialized from create_action.create_action
 	if pb.GetCreateAction() != nil {
-		if data, err := proto.Marshal(pb.GetCreateAction()); err == nil {
+		if data, err := protojson.Marshal(pb.GetCreateAction()); err == nil {
 			p.CreateActionCreateAction = data
 		}
 	} else {
@@ -956,7 +956,7 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	}
 	// DeleteActionDeleteAction serialized from delete_action.delete_action
 	if pb.GetDeleteAction() != nil {
-		if data, err := proto.Marshal(pb.GetDeleteAction()); err == nil {
+		if data, err := protojson.Marshal(pb.GetDeleteAction()); err == nil {
 			p.DeleteActionDeleteAction = data
 		}
 	} else {
@@ -990,14 +990,14 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 	// CreateActionCreateAction deserialize -> create_action.create_action
 	if len(p.CreateActionCreateAction) > 0 {
 		var msg AuditCreateAction
-		if err := proto.Unmarshal(p.CreateActionCreateAction, &msg); err == nil {
+		if err := protojson.Unmarshal(p.CreateActionCreateAction, &msg); err == nil {
 			pb.Detail = &AuditLog_CreateAction{CreateAction: &msg}
 		}
 	}
 	// DeleteActionDeleteAction deserialize -> delete_action.delete_action
 	if len(p.DeleteActionDeleteAction) > 0 {
 		var msg AuditDeleteAction
-		if err := proto.Unmarshal(p.DeleteActionDeleteAction, &msg); err == nil {
+		if err := protojson.Unmarshal(p.DeleteActionDeleteAction, &msg); err == nil {
 			pb.Detail = &AuditLog_DeleteAction{DeleteAction: &msg}
 		}
 	}
@@ -1033,7 +1033,7 @@ func (pb *AppearanceSettings) IntoPlain() *AppearanceSettingsScanner {
 
 	// SelectedTheme serialized from selected_theme
 	if pb.SelectedTheme != nil {
-		if data, err := proto.Marshal(pb.SelectedTheme); err == nil {
+		if data, err := protojson.Marshal(pb.SelectedTheme); err == nil {
 			p.SelectedTheme = data
 		}
 	} else {
@@ -1041,7 +1041,7 @@ func (pb *AppearanceSettings) IntoPlain() *AppearanceSettingsScanner {
 	}
 	// FallbackTheme serialized from fallback_theme
 	if pb.FallbackTheme != nil {
-		if data, err := proto.Marshal(pb.FallbackTheme); err == nil {
+		if data, err := protojson.Marshal(pb.FallbackTheme); err == nil {
 			p.FallbackTheme = data
 		}
 	} else {
@@ -1060,14 +1060,14 @@ func (p *AppearanceSettingsScanner) IntoPb() *AppearanceSettings {
 	// SelectedTheme deserialize -> selected_theme
 	if len(p.SelectedTheme) > 0 {
 		var msg ThemeConfig
-		if err := proto.Unmarshal(p.SelectedTheme, &msg); err == nil {
+		if err := protojson.Unmarshal(p.SelectedTheme, &msg); err == nil {
 			pb.SelectedTheme = &msg
 		}
 	}
 	// FallbackTheme deserialize -> fallback_theme
 	if len(p.FallbackTheme) > 0 {
 		var msg ThemeConfig
-		if err := proto.Unmarshal(p.FallbackTheme, &msg); err == nil {
+		if err := protojson.Unmarshal(p.FallbackTheme, &msg); err == nil {
 			pb.FallbackTheme = &msg
 		}
 	}
@@ -1092,7 +1092,7 @@ func (pb *UserPreferences) IntoPlain() *UserPreferencesScanner {
 	p.UserId = pb.UserId
 	// SelectedTheme serialized from selected_theme
 	if pb.GetAppearance() != nil && pb.GetAppearance().GetSelectedTheme() != nil {
-		if data, err := proto.Marshal(pb.GetAppearance().GetSelectedTheme()); err == nil {
+		if data, err := protojson.Marshal(pb.GetAppearance().GetSelectedTheme()); err == nil {
 			p.SelectedTheme = data
 		}
 	} else {
@@ -1100,7 +1100,7 @@ func (pb *UserPreferences) IntoPlain() *UserPreferencesScanner {
 	}
 	// FallbackTheme serialized from fallback_theme
 	if pb.GetAppearance() != nil && pb.GetAppearance().GetFallbackTheme() != nil {
-		if data, err := proto.Marshal(pb.GetAppearance().GetFallbackTheme()); err == nil {
+		if data, err := protojson.Marshal(pb.GetAppearance().GetFallbackTheme()); err == nil {
 			p.FallbackTheme = data
 		}
 	} else {
@@ -1121,7 +1121,7 @@ func (p *UserPreferencesScanner) IntoPb() *UserPreferences {
 	// SelectedTheme deserialize -> selected_theme
 	if len(p.SelectedTheme) > 0 {
 		var msg ThemeConfig
-		if err := proto.Unmarshal(p.SelectedTheme, &msg); err == nil {
+		if err := protojson.Unmarshal(p.SelectedTheme, &msg); err == nil {
 			if pb.Appearance == nil {
 				pb.Appearance = &AppearanceSettings{}
 			}
@@ -1131,7 +1131,7 @@ func (p *UserPreferencesScanner) IntoPb() *UserPreferences {
 	// FallbackTheme deserialize -> fallback_theme
 	if len(p.FallbackTheme) > 0 {
 		var msg ThemeConfig
-		if err := proto.Unmarshal(p.FallbackTheme, &msg); err == nil {
+		if err := protojson.Unmarshal(p.FallbackTheme, &msg); err == nil {
 			if pb.Appearance == nil {
 				pb.Appearance = &AppearanceSettings{}
 			}

@@ -102,8 +102,8 @@ the Scanner struct. Each variant becomes a separate column, plus a discriminator
 `_case` column.
 
 For message variants, use `(goplain.field).serialize = true` to store them as
-`BYTEA` (serialized via `proto.Marshal`/`proto.Unmarshal`). All oneof columns
-are nullable since only one variant is active at a time.
+`JSONB` (serialized via `protojson.Marshal`/`protojson.Unmarshal`). All oneof
+columns are nullable since only one variant is active at a time.
 
 ```protobuf
 message CreateAction {
@@ -136,13 +136,13 @@ Generated columns:
 
 | Column | SQL Type | Scanner Type | Notes |
 |--------|----------|-------------|-------|
-| `create_action_create_action` | `BYTEA NULL` | `[]byte` | Serialized proto bytes |
-| `delete_action_delete_action` | `BYTEA NULL` | `[]byte` | Serialized proto bytes |
+| `create_action_create_action` | `JSONB NULL` | `[]byte` | Serialized as JSON via protojson |
+| `delete_action_delete_action` | `JSONB NULL` | `[]byte` | Serialized as JSON via protojson |
 | `detail_case` | `TEXT` | `string` | `"create_action"` or `"delete_action"` |
 
 The generated `IntoPlain()` serializes the active variant and sets `DetailCase`.
 `IntoPb()` deserializes based on `DetailCase` and reconstructs the oneof wrapper.
-Empty variants produce `[]byte{}` (not nil) to satisfy `NOT NULL` constraints.
+Inactive variants produce `[]byte{}` (empty, not nil) in the Scanner.
 
 ### Serial Types
 

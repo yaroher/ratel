@@ -1829,8 +1829,8 @@ func (s *AuditLogScanner) Relations() []exec.RelationLoader[*AuditLogScanner] {
 // AuditLogsTable represents the audit_logs table with its columns
 type AuditLogsTable struct {
 	*schema.Table[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner]
-	CreateActionCreateAction schema.NullByteaColumnI[AuditLogColumnAlias]
-	DeleteActionDeleteAction schema.NullByteaColumnI[AuditLogColumnAlias]
+	CreateActionCreateAction schema.NullJSONBColumnI[AuditLogColumnAlias]
+	DeleteActionDeleteAction schema.NullJSONBColumnI[AuditLogColumnAlias]
 	DetailCase               schema.TextColumnI[AuditLogColumnAlias]
 	Id                       schema.BigSerialColumnI[AuditLogColumnAlias]
 	Action                   schema.TextColumnI[AuditLogColumnAlias]
@@ -1846,8 +1846,8 @@ type AuditLogsTable struct {
 
 // AuditLogs is the global audit_logs table instance
 var AuditLogs = func() AuditLogsTable {
-	createActionCreateActionCol := schema.NullByteaColumn(AuditLogColumnCreateActionCreateAction)
-	deleteActionDeleteActionCol := schema.NullByteaColumn(AuditLogColumnDeleteActionDeleteAction)
+	createActionCreateActionCol := schema.NullJSONBColumn(AuditLogColumnCreateActionCreateAction)
+	deleteActionDeleteActionCol := schema.NullJSONBColumn(AuditLogColumnDeleteActionDeleteAction)
 	detailCaseCol := schema.TextColumn(AuditLogColumnDetailCase, ddl.WithNotNull[AuditLogColumnAlias]())
 	idCol := schema.BigSerialColumn(AuditLogColumnId, ddl.WithPrimaryKey[AuditLogColumnAlias]())
 	actionCol := schema.TextColumn(AuditLogColumnAction, ddl.WithNotNull[AuditLogColumnAlias]())

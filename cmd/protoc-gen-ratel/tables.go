@@ -222,19 +222,19 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 		isSerialized := fieldOpts != nil && fieldOpts.Serialize
 
 		if isSerialized {
-			// Serialized message variant → BYTEA NULL column (treated as virtual for codegen)
+			// Serialized message variant → JSONB NULL column (treated as virtual for codegen)
 			goName := strcase.ToCamel(variantName) + field.GoName
 			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(field.GoName)
 
 			cols = append(cols, &RatelColumn{
 				SQLName:   sqlName,
-				SQLType:   "BYTEA",
+				SQLType:   "JSONB",
 				GoName:    goName,
 				GoType:    "[]byte",
 				IsVirtual: true,
 				VirtualDef: &ratelproto.VirtualColumn{
 					SqlName:    sqlName,
-					SqlType:    "BYTEA",
+					SqlType:    "JSONB",
 					IsNullable: true,
 				},
 			})
