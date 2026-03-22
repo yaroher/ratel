@@ -95,6 +95,55 @@ Unknown string values map to the zero enum value (typically `UNSPECIFIED`).
 No `enum_as_string` annotation is needed — `protoc-gen-ratel` enables this
 automatically for all enum fields in ratel tables.
 
+### Oneof (Embedded)
+
+Protobuf `oneof` fields with `(goplain.oneof).embed = true` are flattened into
+the Scanner struct. Each variant becomes a separate column, plus a discriminator
+`_case` column.
+
+For message variants, use `(goplain.field).serialize = true` to store them as
+`BYTEA` (serialized via `proto.Marshal`/`proto.Unmarshal`). All oneof columns
+are nullable since only one variant is active at a time.
+
+```protobuf
+message CreateAction {
+  option (goplain.message).generate = true;
+  string created_name = 1;
+}
+
+message DeleteAction {
+  option (goplain.message).generate = true;
+  int64 deleted_id = 1;
+  string reason = 2;
+}
+
+message AuditLog {
+  option (goplain.message).generate = true;
+  option (ratel.table) = { generate: true, table_name: "audit_logs" };
+
+  int64 id = 1;
+  string action = 2;
+
+  oneof detail {
+    option (goplain.oneof).embed = true;
+    CreateAction create_action = 10 [(goplain.field).serialize = true];
+    DeleteAction delete_action = 11 [(goplain.field).serialize = true];
+  }
+}
+```
+
+Generated columns:
+
+| Column | SQL Type | Scanner Type | Notes |
+|--------|----------|-------------|-------|
+| `create_action_create_action` | `BYTEA NULL` | `[]byte` | Serialized proto bytes |
+| `delete_action_delete_action` | `BYTEA NULL` | `[]byte` | Serialized proto bytes |
+| `detail_case` | `TEXT` | `string` | `"create_action"` or `"delete_action"` |
+
+The generated `IntoPlain()` serializes the active variant and sets `DetailCase`.
+`IntoPb()` deserializes based on `DetailCase` and reconstructs the oneof wrapper.
+Empty variants produce `[]byte{}` (not nil) to satisfy `NOT NULL` constraints.
+
 ### Serial Types
 
 Primary key fields with integer types automatically use serial variants:
