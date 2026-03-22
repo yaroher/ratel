@@ -25,6 +25,62 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Enum for testing enum-as-string scanning
+type AuditSeverity int32
+
+const (
+	AuditSeverity_AUDIT_SEVERITY_UNSPECIFIED AuditSeverity = 0
+	AuditSeverity_AUDIT_SEVERITY_LOW         AuditSeverity = 1
+	AuditSeverity_AUDIT_SEVERITY_MEDIUM      AuditSeverity = 2
+	AuditSeverity_AUDIT_SEVERITY_HIGH        AuditSeverity = 3
+	AuditSeverity_AUDIT_SEVERITY_CRITICAL    AuditSeverity = 4
+)
+
+// Enum value maps for AuditSeverity.
+var (
+	AuditSeverity_name = map[int32]string{
+		0: "AUDIT_SEVERITY_UNSPECIFIED",
+		1: "AUDIT_SEVERITY_LOW",
+		2: "AUDIT_SEVERITY_MEDIUM",
+		3: "AUDIT_SEVERITY_HIGH",
+		4: "AUDIT_SEVERITY_CRITICAL",
+	}
+	AuditSeverity_value = map[string]int32{
+		"AUDIT_SEVERITY_UNSPECIFIED": 0,
+		"AUDIT_SEVERITY_LOW":         1,
+		"AUDIT_SEVERITY_MEDIUM":      2,
+		"AUDIT_SEVERITY_HIGH":        3,
+		"AUDIT_SEVERITY_CRITICAL":    4,
+	}
+)
+
+func (x AuditSeverity) Enum() *AuditSeverity {
+	p := new(AuditSeverity)
+	*p = x
+	return p
+}
+
+func (x AuditSeverity) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuditSeverity) Descriptor() protoreflect.EnumDescriptor {
+	return file_examples_proto_store_proto_enumTypes[0].Descriptor()
+}
+
+func (AuditSeverity) Type() protoreflect.EnumType {
+	return &file_examples_proto_store_proto_enumTypes[0]
+}
+
+func (x AuditSeverity) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuditSeverity.Descriptor instead.
+func (AuditSeverity) EnumDescriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{0}
+}
+
 // EntityID - базовый type alias для ID сущностей
 type EntityID struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1004,8 +1060,10 @@ type AuditLog struct {
 	EntityType string                 `protobuf:"bytes,3,opt,name=entity_type,json=entityType,proto3" json:"entity_type,omitempty"`
 	EntityId   int64                  `protobuf:"varint,4,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
 	// repeated scalar → TEXT[] in PostgreSQL
-	Tags          []string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
-	RelatedIds    []int64  `protobuf:"varint,6,rep,packed,name=related_ids,json=relatedIds,proto3" json:"related_ids,omitempty"`
+	Tags       []string `protobuf:"bytes,5,rep,name=tags,proto3" json:"tags,omitempty"`
+	RelatedIds []int64  `protobuf:"varint,6,rep,packed,name=related_ids,json=relatedIds,proto3" json:"related_ids,omitempty"`
+	// enum field → TEXT in PostgreSQL, scanner should use string
+	Severity      AuditSeverity `protobuf:"varint,7,opt,name=severity,proto3,enum=store.AuditSeverity" json:"severity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1080,6 +1138,13 @@ func (x *AuditLog) GetRelatedIds() []int64 {
 		return x.RelatedIds
 	}
 	return nil
+}
+
+func (x *AuditLog) GetSeverity() AuditSeverity {
+	if x != nil {
+		return x.Severity
+	}
+	return AuditSeverity_AUDIT_SEVERITY_UNSPECIFIED
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
@@ -1317,7 +1382,7 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\fUserSettings\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x123\n" +
 	"\auser_id\x18\x02 \x01(\x03B\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x120\n" +
-	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\x9e\x02\n" +
+	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\xd0\x02\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12\x1f\n" +
@@ -1326,7 +1391,8 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\tentity_id\x18\x04 \x01(\x03R\bentityId\x12\x12\n" +
 	"\x04tags\x18\x05 \x03(\tR\x04tags\x12\x1f\n" +
 	"\vrelated_ids\x18\x06 \x03(\x03R\n" +
-	"relatedIds:m\x92\xb5\x18c\b\x01\x12\n" +
+	"relatedIds\x120\n" +
+	"\bseverity\x18\a \x01(\x0e2\x14.store.AuditSeverityR\bseverity:m\x92\xb5\x18c\b\x01\x12\n" +
 	"audit_logs\x1a%\n" +
 	"\rdb_created_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()\x1a%\n" +
 	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +
@@ -1338,7 +1404,13 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12A\n" +
 	"\n" +
 	"appearance\x18\x03 \x01(\v2\x19.store.AppearanceSettingsB\x06\x82\xa6\x1d\x02 \x01R\n" +
-	"appearance:%\x92\xb5\x18\x1b\b\x01\x12\x10user_preferencesB\x05store\x82\xa6\x1d\x02\b\x01B\xea\x01\x82\xb5\x18&CREATE EXTENSION IF NOT EXISTS pg_trgm\x82\xb5\x18\x8a\x01CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
+	"appearance:%\x92\xb5\x18\x1b\b\x01\x12\x10user_preferencesB\x05store\x82\xa6\x1d\x02\b\x01*\x98\x01\n" +
+	"\rAuditSeverity\x12\x1e\n" +
+	"\x1aAUDIT_SEVERITY_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12AUDIT_SEVERITY_LOW\x10\x01\x12\x19\n" +
+	"\x15AUDIT_SEVERITY_MEDIUM\x10\x02\x12\x17\n" +
+	"\x13AUDIT_SEVERITY_HIGH\x10\x03\x12\x1b\n" +
+	"\x17AUDIT_SEVERITY_CRITICAL\x10\x04B\xea\x01\x82\xb5\x18&CREATE EXTENSION IF NOT EXISTS pg_trgm\x82\xb5\x18\x8a\x01CREATE OR REPLACE FUNCTION store.set_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN NEW.updated_at = now(); RETURN NEW; END; $$Z/github.com/yaroher/ratel/examples/proto/storepbb\x06proto3"
 
 var (
 	file_examples_proto_store_proto_rawDescOnce sync.Once
@@ -1352,64 +1424,67 @@ func file_examples_proto_store_proto_rawDescGZIP() []byte {
 	return file_examples_proto_store_proto_rawDescData
 }
 
+var file_examples_proto_store_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_examples_proto_store_proto_goTypes = []any{
-	(*EntityID)(nil),              // 0: store.EntityID
-	(*Timestamps)(nil),            // 1: store.Timestamps
-	(*BaseEntity)(nil),            // 2: store.BaseEntity
-	(*Currency)(nil),              // 3: store.Currency
-	(*User)(nil),                  // 4: store.User
-	(*Profile)(nil),               // 5: store.Profile
-	(*Category)(nil),              // 6: store.Category
-	(*Tag)(nil),                   // 7: store.Tag
-	(*Product)(nil),               // 8: store.Product
-	(*Order)(nil),                 // 9: store.Order
-	(*OrderItem)(nil),             // 10: store.OrderItem
-	(*ThemeConfig)(nil),           // 11: store.ThemeConfig
-	(*UserSettings)(nil),          // 12: store.UserSettings
-	(*AuditLog)(nil),              // 13: store.AuditLog
-	(*AppearanceSettings)(nil),    // 14: store.AppearanceSettings
-	(*UserPreferences)(nil),       // 15: store.UserPreferences
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
-	(*wrapperspb.Int64Value)(nil), // 17: google.protobuf.Int64Value
+	(AuditSeverity)(0),            // 0: store.AuditSeverity
+	(*EntityID)(nil),              // 1: store.EntityID
+	(*Timestamps)(nil),            // 2: store.Timestamps
+	(*BaseEntity)(nil),            // 3: store.BaseEntity
+	(*Currency)(nil),              // 4: store.Currency
+	(*User)(nil),                  // 5: store.User
+	(*Profile)(nil),               // 6: store.Profile
+	(*Category)(nil),              // 7: store.Category
+	(*Tag)(nil),                   // 8: store.Tag
+	(*Product)(nil),               // 9: store.Product
+	(*Order)(nil),                 // 10: store.Order
+	(*OrderItem)(nil),             // 11: store.OrderItem
+	(*ThemeConfig)(nil),           // 12: store.ThemeConfig
+	(*UserSettings)(nil),          // 13: store.UserSettings
+	(*AuditLog)(nil),              // 14: store.AuditLog
+	(*AppearanceSettings)(nil),    // 15: store.AppearanceSettings
+	(*UserPreferences)(nil),       // 16: store.UserPreferences
+	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil), // 18: google.protobuf.Int64Value
 }
 var file_examples_proto_store_proto_depIdxs = []int32{
-	16, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
-	16, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 2: store.BaseEntity.id:type_name -> store.EntityID
-	1,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
-	2,  // 4: store.User.base:type_name -> store.BaseEntity
-	16, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
-	16, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
-	9,  // 7: store.User.orders:type_name -> store.Order
-	5,  // 8: store.User.profile:type_name -> store.Profile
-	2,  // 9: store.Profile.base:type_name -> store.BaseEntity
-	0,  // 10: store.Profile.user_id:type_name -> store.EntityID
-	4,  // 11: store.Profile.user:type_name -> store.User
-	2,  // 12: store.Category.base:type_name -> store.BaseEntity
-	17, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
-	2,  // 14: store.Tag.base:type_name -> store.BaseEntity
-	2,  // 15: store.Product.base:type_name -> store.BaseEntity
-	6,  // 16: store.Product.categories:type_name -> store.Category
-	7,  // 17: store.Product.tags:type_name -> store.Tag
-	2,  // 18: store.Order.base:type_name -> store.BaseEntity
-	0,  // 19: store.Order.user_id:type_name -> store.EntityID
-	10, // 20: store.Order.items:type_name -> store.OrderItem
-	4,  // 21: store.Order.user:type_name -> store.User
-	3,  // 22: store.Order.money:type_name -> store.Currency
-	0,  // 23: store.OrderItem.order_id:type_name -> store.EntityID
-	0,  // 24: store.OrderItem.product_id:type_name -> store.EntityID
-	9,  // 25: store.OrderItem.order:type_name -> store.Order
-	8,  // 26: store.OrderItem.product:type_name -> store.Product
-	11, // 27: store.UserSettings.theme:type_name -> store.ThemeConfig
-	11, // 28: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
-	11, // 29: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
-	14, // 30: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
-	31, // [31:31] is the sub-list for method output_type
-	31, // [31:31] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	17, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
+	17, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
+	1,  // 2: store.BaseEntity.id:type_name -> store.EntityID
+	2,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
+	3,  // 4: store.User.base:type_name -> store.BaseEntity
+	17, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
+	17, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
+	10, // 7: store.User.orders:type_name -> store.Order
+	6,  // 8: store.User.profile:type_name -> store.Profile
+	3,  // 9: store.Profile.base:type_name -> store.BaseEntity
+	1,  // 10: store.Profile.user_id:type_name -> store.EntityID
+	5,  // 11: store.Profile.user:type_name -> store.User
+	3,  // 12: store.Category.base:type_name -> store.BaseEntity
+	18, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	3,  // 14: store.Tag.base:type_name -> store.BaseEntity
+	3,  // 15: store.Product.base:type_name -> store.BaseEntity
+	7,  // 16: store.Product.categories:type_name -> store.Category
+	8,  // 17: store.Product.tags:type_name -> store.Tag
+	3,  // 18: store.Order.base:type_name -> store.BaseEntity
+	1,  // 19: store.Order.user_id:type_name -> store.EntityID
+	11, // 20: store.Order.items:type_name -> store.OrderItem
+	5,  // 21: store.Order.user:type_name -> store.User
+	4,  // 22: store.Order.money:type_name -> store.Currency
+	1,  // 23: store.OrderItem.order_id:type_name -> store.EntityID
+	1,  // 24: store.OrderItem.product_id:type_name -> store.EntityID
+	10, // 25: store.OrderItem.order:type_name -> store.Order
+	9,  // 26: store.OrderItem.product:type_name -> store.Product
+	12, // 27: store.UserSettings.theme:type_name -> store.ThemeConfig
+	0,  // 28: store.AuditLog.severity:type_name -> store.AuditSeverity
+	12, // 29: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
+	12, // 30: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
+	15, // 31: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
+	32, // [32:32] is the sub-list for method output_type
+	32, // [32:32] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
@@ -1423,13 +1498,14 @@ func file_examples_proto_store_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_examples_proto_store_proto_rawDesc), len(file_examples_proto_store_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_examples_proto_store_proto_goTypes,
 		DependencyIndexes: file_examples_proto_store_proto_depIdxs,
+		EnumInfos:         file_examples_proto_store_proto_enumTypes,
 		MessageInfos:      file_examples_proto_store_proto_msgTypes,
 	}.Build()
 	File_examples_proto_store_proto = out.File

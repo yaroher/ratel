@@ -107,3 +107,62 @@ func TestIntoPlainRepeatedMessageFieldsPreserved(t *testing.T) {
 		t.Errorf("unexpected Tags: %+v", plain.Tags)
 	}
 }
+
+// TestIntoPlainEnumAsString verifies that enum fields are converted to string
+// in IntoPlain() so pgx can scan TEXT columns directly.
+func TestIntoPlainEnumAsString(t *testing.T) {
+	tests := []struct {
+		name     string
+		severity AuditSeverity
+		want     string
+	}{
+		{"unspecified", AuditSeverity_AUDIT_SEVERITY_UNSPECIFIED, "AUDIT_SEVERITY_UNSPECIFIED"},
+		{"low", AuditSeverity_AUDIT_SEVERITY_LOW, "AUDIT_SEVERITY_LOW"},
+		{"medium", AuditSeverity_AUDIT_SEVERITY_MEDIUM, "AUDIT_SEVERITY_MEDIUM"},
+		{"high", AuditSeverity_AUDIT_SEVERITY_HIGH, "AUDIT_SEVERITY_HIGH"},
+		{"critical", AuditSeverity_AUDIT_SEVERITY_CRITICAL, "AUDIT_SEVERITY_CRITICAL"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pb := &AuditLog{
+				Id:       1,
+				Action:   "test",
+				Severity: tt.severity,
+			}
+			plain := pb.IntoPlain()
+
+			if plain.Severity != tt.want {
+				t.Errorf("IntoPlain().Severity = %q, want %q", plain.Severity, tt.want)
+			}
+		})
+	}
+}
+
+// TestIntoPbEnumFromString verifies that IntoPb() converts string back to enum.
+func TestIntoPbEnumFromString(t *testing.T) {
+	tests := []struct {
+		name string
+		str  string
+		want AuditSeverity
+	}{
+		{"low", "AUDIT_SEVERITY_LOW", AuditSeverity_AUDIT_SEVERITY_LOW},
+		{"critical", "AUDIT_SEVERITY_CRITICAL", AuditSeverity_AUDIT_SEVERITY_CRITICAL},
+		{"unknown", "UNKNOWN_VALUE", AuditSeverity_AUDIT_SEVERITY_UNSPECIFIED},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plain := &AuditLogScanner{
+				Id:       1,
+				Action:   "test",
+				Severity: tt.str,
+			}
+			pb := plain.IntoPb()
+
+			if pb.Severity != tt.want {
+				t.Errorf("IntoPb().Severity = %v, want %v", pb.Severity, tt.want)
+			}
+		})
+	}
+}

@@ -433,6 +433,15 @@ message UserSettings {
   ThemeConfig theme = 3 [(goplain.field).serialize = true];
 }
 
+// Enum for testing enum-as-string scanning
+enum AuditSeverity {
+  AUDIT_SEVERITY_UNSPECIFIED = 0;
+  AUDIT_SEVERITY_LOW = 1;
+  AUDIT_SEVERITY_MEDIUM = 2;
+  AUDIT_SEVERITY_HIGH = 3;
+  AUDIT_SEVERITY_CRITICAL = 4;
+}
+
 // Тест: virtual_columns — колонки без proto field, только DDL
 message AuditLog {
   option (goplain.message).generate = true;
@@ -465,6 +474,9 @@ message AuditLog {
   // repeated scalar → TEXT[] in PostgreSQL
   repeated string tags = 5;
   repeated int64 related_ids = 6;
+
+  // enum field → TEXT in PostgreSQL, scanner should use string
+  AuditSeverity severity = 7;
 }
 
 // Тест: serialize = true на message поле ВНУТРИ embedded struct

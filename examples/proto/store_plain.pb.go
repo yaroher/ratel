@@ -840,6 +840,7 @@ type AuditLogScanner struct {
 	EntityId    int64    `json:"entityId"`
 	Tags        []string `json:"tags"`
 	RelatedIds  []int64  `json:"relatedIds"`
+	Severity    string   `json:"severity"`
 	DbCreatedAt string   `json:"dbCreatedAt"` // origin: virtual, empath: virtual
 	DbUpdatedAt string   `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
 }
@@ -865,6 +866,7 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	} else {
 		p.RelatedIds = []int64{}
 	}
+	p.Severity = pb.Severity.String()
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
 	return p
@@ -883,6 +885,7 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 	pb.EntityId = p.EntityId
 	pb.Tags = p.Tags
 	pb.RelatedIds = p.RelatedIds
+	pb.Severity = AuditSeverity(AuditSeverity_value[p.Severity])
 	// DbCreatedAt is virtual, skipping
 	// DbUpdatedAt is virtual, skipping
 	return pb

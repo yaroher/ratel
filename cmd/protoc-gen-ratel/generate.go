@@ -27,8 +27,11 @@ func Generate(p *protogen.Plugin) error {
 	injectVirtualFields(p)
 
 	// Create generator with ratel-specific options
+	// WithForceEnumAsString: ratel stores enums as TEXT in PostgreSQL,
+	// so Scanner fields must be string for pgx to scan text values directly.
 	g, err := generator.NewGenerator(p, settings,
 		generator.WithPlainSuffix("Scanner"),
+		generator.WithForceEnumAsString(),
 		generator.WithTypeOverrides(getRatelTypeOverrides()),
 		generator.WithExistingCasters(getRatelCasters()),
 	)

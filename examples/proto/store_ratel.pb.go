@@ -1695,6 +1695,7 @@ const (
 	AuditLogColumnEntityId    AuditLogColumnAlias = "entity_id"
 	AuditLogColumnTags        AuditLogColumnAlias = "tags"
 	AuditLogColumnRelatedIds  AuditLogColumnAlias = "related_ids"
+	AuditLogColumnSeverity    AuditLogColumnAlias = "severity"
 	AuditLogColumnDbCreatedAt AuditLogColumnAlias = "db_created_at"
 	AuditLogColumnDbUpdatedAt AuditLogColumnAlias = "db_updated_at"
 )
@@ -1713,6 +1714,8 @@ func (s *AuditLogScanner) GetTarget(col string) func() any {
 		return func() any { return &s.Tags }
 	case AuditLogColumnRelatedIds:
 		return func() any { return &s.RelatedIds }
+	case AuditLogColumnSeverity:
+		return func() any { return &s.Severity }
 	case AuditLogColumnDbCreatedAt:
 		return func() any { return &s.DbCreatedAt }
 	case AuditLogColumnDbUpdatedAt:
@@ -1736,6 +1739,8 @@ func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSette
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Tags) }
 	case AuditLogColumnRelatedIds:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.RelatedIds) }
+	case AuditLogColumnSeverity:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Severity) }
 	case AuditLogColumnDbCreatedAt:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DbCreatedAt) }
 	case AuditLogColumnDbUpdatedAt:
@@ -1759,6 +1764,8 @@ func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 		return func() any { return s.Tags }
 	case AuditLogColumnRelatedIds:
 		return func() any { return s.RelatedIds }
+	case AuditLogColumnSeverity:
+		return func() any { return s.Severity }
 	case AuditLogColumnDbCreatedAt:
 		return func() any { return s.DbCreatedAt }
 	case AuditLogColumnDbUpdatedAt:
@@ -1776,6 +1783,7 @@ func (s *AuditLogScanner) AllSetters() []set.ValueSetter[AuditLogColumnAlias] {
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityId, s.EntityId),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnTags, s.Tags),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnRelatedIds, s.RelatedIds),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnSeverity, s.Severity),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbCreatedAt, s.DbCreatedAt),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDbUpdatedAt, s.DbUpdatedAt),
 	}
@@ -1795,6 +1803,7 @@ type AuditLogsTable struct {
 	EntityId    schema.BigIntColumnI[AuditLogColumnAlias]
 	Tags        schema.TextArrayColumnI[AuditLogColumnAlias]
 	RelatedIds  schema.BigIntArrayColumnI[AuditLogColumnAlias]
+	Severity    schema.TextColumnI[AuditLogColumnAlias]
 	DbCreatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
 	DbUpdatedAt schema.TimestamptzColumnI[AuditLogColumnAlias]
 }
@@ -1807,6 +1816,7 @@ var AuditLogs = func() AuditLogsTable {
 	entityIdCol := schema.BigIntColumn(AuditLogColumnEntityId, ddl.WithNotNull[AuditLogColumnAlias]())
 	tagsCol := schema.TextArrayColumn(AuditLogColumnTags, ddl.WithNotNull[AuditLogColumnAlias]())
 	relatedIdsCol := schema.BigIntArrayColumn(AuditLogColumnRelatedIds, ddl.WithNotNull[AuditLogColumnAlias]())
+	severityCol := schema.TextColumn(AuditLogColumnSeverity, ddl.WithNotNull[AuditLogColumnAlias]())
 	dbCreatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbCreatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
 	dbUpdatedAtCol := schema.TimestamptzColumn(AuditLogColumnDbUpdatedAt, ddl.WithDefault[AuditLogColumnAlias]("now()"), ddl.WithNotNull[AuditLogColumnAlias]())
 
@@ -1821,6 +1831,7 @@ var AuditLogs = func() AuditLogsTable {
 				entityIdCol.DDL(),
 				tagsCol.DDL(),
 				relatedIdsCol.DDL(),
+				severityCol.DDL(),
 				dbCreatedAtCol.DDL(),
 				dbUpdatedAtCol.DDL(),
 			},
@@ -1832,6 +1843,7 @@ var AuditLogs = func() AuditLogsTable {
 		EntityId:    entityIdCol,
 		Tags:        tagsCol,
 		RelatedIds:  relatedIdsCol,
+		Severity:    severityCol,
 		DbCreatedAt: dbCreatedAtCol,
 		DbUpdatedAt: dbUpdatedAtCol,
 	}
