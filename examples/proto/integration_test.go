@@ -897,6 +897,55 @@ func TestGeneratedModels(t *testing.T) {
 			item.Order.Id, item.Product.Sku)
 	})
 
+	// ========================================================================
+	// IN / ANY: Verify parameterized queries against real PostgreSQL
+	// ========================================================================
+	t.Run("Select with In (multiple params)", func(t *testing.T) {
+		query := Orders.SelectAll().Where(
+			Orders.Status.In("NEW", "SHIPPED"),
+		)
+		orders, err := Orders.Query(ctx, db, query)
+		if err != nil {
+			t.Fatalf("In query failed: %v", err)
+		}
+		for _, o := range orders {
+			if o.Status != "NEW" && o.Status != "SHIPPED" {
+				t.Errorf("unexpected status %q, expected NEW or SHIPPED", o.Status)
+			}
+		}
+		t.Logf("In query returned %d orders", len(orders))
+	})
+
+	t.Run("Select with Any (array param)", func(t *testing.T) {
+		query := Users.SelectAll().Where(
+			Users.Id.Any(userIDs...),
+		)
+		users, err := Users.Query(ctx, db, query)
+		if err != nil {
+			t.Fatalf("Any query failed: %v", err)
+		}
+		if len(users) != len(userIDs) {
+			t.Errorf("expected %d users, got %d", len(userIDs), len(users))
+		}
+		t.Logf("Any query returned %d users", len(users))
+	})
+
+	t.Run("Select with NotIn", func(t *testing.T) {
+		query := Orders.SelectAll().Where(
+			Orders.Status.NotIn("NEW", "SHIPPED"),
+		)
+		orders, err := Orders.Query(ctx, db, query)
+		if err != nil {
+			t.Fatalf("NotIn query failed: %v", err)
+		}
+		for _, o := range orders {
+			if o.Status == "NEW" || o.Status == "SHIPPED" {
+				t.Errorf("unexpected status %q in NotIn result", o.Status)
+			}
+		}
+		t.Logf("NotIn query returned %d orders", len(orders))
+	})
+
 	// Suppress unused variables
 	_ = categoryIDs
 	_ = tagIDs
