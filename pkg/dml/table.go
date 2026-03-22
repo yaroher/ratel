@@ -67,6 +67,13 @@ func (t *TableDML[T, C]) Insert() *InsertQuery[T, C] {
 		BaseQuery: t.baseQuery(t.alias),
 	}
 }
+
+// Ref returns a column reference expression for use in correlated subqueries.
+// Example: Users.Ref(UserColumnId) produces "users.id" in SQL.
+func (t *TableDML[T, C]) Ref(column C) *clause.ColumnRefExpr {
+	return &clause.ColumnRefExpr{TableAlias: t.alias.String(), Column: column.String()}
+}
+
 func (t *TableDML[T, C]) Raw(sql string, args ...any) clause.Clause[C] {
 	return &clause.RawExprClause[C]{SQL: sql, Args: args}
 }

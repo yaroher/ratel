@@ -437,6 +437,90 @@ func TestDiffAddTablesTopologicalOrder(t *testing.T) {
 	}
 }
 
+// ---- TestDiffCrossSchemaFKOrder ----
+
+func TestDiffCrossSchemaFKOrder(t *testing.T) {
+	// komeet.message_reports has FK → auth.users.
+	// Both schemas are new. All CREATE SCHEMA must come before any CREATE TABLE,
+	// and auth.users must come before komeet.message_reports.
+	current := &migrate.SchemaState{
+		Schemas: []migrate.Schema{{Name: "public"}},
+	}
+	desired := &migrate.SchemaState{
+		Schemas: []migrate.Schema{
+			{Name: "public"},
+			{
+				Name: "komeet",
+				Tables: []migrate.Table{
+					{
+						Name:   "message_reports",
+						Schema: "komeet",
+						Columns: []migrate.Column{
+							{Name: "id", Type: "bigint", Nullable: false},
+							{Name: "reporter_id", Type: "bigint", Nullable: false},
+						},
+						ForeignKeys: []migrate.ForeignKey{
+							{Name: "fk_reporter", Columns: []string{"reporter_id"}, RefTable: "users", RefSchema: "auth", RefColumns: []string{"id"}},
+						},
+					},
+				},
+			},
+			{
+				Name: "auth",
+				Tables: []migrate.Table{
+					{
+						Name:   "users",
+						Schema: "auth",
+						Columns: []migrate.Column{
+							{Name: "id", Type: "bigint", Nullable: false},
+							{Name: "email", Type: "text", Nullable: false},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	d := newDiffer()
+	changes, err := d.Diff(current, desired)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var order []string
+	for _, c := range changes {
+		switch v := c.(type) {
+		case migrate.AddSchema:
+			order = append(order, "schema:"+v.S.Name)
+		case migrate.AddTable:
+			order = append(order, "table:"+v.T.Schema+"."+v.T.Name)
+		}
+	}
+
+	// Both schemas must appear before any table.
+	schemaEnd := 0
+	for i, entry := range order {
+		if entry[:6] == "schema" {
+			schemaEnd = i + 1
+		}
+	}
+	for i, entry := range order {
+		if entry[:5] == "table" && i < schemaEnd {
+			t.Errorf("table %s (pos %d) appears before last schema (pos %d); order: %v", entry, i, schemaEnd-1, order)
+		}
+	}
+
+	// auth.users must come before komeet.message_reports.
+	pos := make(map[string]int)
+	for i, entry := range order {
+		pos[entry] = i
+	}
+	if pos["table:auth.users"] >= pos["table:komeet.message_reports"] {
+		t.Errorf("auth.users (pos %d) must come before komeet.message_reports (pos %d); order: %v",
+			pos["table:auth.users"], pos["table:komeet.message_reports"], order)
+	}
+}
+
 // ---- TestDiffExtensions ----
 
 func TestDiffExtensions(t *testing.T) {

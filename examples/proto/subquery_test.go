@@ -125,6 +125,53 @@ func TestSubqueryParameterIndexContinuity(t *testing.T) {
 	}
 }
 
+// TestCorrelatedExistsOf verifies correlated subquery via ExistsOf + EqRef.
+// Produces: SELECT ... FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND orders.status = $1)
+func TestCorrelatedExistsOf(t *testing.T) {
+	subquery := Orders.Select1().Where(
+		Orders.UserId.EqRef(Users.Table.Ref(UserColumnId)),
+		Orders.Status.Eq("PAID"),
+	)
+	query := Users.SelectAll().Where(
+		Users.Table.ExistsOf(subquery),
+	)
+
+	sql, args := query.Build()
+	t.Logf("SQL: %s", sql)
+
+	assertContains(t, sql, "EXISTS (SELECT 1 FROM")
+	assertContains(t, sql, "orders.user_id = users.id")
+	assertContains(t, sql, "orders.status = $1")
+	if len(args) != 1 || args[0] != "PAID" {
+		t.Errorf("expected args=[PAID], got %v", args)
+	}
+}
+
+// TestCorrelatedExistsOfMultipleConditions verifies correlated EXISTS with extra WHERE clauses on outer query.
+func TestCorrelatedExistsOfMultipleConditions(t *testing.T) {
+	subquery := Orders.Select1().Where(
+		Orders.UserId.EqRef(Users.Table.Ref(UserColumnId)),
+		Orders.Status.Eq("PENDING"),
+	)
+	query := Users.SelectAll().Where(
+		Users.IsActive.Eq(true),
+		Users.DeletedAt.IsNull(),
+		Users.Table.ExistsOf(subquery),
+	).OrderByDESC(UserColumnCreatedAt)
+
+	sql, args := query.Build()
+	t.Logf("SQL: %s", sql)
+
+	assertContains(t, sql, "users.is_active = $1")
+	assertContains(t, sql, "users.deleted_at IS NULL")
+	assertContains(t, sql, "orders.user_id = users.id")
+	assertContains(t, sql, "orders.status = $2")
+	assertContains(t, sql, "ORDER BY users.created_at DESC")
+	if len(args) != 2 {
+		t.Errorf("expected 2 args, got %d: %v", len(args), args)
+	}
+}
+
 func assertContains(t *testing.T, s, substr string) {
 	t.Helper()
 	if !strings.Contains(s, substr) {

@@ -22,36 +22,71 @@ func (d *Differ) Diff(current, desired *migrate.SchemaState) ([]migrate.Change, 
 	currentSchemas := schemaMap(current.Schemas)
 	desiredSchemas := schemaMap(desired.Schemas)
 
-	// Added schemas — emit AddSchema + diff contents against empty
+	// Added schemas — collect all new schemas first, then emit CREATE SCHEMA
+	// before any tables so that cross-schema FK references resolve correctly.
+	var addedSchemaNames []string
+	addedSchemaMap := make(map[string]migrate.Schema)
+	var allAddedTables []migrate.Table
 	for name, s := range desiredSchemas {
 		if _, ok := currentSchemas[name]; !ok {
-			sc := s
-			changes = append(changes, migrate.AddSchema{S: &sc})
-			// Diff tables/extensions/functions within the new schema against empty
-			changes = append(changes, d.diffTables(nil, sc.Tables)...)
-			changes = append(changes, d.diffExtensions(nil, sc.Extensions)...)
-			changes = append(changes, d.diffFunctions(nil, sc.Functions)...)
+			addedSchemaNames = append(addedSchemaNames, name)
+			addedSchemaMap[name] = s
+			allAddedTables = append(allAddedTables, s.Tables...)
 		}
+	}
+	sort.Strings(addedSchemaNames)
+
+	// Emit all CREATE SCHEMA statements first.
+	for _, name := range addedSchemaNames {
+		sc := addedSchemaMap[name]
+		changes = append(changes, migrate.AddSchema{S: &sc})
+	}
+
+	// Emit extensions and functions for new schemas.
+	for _, name := range addedSchemaNames {
+		sc := addedSchemaMap[name]
+		changes = append(changes, d.diffExtensions(nil, sc.Extensions)...)
+		changes = append(changes, d.diffFunctions(nil, sc.Functions)...)
+	}
+
+	// Sort all added tables across schemas by FK dependencies, then emit.
+	sort.Slice(allAddedTables, func(i, j int) bool {
+		return qualifiedTableKey(allAddedTables[i]) < qualifiedTableKey(allAddedTables[j])
+	})
+	sortTablesByFK(allAddedTables)
+	for i := range allAddedTables {
+		tc := allAddedTables[i]
+		changes = append(changes, migrate.AddTable{T: &tc})
 	}
 
 	// Dropped schemas — emit content drops first, then DropSchema
-	for name, s := range currentSchemas {
+	var droppedSchemaNames []string
+	for name := range currentSchemas {
 		if _, ok := desiredSchemas[name]; !ok {
-			sc := s
-			// Drop contents before dropping the schema itself
-			changes = append(changes, d.diffFunctions(sc.Functions, nil)...)
-			changes = append(changes, d.diffExtensions(sc.Extensions, nil)...)
-			changes = append(changes, d.diffTables(sc.Tables, nil)...)
-			changes = append(changes, migrate.DropSchema{S: &sc})
+			droppedSchemaNames = append(droppedSchemaNames, name)
 		}
+	}
+	sort.Strings(droppedSchemaNames)
+	for _, name := range droppedSchemaNames {
+		sc := currentSchemas[name]
+		// Drop contents before dropping the schema itself
+		changes = append(changes, d.diffFunctions(sc.Functions, nil)...)
+		changes = append(changes, d.diffExtensions(sc.Extensions, nil)...)
+		changes = append(changes, d.diffTables(sc.Tables, nil)...)
+		changes = append(changes, migrate.DropSchema{S: &sc})
 	}
 
 	// Modified schemas — diff tables, extensions, functions within
-	for name, curSchema := range currentSchemas {
-		desSchema, ok := desiredSchemas[name]
-		if !ok {
-			continue
+	var modifiedSchemaNames []string
+	for name := range currentSchemas {
+		if _, ok := desiredSchemas[name]; ok {
+			modifiedSchemaNames = append(modifiedSchemaNames, name)
 		}
+	}
+	sort.Strings(modifiedSchemaNames)
+	for _, name := range modifiedSchemaNames {
+		curSchema := currentSchemas[name]
+		desSchema := desiredSchemas[name]
 		tableChanges := d.diffTables(curSchema.Tables, desSchema.Tables)
 		changes = append(changes, tableChanges...)
 		extChanges := d.diffExtensions(curSchema.Extensions, desSchema.Extensions)
@@ -133,15 +168,16 @@ func (d *Differ) diffTables(current, desired []migrate.Table) []migrate.Change {
 // sortTablesByFK sorts tables in topological order based on foreign key
 // dependencies (Kahn's algorithm). Tables that are referenced by others come
 // first so that CREATE TABLE statements execute in a valid order.
+// Uses schema-qualified names so cross-schema FK references are handled correctly.
 func sortTablesByFK(tables []migrate.Table) {
 	if len(tables) <= 1 {
 		return
 	}
 
-	// Build name → index mapping.
+	// Build qualified name → index mapping for cross-schema support.
 	idx := make(map[string]int, len(tables))
 	for i, t := range tables {
-		idx[t.Name] = i
+		idx[qualifiedTableKey(t)] = i
 	}
 
 	// Calculate in-degree: how many tables within this set reference each table.
@@ -149,7 +185,8 @@ func sortTablesByFK(tables []migrate.Table) {
 	deps := make(map[int][]int) // dependency index → dependent indexes
 	for i, t := range tables {
 		for _, fk := range t.ForeignKeys {
-			if j, ok := idx[fk.RefTable]; ok && j != i {
+			refKey := fkRefKey(t.Schema, fk)
+			if j, ok := idx[refKey]; ok && j != i {
 				inDeg[i]++
 				deps[j] = append(deps[j], i)
 			}
@@ -187,6 +224,27 @@ func sortTablesByFK(tables []migrate.Table) {
 	}
 
 	copy(tables, sorted)
+}
+
+// qualifiedTableKey returns "schema.name" or just "name" if schema is empty.
+func qualifiedTableKey(t migrate.Table) string {
+	if t.Schema == "" {
+		return t.Name
+	}
+	return t.Schema + "." + t.Name
+}
+
+// fkRefKey returns the qualified lookup key for a FK reference.
+// If RefSchema is empty, it falls back to the owning table's schema.
+func fkRefKey(tableSchema string, fk migrate.ForeignKey) string {
+	schema := fk.RefSchema
+	if schema == "" {
+		schema = tableSchema
+	}
+	if schema == "" {
+		return fk.RefTable
+	}
+	return schema + "." + fk.RefTable
 }
 
 func tableMap(tables []migrate.Table) map[string]migrate.Table {

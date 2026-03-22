@@ -162,15 +162,51 @@ Users.SelectAll().
         Users.IsActive.Eq(true),
     ))
 
-// Subqueries
+// Subqueries (non-correlated)
 Users.ID.EqOf(subquery)     // = (SELECT ...)
+Users.ID.InOf(subquery)     // IN (SELECT ...)
 Users.ID.AnyOf(subquery)    // = ANY(SELECT ...)
 
-// EXISTS
-Users.ExistsOf(subquery)      // EXISTS (SELECT ...)
-Users.NotExistsOf(subquery)   // NOT EXISTS (SELECT ...)
+// EXISTS (non-correlated)
+Users.Table.ExistsOf(subquery)      // EXISTS (SELECT ...)
+Users.Table.NotExistsOf(subquery)   // NOT EXISTS (SELECT ...)
 
 // Raw SQL
 Users.Email.EqRaw("current_user")
-Users.Raw("age > $1", 18)
+Users.Table.Raw("age > $1", 18)
+```
+
+### Correlated Subqueries
+
+Use `Table.Ref(column)` to reference a column from an outer query inside a subquery.
+This enables correlated `EXISTS`, `IN`, and other subquery patterns where the inner
+query depends on the outer row.
+
+```go
+// Find active users who have at least one paid order:
+//
+// SELECT * FROM users
+// WHERE users.deleted_at IS NULL
+//   AND EXISTS (
+//     SELECT 1 FROM orders
+//     WHERE orders.user_id = users.id
+//       AND orders.status = $1
+//   )
+subquery := Orders.Select1().Where(
+    Orders.UserID.EqRef(Users.Table.Ref(UserColumnID)),  // orders.user_id = users.id
+    Orders.Status.Eq("PAID"),
+)
+
+query := Users.SelectAll().Where(
+    Users.DeletedAt.IsNull(),
+    Users.Table.ExistsOf(subquery),
+)
+```
+
+`Ref` returns a column reference that writes `table.column` directly into SQL
+without a parameter placeholder. It works with any comparison method:
+
+```go
+Col.EqRef(OtherTable.Ref(col))   // col = other_table.col
+Col.NeqRef(OtherTable.Ref(col))  // col != other_table.col
 ```

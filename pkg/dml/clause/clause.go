@@ -82,6 +82,19 @@ func (e *SubQueryExprClause[C]) AddToBuilder(buf *strings.Builder, ta string, pa
 
 }
 
+// ColumnRefExpr writes a qualified column reference (e.g. "users.id") without parameters.
+// Used for correlated subqueries where the inner query references an outer table's column.
+type ColumnRefExpr struct {
+	TableAlias string
+	Column     string
+}
+
+func (e *ColumnRefExpr) AddToBuilder(buf *strings.Builder, _ string, _ *int, _ *[]any) {
+	buf.WriteString(e.TableAlias)
+	buf.WriteByte('.')
+	buf.WriteString(e.Column)
+}
+
 type FieldClause[C types.ColumnAlias] struct {
 	Field    C
 	Operator string

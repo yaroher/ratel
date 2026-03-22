@@ -28,6 +28,15 @@ func (f *ColumnDML[V, C]) EqRaw(sql string, args ...any) Clause[C] {
 	return &FieldClause[C]{Field: f.fieldAlias, Operator: "=", Right: &RawExprClause[C]{SQL: sql, Args: args}}
 }
 
+// EqRef compares this column to a column from another table (for correlated subqueries).
+// Example: Orders.UserId.EqRef(Users.Ref(UserColumnId)) produces "orders.user_id = users.id".
+func (f *ColumnDML[V, C]) EqRef(ref *ColumnRefExpr) Clause[C] {
+	return &FieldClause[C]{Field: f.fieldAlias, Operator: "=", Right: ref}
+}
+func (f *ColumnDML[V, C]) NeqRef(ref *ColumnRefExpr) Clause[C] {
+	return &FieldClause[C]{Field: f.fieldAlias, Operator: "!=", Right: ref}
+}
+
 func (f *ColumnDML[V, C]) Gt(val V) Clause[C] {
 	return &FieldClause[C]{Field: f.fieldAlias, Operator: ">", Right: &ParamExprClause[C]{Value: val}}
 }

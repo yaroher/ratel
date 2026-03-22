@@ -122,9 +122,30 @@ query := Users.Delete().
 | Operator | SQL |
 |----------|-----|
 | `Col.EqOf(subquery)` | `= (SELECT ...)` |
+| `Col.InOf(subquery)` | `IN (SELECT ...)` |
 | `Col.AnyOf(subquery)` | `= ANY(SELECT ...)` |
 | `Table.ExistsOf(subquery)` | `EXISTS (...)` |
 | `Table.NotExistsOf(subquery)` | `NOT EXISTS (...)` |
+
+### Correlated Subqueries
+
+Use `Table.Ref(column)` to reference an outer table's column inside a subquery:
+
+| Operator | SQL |
+|----------|-----|
+| `Table.Ref(col)` | Returns a column reference (`table.col`) |
+| `Col.EqRef(ref)` | `col = other_table.col` |
+| `Col.NeqRef(ref)` | `col != other_table.col` |
+
+```go
+// SELECT * FROM users WHERE EXISTS (
+//   SELECT 1 FROM orders WHERE orders.user_id = users.id AND orders.status = $1)
+subquery := Orders.Select1().Where(
+    Orders.UserID.EqRef(Users.Table.Ref(UserColumnID)),
+    Orders.Status.Eq("PAID"),
+)
+query := Users.SelectAll().Where(Users.Table.ExistsOf(subquery))
+```
 
 ### Logical
 

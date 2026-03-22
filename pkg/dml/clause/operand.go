@@ -32,6 +32,8 @@ type EqOperand[V any, C types.ColumnAlias] interface {
 	Neq(V) Clause[C]
 	EqOf(query types.Query) Clause[C]
 	EqRaw(string, ...any) Clause[C]
+	EqRef(ref *ColumnRefExpr) Clause[C]
+	NeqRef(ref *ColumnRefExpr) Clause[C]
 }
 type LogicalOperand[C types.ColumnAlias] interface {
 	Or(clause ...Clause[C]) Clause[C]
