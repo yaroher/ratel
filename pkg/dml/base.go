@@ -26,6 +26,10 @@ func (q *BaseQuery[T, C]) fromName() string {
 	return q.Ta.String()
 }
 
+func (q *BaseQuery[T, C]) TableAlias() string {
+	return q.Ta.String()
+}
+
 func (q *BaseQuery[T, C]) ScanAbleFields() []string {
 	mp := make([]string, len(q.UsingFields))
 	for i, f := range q.UsingFields {
