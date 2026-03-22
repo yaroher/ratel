@@ -437,6 +437,9 @@ func NullJSONBColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[
 type TextArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]string, C]
+	clause2.EqOperand[[]string, C]
+	clause2.ArrayOperand[[]string, C]
+	clause2.IsNullOperand[C]
 }
 
 func TextArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) TextArrayColumnI[C] {
@@ -448,6 +451,9 @@ func TextArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[
 type IntegerArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]int32, C]
+	clause2.EqOperand[[]int32, C]
+	clause2.ArrayOperand[[]int32, C]
+	clause2.IsNullOperand[C]
 }
 
 func IntegerArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) IntegerArrayColumnI[C] {
@@ -459,6 +465,9 @@ func IntegerArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOpti
 type BigIntArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]int64, C]
+	clause2.EqOperand[[]int64, C]
+	clause2.ArrayOperand[[]int64, C]
+	clause2.IsNullOperand[C]
 }
 
 func BigIntArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) BigIntArrayColumnI[C] {
@@ -470,6 +479,9 @@ func BigIntArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOptio
 type BooleanArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]bool, C]
+	clause2.EqOperand[[]bool, C]
+	clause2.ArrayOperand[[]bool, C]
+	clause2.IsNullOperand[C]
 }
 
 func BooleanArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) BooleanArrayColumnI[C] {
@@ -481,6 +493,9 @@ func BooleanArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOpti
 type RealArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]float32, C]
+	clause2.EqOperand[[]float32, C]
+	clause2.ArrayOperand[[]float32, C]
+	clause2.IsNullOperand[C]
 }
 
 func RealArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) RealArrayColumnI[C] {
@@ -492,6 +507,9 @@ func RealArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[
 type DoublePrecisionArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[]float64, C]
+	clause2.EqOperand[[]float64, C]
+	clause2.ArrayOperand[[]float64, C]
+	clause2.IsNullOperand[C]
 }
 
 func DoublePrecisionArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) DoublePrecisionArrayColumnI[C] {
@@ -503,6 +521,9 @@ func DoublePrecisionArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.Co
 type ByteaArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[[][]byte, C]
+	clause2.EqOperand[[][]byte, C]
+	clause2.ArrayOperand[[][]byte, C]
+	clause2.IsNullOperand[C]
 }
 
 func ByteaArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) ByteaArrayColumnI[C] {
@@ -514,6 +535,9 @@ func ByteaArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption
 type UuidArrayColumnI[C types.ColumnAlias] interface {
 	ddlAbles[C]
 	set2.SetterColumn[pgtype.FlatArray[pgtype.UUID], C]
+	clause2.EqOperand[pgtype.FlatArray[pgtype.UUID], C]
+	clause2.ArrayOperand[pgtype.FlatArray[pgtype.UUID], C]
+	clause2.IsNullOperand[C]
 }
 
 func UuidArrayColumn[C types.ColumnAlias](alias C, options ...ddl2.ColumnOption[C]) UuidArrayColumnI[C] {
