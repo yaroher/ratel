@@ -55,9 +55,21 @@ func collectRatelTables(f *protogen.File) []*RatelTable {
 			Relations: make([]*RatelRelation, 0),
 		}
 
+		// Process embedded oneofs
+		for _, oneof := range msg.Oneofs {
+			if oneof.Desc.IsSynthetic() {
+				continue
+			}
+			if !isEmbeddedOneof(oneof) {
+				continue
+			}
+			cols := collectOneofColumns(oneof)
+			table.Columns = append(table.Columns, cols...)
+		}
+
 		// Process fields
 		for _, field := range msg.Fields {
-			// Skip oneof fields (handled separately)
+			// Skip oneof fields (embedded oneofs handled above, non-embedded skipped)
 			if field.Oneof != nil && !field.Oneof.Desc.IsSynthetic() {
 				continue
 			}
@@ -176,6 +188,121 @@ func collectEmbeddedColumns(msg *protogen.Message, _ string) []*RatelColumn {
 	}
 
 	return cols
+}
+
+// isEmbeddedOneof checks if a oneof has (goplain.oneof).embed = true
+func isEmbeddedOneof(oneof *protogen.Oneof) bool {
+	opts := oneof.Desc.Options()
+	if opts == nil {
+		return false
+	}
+	ext := proto.GetExtension(opts, goplain.E_Oneof)
+	if ext == nil {
+		return false
+	}
+	oneofOpts, ok := ext.(*goplain.OneofOptions)
+	if !ok || oneofOpts == nil {
+		return false
+	}
+	return oneofOpts.Embed || oneofOpts.EmbedWithPrefix
+}
+
+// collectOneofColumns creates ratel columns for an embedded oneof.
+// Each variant field becomes a nullable column, plus a _case TEXT column.
+func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
+	var cols []*RatelColumn
+
+	oneofName := string(oneof.Desc.Name())
+
+	for _, field := range oneof.Fields {
+		variantName := string(field.Desc.Name())
+
+		// Check if field has serialize = true (message stored as bytes)
+		fieldOpts := getGoplainFieldOptions(field)
+		isSerialized := fieldOpts != nil && fieldOpts.Serialize
+
+		if isSerialized {
+			// Serialized message variant → BYTEA NULL column (treated as virtual for codegen)
+			goName := strcase.ToCamel(variantName) + field.GoName
+			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(field.GoName)
+
+			cols = append(cols, &RatelColumn{
+				SQLName:   sqlName,
+				SQLType:   "BYTEA",
+				GoName:    goName,
+				GoType:    "[]byte",
+				IsVirtual: true,
+				VirtualDef: &ratelproto.VirtualColumn{
+					SqlName:    sqlName,
+					SqlType:    "BYTEA",
+					IsNullable: true,
+				},
+			})
+		} else if field.Message != nil {
+			// Non-serialized message variant — flatten inner fields as nullable
+			for _, innerField := range field.Message.Fields {
+				goName := strcase.ToCamel(variantName) + innerField.GoName
+				sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(innerField.Desc.Name()))
+
+				col := &RatelColumn{
+					Field:      innerField,
+					SQLName:    sqlName,
+					SQLType:    protoFieldToSQLType(innerField),
+					GoName:     goName,
+					IsEmbedded: true,
+				}
+				col.GoType = computeGoType(col)
+				cols = append(cols, col)
+			}
+		} else {
+			// Scalar variant → nullable column
+			goName := strcase.ToCamel(variantName) + field.GoName
+			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(field.Desc.Name()))
+
+			col := &RatelColumn{
+				Field:      field,
+				SQLName:    sqlName,
+				SQLType:    protoFieldToSQLType(field),
+				GoName:     goName,
+				IsEmbedded: true,
+			}
+			col.GoType = computeGoType(col)
+			cols = append(cols, col)
+		}
+	}
+
+	// Add {oneof_name}_case TEXT column (treated as virtual — no proto field)
+	caseName := oneofName + "_case"
+	cols = append(cols, &RatelColumn{
+		SQLName:   caseName,
+		SQLType:   "TEXT",
+		GoName:    strcase.ToCamel(caseName),
+		GoType:    "string",
+		IsVirtual: true,
+		VirtualDef: &ratelproto.VirtualColumn{
+			SqlName: caseName,
+			SqlType: "TEXT",
+		},
+	})
+
+	return cols
+}
+
+// getGoplainFieldOptions returns goplain field options for a field
+func getGoplainFieldOptions(field *protogen.Field) *goplain.FieldOptions {
+	opts := field.Desc.Options()
+	if opts == nil {
+		return nil
+	}
+	ext := proto.GetExtension(opts, goplain.E_Field)
+	if ext == nil {
+		return nil
+	}
+	fieldOpts, ok := ext.(*goplain.FieldOptions)
+	if !ok {
+		return nil
+	}
+	return fieldOpts
 }
 
 // getTableName returns the SQL table name for the table (without schema prefix)

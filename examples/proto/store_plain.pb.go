@@ -809,6 +809,8 @@ func (pb *UserSettings) IntoPlain() *UserSettingsScanner {
 		if data, err := proto.Marshal(pb.Theme); err == nil {
 			p.Theme = data
 		}
+	} else {
+		p.Theme = []byte{}
 	}
 	return p
 }
@@ -832,18 +834,78 @@ func (p *UserSettingsScanner) IntoPb() *UserSettings {
 	return pb
 }
 
+// Oneof variant messages for testing embedded oneof in ratel tables
+type AuditCreateActionScanner struct {
+	CreatedName string `json:"createdName"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *AuditCreateAction) IntoPlain() *AuditCreateActionScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &AuditCreateActionScanner{}
+
+	p.CreatedName = pb.CreatedName
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *AuditCreateActionScanner) IntoPb() *AuditCreateAction {
+	if p == nil {
+		return nil
+	}
+	pb := &AuditCreateAction{}
+
+	pb.CreatedName = p.CreatedName
+	return pb
+}
+
+type AuditDeleteActionScanner struct {
+	DeletedId int64  `json:"deletedId"`
+	Reason    string `json:"reason"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *AuditDeleteAction) IntoPlain() *AuditDeleteActionScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &AuditDeleteActionScanner{}
+
+	p.DeletedId = pb.DeletedId
+	p.Reason = pb.Reason
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *AuditDeleteActionScanner) IntoPb() *AuditDeleteAction {
+	if p == nil {
+		return nil
+	}
+	pb := &AuditDeleteAction{}
+
+	pb.DeletedId = p.DeletedId
+	pb.Reason = p.Reason
+	return pb
+}
+
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLogScanner struct {
-	Id             int64    `json:"id"`
-	Action         string   `json:"action"`
-	EntityType     string   `json:"entityType"`
-	EntityId       int64    `json:"entityId"`
-	Tags           []string `json:"tags"`
-	RelatedIds     []int64  `json:"relatedIds"`
-	Severity       string   `json:"severity"`
-	AffectedLevels []string `json:"affectedLevels"`
-	DbCreatedAt    string   `json:"dbCreatedAt"` // origin: virtual, empath: virtual
-	DbUpdatedAt    string   `json:"dbUpdatedAt"` // origin: virtual, empath: virtual
+	Id                       int64    `json:"id"`
+	Action                   string   `json:"action"`
+	EntityType               string   `json:"entityType"`
+	EntityId                 int64    `json:"entityId"`
+	Tags                     []string `json:"tags"`
+	RelatedIds               []int64  `json:"relatedIds"`
+	Severity                 string   `json:"severity"`
+	AffectedLevels           []string `json:"affectedLevels"`
+	CreateActionCreateAction []byte   `json:"createActionCreateAction"` // origin: serialized, empath: create_action.create_action
+	DeleteActionDeleteAction []byte   `json:"deleteActionDeleteAction"` // origin: serialized, empath: delete_action.delete_action
+	DbCreatedAt              string   `json:"dbCreatedAt"`              // origin: virtual, empath: virtual
+	DbUpdatedAt              string   `json:"dbUpdatedAt"`              // origin: virtual, empath: virtual
+	// DetailCase indicates which variant of detail oneof is set
+	DetailCase string `json:"detail_case,omitempty"`
 }
 
 // IntoPlain converts protobuf message to plain struct
@@ -852,6 +914,14 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 		return nil
 	}
 	p := &AuditLogScanner{}
+
+	// Detect detail oneof case
+	switch pb.Detail.(type) {
+	case *AuditLog_CreateAction:
+		p.DetailCase = "create_action"
+	case *AuditLog_DeleteAction:
+		p.DetailCase = "delete_action"
+	}
 
 	p.Id = pb.Id
 	p.Action = pb.Action
@@ -876,6 +946,22 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	} else {
 		p.AffectedLevels = []string{}
 	}
+	// CreateActionCreateAction serialized from create_action.create_action
+	if pb.GetCreateAction() != nil {
+		if data, err := proto.Marshal(pb.GetCreateAction()); err == nil {
+			p.CreateActionCreateAction = data
+		}
+	} else {
+		p.CreateActionCreateAction = []byte{}
+	}
+	// DeleteActionDeleteAction serialized from delete_action.delete_action
+	if pb.GetDeleteAction() != nil {
+		if data, err := proto.Marshal(pb.GetDeleteAction()); err == nil {
+			p.DeleteActionDeleteAction = data
+		}
+	} else {
+		p.DeleteActionDeleteAction = []byte{}
+	}
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
 	return p
@@ -899,6 +985,20 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 		pb.AffectedLevels = make([]AuditSeverity, len(p.AffectedLevels))
 		for i, v := range p.AffectedLevels {
 			pb.AffectedLevels[i] = AuditSeverity(AuditSeverity_value[v])
+		}
+	}
+	// CreateActionCreateAction deserialize -> create_action.create_action
+	if len(p.CreateActionCreateAction) > 0 {
+		var msg AuditCreateAction
+		if err := proto.Unmarshal(p.CreateActionCreateAction, &msg); err == nil {
+			pb.Detail = &AuditLog_CreateAction{CreateAction: &msg}
+		}
+	}
+	// DeleteActionDeleteAction deserialize -> delete_action.delete_action
+	if len(p.DeleteActionDeleteAction) > 0 {
+		var msg AuditDeleteAction
+		if err := proto.Unmarshal(p.DeleteActionDeleteAction, &msg); err == nil {
+			pb.Detail = &AuditLog_DeleteAction{DeleteAction: &msg}
 		}
 	}
 	// DbCreatedAt is virtual, skipping
@@ -936,12 +1036,16 @@ func (pb *AppearanceSettings) IntoPlain() *AppearanceSettingsScanner {
 		if data, err := proto.Marshal(pb.SelectedTheme); err == nil {
 			p.SelectedTheme = data
 		}
+	} else {
+		p.SelectedTheme = []byte{}
 	}
 	// FallbackTheme serialized from fallback_theme
 	if pb.FallbackTheme != nil {
 		if data, err := proto.Marshal(pb.FallbackTheme); err == nil {
 			p.FallbackTheme = data
 		}
+	} else {
+		p.FallbackTheme = []byte{}
 	}
 	return p
 }
@@ -991,12 +1095,16 @@ func (pb *UserPreferences) IntoPlain() *UserPreferencesScanner {
 		if data, err := proto.Marshal(pb.GetAppearance().GetSelectedTheme()); err == nil {
 			p.SelectedTheme = data
 		}
+	} else {
+		p.SelectedTheme = []byte{}
 	}
 	// FallbackTheme serialized from fallback_theme
 	if pb.GetAppearance() != nil && pb.GetAppearance().GetFallbackTheme() != nil {
 		if data, err := proto.Marshal(pb.GetAppearance().GetFallbackTheme()); err == nil {
 			p.FallbackTheme = data
 		}
+	} else {
+		p.FallbackTheme = []byte{}
 	}
 	return p
 }

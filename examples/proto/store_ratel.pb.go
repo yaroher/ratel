@@ -1689,20 +1689,29 @@ type AuditLogColumnAlias string
 func (c AuditLogColumnAlias) String() string { return string(c) }
 
 const (
-	AuditLogColumnId             AuditLogColumnAlias = "id"
-	AuditLogColumnAction         AuditLogColumnAlias = "action"
-	AuditLogColumnEntityType     AuditLogColumnAlias = "entity_type"
-	AuditLogColumnEntityId       AuditLogColumnAlias = "entity_id"
-	AuditLogColumnTags           AuditLogColumnAlias = "tags"
-	AuditLogColumnRelatedIds     AuditLogColumnAlias = "related_ids"
-	AuditLogColumnSeverity       AuditLogColumnAlias = "severity"
-	AuditLogColumnAffectedLevels AuditLogColumnAlias = "affected_levels"
-	AuditLogColumnDbCreatedAt    AuditLogColumnAlias = "db_created_at"
-	AuditLogColumnDbUpdatedAt    AuditLogColumnAlias = "db_updated_at"
+	AuditLogColumnCreateActionCreateAction AuditLogColumnAlias = "create_action_create_action"
+	AuditLogColumnDeleteActionDeleteAction AuditLogColumnAlias = "delete_action_delete_action"
+	AuditLogColumnDetailCase               AuditLogColumnAlias = "detail_case"
+	AuditLogColumnId                       AuditLogColumnAlias = "id"
+	AuditLogColumnAction                   AuditLogColumnAlias = "action"
+	AuditLogColumnEntityType               AuditLogColumnAlias = "entity_type"
+	AuditLogColumnEntityId                 AuditLogColumnAlias = "entity_id"
+	AuditLogColumnTags                     AuditLogColumnAlias = "tags"
+	AuditLogColumnRelatedIds               AuditLogColumnAlias = "related_ids"
+	AuditLogColumnSeverity                 AuditLogColumnAlias = "severity"
+	AuditLogColumnAffectedLevels           AuditLogColumnAlias = "affected_levels"
+	AuditLogColumnDbCreatedAt              AuditLogColumnAlias = "db_created_at"
+	AuditLogColumnDbUpdatedAt              AuditLogColumnAlias = "db_updated_at"
 )
 
 func (s *AuditLogScanner) GetTarget(col string) func() any {
 	switch AuditLogColumnAlias(col) {
+	case AuditLogColumnCreateActionCreateAction:
+		return func() any { return &s.CreateActionCreateAction }
+	case AuditLogColumnDeleteActionDeleteAction:
+		return func() any { return &s.DeleteActionDeleteAction }
+	case AuditLogColumnDetailCase:
+		return func() any { return &s.DetailCase }
 	case AuditLogColumnId:
 		return func() any { return &s.Id }
 	case AuditLogColumnAction:
@@ -1730,6 +1739,12 @@ func (s *AuditLogScanner) GetTarget(col string) func() any {
 
 func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSetter[AuditLogColumnAlias] {
 	switch f {
+	case AuditLogColumnCreateActionCreateAction:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.CreateActionCreateAction) }
+	case AuditLogColumnDeleteActionDeleteAction:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DeleteActionDeleteAction) }
+	case AuditLogColumnDetailCase:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DetailCase) }
 	case AuditLogColumnId:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.Id) }
 	case AuditLogColumnAction:
@@ -1757,6 +1772,12 @@ func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSette
 
 func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 	switch f {
+	case AuditLogColumnCreateActionCreateAction:
+		return func() any { return s.CreateActionCreateAction }
+	case AuditLogColumnDeleteActionDeleteAction:
+		return func() any { return s.DeleteActionDeleteAction }
+	case AuditLogColumnDetailCase:
+		return func() any { return s.DetailCase }
 	case AuditLogColumnId:
 		return func() any { return s.Id }
 	case AuditLogColumnAction:
@@ -1784,6 +1805,9 @@ func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 
 func (s *AuditLogScanner) AllSetters() []set.ValueSetter[AuditLogColumnAlias] {
 	return []set.ValueSetter[AuditLogColumnAlias]{
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnCreateActionCreateAction, s.CreateActionCreateAction),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDeleteActionDeleteAction, s.DeleteActionDeleteAction),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDetailCase, s.DetailCase),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnId, s.Id),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnAction, s.Action),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnEntityType, s.EntityType),
@@ -1805,20 +1829,26 @@ func (s *AuditLogScanner) Relations() []exec.RelationLoader[*AuditLogScanner] {
 // AuditLogsTable represents the audit_logs table with its columns
 type AuditLogsTable struct {
 	*schema.Table[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner]
-	Id             schema.BigSerialColumnI[AuditLogColumnAlias]
-	Action         schema.TextColumnI[AuditLogColumnAlias]
-	EntityType     schema.TextColumnI[AuditLogColumnAlias]
-	EntityId       schema.BigIntColumnI[AuditLogColumnAlias]
-	Tags           schema.TextArrayColumnI[AuditLogColumnAlias]
-	RelatedIds     schema.BigIntArrayColumnI[AuditLogColumnAlias]
-	Severity       schema.TextColumnI[AuditLogColumnAlias]
-	AffectedLevels schema.TextArrayColumnI[AuditLogColumnAlias]
-	DbCreatedAt    schema.TimestamptzColumnI[AuditLogColumnAlias]
-	DbUpdatedAt    schema.TimestamptzColumnI[AuditLogColumnAlias]
+	CreateActionCreateAction schema.NullByteaColumnI[AuditLogColumnAlias]
+	DeleteActionDeleteAction schema.NullByteaColumnI[AuditLogColumnAlias]
+	DetailCase               schema.TextColumnI[AuditLogColumnAlias]
+	Id                       schema.BigSerialColumnI[AuditLogColumnAlias]
+	Action                   schema.TextColumnI[AuditLogColumnAlias]
+	EntityType               schema.TextColumnI[AuditLogColumnAlias]
+	EntityId                 schema.BigIntColumnI[AuditLogColumnAlias]
+	Tags                     schema.TextArrayColumnI[AuditLogColumnAlias]
+	RelatedIds               schema.BigIntArrayColumnI[AuditLogColumnAlias]
+	Severity                 schema.TextColumnI[AuditLogColumnAlias]
+	AffectedLevels           schema.TextArrayColumnI[AuditLogColumnAlias]
+	DbCreatedAt              schema.TimestamptzColumnI[AuditLogColumnAlias]
+	DbUpdatedAt              schema.TimestamptzColumnI[AuditLogColumnAlias]
 }
 
 // AuditLogs is the global audit_logs table instance
 var AuditLogs = func() AuditLogsTable {
+	createActionCreateActionCol := schema.NullByteaColumn(AuditLogColumnCreateActionCreateAction)
+	deleteActionDeleteActionCol := schema.NullByteaColumn(AuditLogColumnDeleteActionDeleteAction)
+	detailCaseCol := schema.TextColumn(AuditLogColumnDetailCase, ddl.WithNotNull[AuditLogColumnAlias]())
 	idCol := schema.BigSerialColumn(AuditLogColumnId, ddl.WithPrimaryKey[AuditLogColumnAlias]())
 	actionCol := schema.TextColumn(AuditLogColumnAction, ddl.WithNotNull[AuditLogColumnAlias]())
 	entityTypeCol := schema.TextColumn(AuditLogColumnEntityType, ddl.WithNotNull[AuditLogColumnAlias]())
@@ -1835,6 +1865,9 @@ var AuditLogs = func() AuditLogsTable {
 			AuditLogAliasName,
 			func() *AuditLogScanner { return &AuditLogScanner{} },
 			[]*ddl.ColumnDDL[AuditLogColumnAlias]{
+				createActionCreateActionCol.DDL(),
+				deleteActionDeleteActionCol.DDL(),
+				detailCaseCol.DDL(),
 				idCol.DDL(),
 				actionCol.DDL(),
 				entityTypeCol.DDL(),
@@ -1848,16 +1881,19 @@ var AuditLogs = func() AuditLogsTable {
 			},
 			ddl.WithSchema[AuditLogAlias, AuditLogColumnAlias]("store"),
 		),
-		Id:             idCol,
-		Action:         actionCol,
-		EntityType:     entityTypeCol,
-		EntityId:       entityIdCol,
-		Tags:           tagsCol,
-		RelatedIds:     relatedIdsCol,
-		Severity:       severityCol,
-		AffectedLevels: affectedLevelsCol,
-		DbCreatedAt:    dbCreatedAtCol,
-		DbUpdatedAt:    dbUpdatedAtCol,
+		CreateActionCreateAction: createActionCreateActionCol,
+		DeleteActionDeleteAction: deleteActionDeleteActionCol,
+		DetailCase:               detailCaseCol,
+		Id:                       idCol,
+		Action:                   actionCol,
+		EntityType:               entityTypeCol,
+		EntityId:                 entityIdCol,
+		Tags:                     tagsCol,
+		RelatedIds:               relatedIdsCol,
+		Severity:                 severityCol,
+		AffectedLevels:           affectedLevelsCol,
+		DbCreatedAt:              dbCreatedAtCol,
+		DbUpdatedAt:              dbUpdatedAtCol,
 	}
 }()
 

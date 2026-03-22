@@ -1052,6 +1052,103 @@ func (x *UserSettings) GetTheme() *ThemeConfig {
 	return nil
 }
 
+// Oneof variant messages for testing embedded oneof in ratel tables
+type AuditCreateAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	CreatedName   string                 `protobuf:"bytes,1,opt,name=created_name,json=createdName,proto3" json:"created_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditCreateAction) Reset() {
+	*x = AuditCreateAction{}
+	mi := &file_examples_proto_store_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditCreateAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditCreateAction) ProtoMessage() {}
+
+func (x *AuditCreateAction) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditCreateAction.ProtoReflect.Descriptor instead.
+func (*AuditCreateAction) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *AuditCreateAction) GetCreatedName() string {
+	if x != nil {
+		return x.CreatedName
+	}
+	return ""
+}
+
+type AuditDeleteAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	DeletedId     int64                  `protobuf:"varint,1,opt,name=deleted_id,json=deletedId,proto3" json:"deleted_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuditDeleteAction) Reset() {
+	*x = AuditDeleteAction{}
+	mi := &file_examples_proto_store_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditDeleteAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditDeleteAction) ProtoMessage() {}
+
+func (x *AuditDeleteAction) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditDeleteAction.ProtoReflect.Descriptor instead.
+func (*AuditDeleteAction) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *AuditDeleteAction) GetDeletedId() int64 {
+	if x != nil {
+		return x.DeletedId
+	}
+	return 0
+}
+
+func (x *AuditDeleteAction) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLog struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
@@ -1066,13 +1163,20 @@ type AuditLog struct {
 	Severity AuditSeverity `protobuf:"varint,7,opt,name=severity,proto3,enum=store.AuditSeverity" json:"severity,omitempty"`
 	// repeated enum field → TEXT[] in PostgreSQL, scanner should use []string
 	AffectedLevels []AuditSeverity `protobuf:"varint,8,rep,packed,name=affected_levels,json=affectedLevels,proto3,enum=store.AuditSeverity" json:"affected_levels,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// oneof embed — variants serialized into scanner
+	//
+	// Types that are valid to be assigned to Detail:
+	//
+	//	*AuditLog_CreateAction
+	//	*AuditLog_DeleteAction
+	Detail        isAuditLog_Detail `protobuf_oneof:"detail"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *AuditLog) Reset() {
 	*x = AuditLog{}
-	mi := &file_examples_proto_store_proto_msgTypes[13]
+	mi := &file_examples_proto_store_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1084,7 +1188,7 @@ func (x *AuditLog) String() string {
 func (*AuditLog) ProtoMessage() {}
 
 func (x *AuditLog) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[13]
+	mi := &file_examples_proto_store_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1097,7 +1201,7 @@ func (x *AuditLog) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuditLog.ProtoReflect.Descriptor instead.
 func (*AuditLog) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{13}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *AuditLog) GetId() int64 {
@@ -1156,6 +1260,47 @@ func (x *AuditLog) GetAffectedLevels() []AuditSeverity {
 	return nil
 }
 
+func (x *AuditLog) GetDetail() isAuditLog_Detail {
+	if x != nil {
+		return x.Detail
+	}
+	return nil
+}
+
+func (x *AuditLog) GetCreateAction() *AuditCreateAction {
+	if x != nil {
+		if x, ok := x.Detail.(*AuditLog_CreateAction); ok {
+			return x.CreateAction
+		}
+	}
+	return nil
+}
+
+func (x *AuditLog) GetDeleteAction() *AuditDeleteAction {
+	if x != nil {
+		if x, ok := x.Detail.(*AuditLog_DeleteAction); ok {
+			return x.DeleteAction
+		}
+	}
+	return nil
+}
+
+type isAuditLog_Detail interface {
+	isAuditLog_Detail()
+}
+
+type AuditLog_CreateAction struct {
+	CreateAction *AuditCreateAction `protobuf:"bytes,10,opt,name=create_action,json=createAction,proto3,oneof"`
+}
+
+type AuditLog_DeleteAction struct {
+	DeleteAction *AuditDeleteAction `protobuf:"bytes,11,opt,name=delete_action,json=deleteAction,proto3,oneof"`
+}
+
+func (*AuditLog_CreateAction) isAuditLog_Detail() {}
+
+func (*AuditLog_DeleteAction) isAuditLog_Detail() {}
+
 // Тест: serialize = true на message поле ВНУТРИ embedded struct
 type AppearanceSettings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1167,7 +1312,7 @@ type AppearanceSettings struct {
 
 func (x *AppearanceSettings) Reset() {
 	*x = AppearanceSettings{}
-	mi := &file_examples_proto_store_proto_msgTypes[14]
+	mi := &file_examples_proto_store_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1179,7 +1324,7 @@ func (x *AppearanceSettings) String() string {
 func (*AppearanceSettings) ProtoMessage() {}
 
 func (x *AppearanceSettings) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[14]
+	mi := &file_examples_proto_store_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1192,7 +1337,7 @@ func (x *AppearanceSettings) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppearanceSettings.ProtoReflect.Descriptor instead.
 func (*AppearanceSettings) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{14}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AppearanceSettings) GetSelectedTheme() *ThemeConfig {
@@ -1221,7 +1366,7 @@ type UserPreferences struct {
 
 func (x *UserPreferences) Reset() {
 	*x = UserPreferences{}
-	mi := &file_examples_proto_store_proto_msgTypes[15]
+	mi := &file_examples_proto_store_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1233,7 +1378,7 @@ func (x *UserPreferences) String() string {
 func (*UserPreferences) ProtoMessage() {}
 
 func (x *UserPreferences) ProtoReflect() protoreflect.Message {
-	mi := &file_examples_proto_store_proto_msgTypes[15]
+	mi := &file_examples_proto_store_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1246,7 +1391,7 @@ func (x *UserPreferences) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserPreferences.ProtoReflect.Descriptor instead.
 func (*UserPreferences) Descriptor() ([]byte, []int) {
-	return file_examples_proto_store_proto_rawDescGZIP(), []int{15}
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *UserPreferences) GetId() int64 {
@@ -1391,7 +1536,13 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\fUserSettings\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x123\n" +
 	"\auser_id\x18\x02 \x01(\x03B\x1a\x9a\xb5\x18\x16\x12\x142\x05users:\x02id@\x01R\x05storeR\x06userId\x120\n" +
-	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\"\x8f\x03\n" +
+	"\x05theme\x18\x03 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\x05theme:\"\x92\xb5\x18\x18\b\x01\x12\ruser_settingsB\x05store\x82\xa6\x1d\x02\b\x01\">\n" +
+	"\x11AuditCreateAction\x12!\n" +
+	"\fcreated_name\x18\x01 \x01(\tR\vcreatedName:\x06\x82\xa6\x1d\x02\b\x01\"R\n" +
+	"\x11AuditDeleteAction\x12\x1d\n" +
+	"\n" +
+	"deleted_id\x18\x01 \x01(\x03R\tdeletedId\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason:\x06\x82\xa6\x1d\x02\b\x01\"\xb3\x04\n" +
 	"\bAuditLog\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12\x1f\n" +
@@ -1402,10 +1553,14 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\vrelated_ids\x18\x06 \x03(\x03R\n" +
 	"relatedIds\x120\n" +
 	"\bseverity\x18\a \x01(\x0e2\x14.store.AuditSeverityR\bseverity\x12=\n" +
-	"\x0faffected_levels\x18\b \x03(\x0e2\x14.store.AuditSeverityR\x0eaffectedLevels:m\x92\xb5\x18c\b\x01\x12\n" +
+	"\x0faffected_levels\x18\b \x03(\x0e2\x14.store.AuditSeverityR\x0eaffectedLevels\x12G\n" +
+	"\rcreate_action\x18\n" +
+	" \x01(\v2\x18.store.AuditCreateActionB\x06\x82\xa6\x1d\x02\x10\x01H\x00R\fcreateAction\x12G\n" +
+	"\rdelete_action\x18\v \x01(\v2\x18.store.AuditDeleteActionB\x06\x82\xa6\x1d\x02\x10\x01H\x00R\fdeleteAction:m\x92\xb5\x18c\b\x01\x12\n" +
 	"audit_logs\x1a%\n" +
 	"\rdb_created_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()\x1a%\n" +
-	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01\"\xa2\x01\n" +
+	"\rdb_updated_at\x12\vTIMESTAMPTZ\x1a\a\x1a\x05now()B\x05store\x82\xa6\x1d\x02\b\x01B\x10\n" +
+	"\x06detail\x12\x06\x82\xb5\x18\x02\b\x01\"\xa2\x01\n" +
 	"\x12AppearanceSettings\x12A\n" +
 	"\x0eselected_theme\x18\x01 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\rselectedTheme\x12A\n" +
 	"\x0efallback_theme\x18\x02 \x01(\v2\x12.store.ThemeConfigB\x06\x82\xa6\x1d\x02\x10\x01R\rfallbackTheme:\x06\x82\xa6\x1d\x02\b\x01\"\xae\x01\n" +
@@ -1435,7 +1590,7 @@ func file_examples_proto_store_proto_rawDescGZIP() []byte {
 }
 
 var file_examples_proto_store_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_examples_proto_store_proto_goTypes = []any{
 	(AuditSeverity)(0),            // 0: store.AuditSeverity
 	(*EntityID)(nil),              // 1: store.EntityID
@@ -1451,27 +1606,29 @@ var file_examples_proto_store_proto_goTypes = []any{
 	(*OrderItem)(nil),             // 11: store.OrderItem
 	(*ThemeConfig)(nil),           // 12: store.ThemeConfig
 	(*UserSettings)(nil),          // 13: store.UserSettings
-	(*AuditLog)(nil),              // 14: store.AuditLog
-	(*AppearanceSettings)(nil),    // 15: store.AppearanceSettings
-	(*UserPreferences)(nil),       // 16: store.UserPreferences
-	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
-	(*wrapperspb.Int64Value)(nil), // 18: google.protobuf.Int64Value
+	(*AuditCreateAction)(nil),     // 14: store.AuditCreateAction
+	(*AuditDeleteAction)(nil),     // 15: store.AuditDeleteAction
+	(*AuditLog)(nil),              // 16: store.AuditLog
+	(*AppearanceSettings)(nil),    // 17: store.AppearanceSettings
+	(*UserPreferences)(nil),       // 18: store.UserPreferences
+	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil), // 20: google.protobuf.Int64Value
 }
 var file_examples_proto_store_proto_depIdxs = []int32{
-	17, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
-	17, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
+	19, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
+	19, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 2: store.BaseEntity.id:type_name -> store.EntityID
 	2,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
 	3,  // 4: store.User.base:type_name -> store.BaseEntity
-	17, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
-	17, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
+	19, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
+	19, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
 	10, // 7: store.User.orders:type_name -> store.Order
 	6,  // 8: store.User.profile:type_name -> store.Profile
 	3,  // 9: store.Profile.base:type_name -> store.BaseEntity
 	1,  // 10: store.Profile.user_id:type_name -> store.EntityID
 	5,  // 11: store.Profile.user:type_name -> store.User
 	3,  // 12: store.Category.base:type_name -> store.BaseEntity
-	18, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	20, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
 	3,  // 14: store.Tag.base:type_name -> store.BaseEntity
 	3,  // 15: store.Product.base:type_name -> store.BaseEntity
 	7,  // 16: store.Product.categories:type_name -> store.Category
@@ -1488,14 +1645,16 @@ var file_examples_proto_store_proto_depIdxs = []int32{
 	12, // 27: store.UserSettings.theme:type_name -> store.ThemeConfig
 	0,  // 28: store.AuditLog.severity:type_name -> store.AuditSeverity
 	0,  // 29: store.AuditLog.affected_levels:type_name -> store.AuditSeverity
-	12, // 30: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
-	12, // 31: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
-	15, // 32: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
-	33, // [33:33] is the sub-list for method output_type
-	33, // [33:33] is the sub-list for method input_type
-	33, // [33:33] is the sub-list for extension type_name
-	33, // [33:33] is the sub-list for extension extendee
-	0,  // [0:33] is the sub-list for field type_name
+	14, // 30: store.AuditLog.create_action:type_name -> store.AuditCreateAction
+	15, // 31: store.AuditLog.delete_action:type_name -> store.AuditDeleteAction
+	12, // 32: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
+	12, // 33: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
+	17, // 34: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
+	35, // [35:35] is the sub-list for method output_type
+	35, // [35:35] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
@@ -1504,13 +1663,17 @@ func file_examples_proto_store_proto_init() {
 		return
 	}
 	file_examples_proto_store_proto_msgTypes[4].OneofWrappers = []any{}
+	file_examples_proto_store_proto_msgTypes[15].OneofWrappers = []any{
+		(*AuditLog_CreateAction)(nil),
+		(*AuditLog_DeleteAction)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_examples_proto_store_proto_rawDesc), len(file_examples_proto_store_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   16,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

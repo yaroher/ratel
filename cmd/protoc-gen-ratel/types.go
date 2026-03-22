@@ -518,7 +518,7 @@ func getVirtualSchemaColumnType(col *RatelColumn, msgName string) string {
 
 // columnConstName returns the Go constant name for a column (works for both regular and virtual).
 func columnConstName(col *RatelColumn, msgName string) string {
-	if col.IsVirtual {
+	if col.IsVirtual || col.Field == nil {
 		return msgName + "Column" + strcase.ToCamel(col.SQLName)
 	}
 	return msgName + "Column" + strcase.ToCamel(string(col.Field.Desc.Name()))

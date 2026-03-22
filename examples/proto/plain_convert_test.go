@@ -222,3 +222,83 @@ func TestIntoPbRepeatedEnumFromString(t *testing.T) {
 		t.Errorf("AffectedLevels[1] = %v, want HIGH", pb.AffectedLevels[1])
 	}
 }
+
+// TestIntoPlainOneofSerializedCreateAction verifies oneof serialized variant → []byte in IntoPlain.
+func TestIntoPlainOneofSerializedCreateAction(t *testing.T) {
+	pb := &AuditLog{
+		Id:     1,
+		Action: "create",
+		Detail: &AuditLog_CreateAction{
+			CreateAction: &AuditCreateAction{CreatedName: "test-entity"},
+		},
+	}
+	plain := pb.IntoPlain()
+
+	if len(plain.CreateActionCreateAction) == 0 {
+		t.Fatal("CreateActionCreateAction should be non-empty bytes")
+	}
+	if len(plain.DeleteActionDeleteAction) != 0 {
+		t.Error("DeleteActionDeleteAction should be empty for create variant")
+	}
+	if plain.DetailCase != "create_action" {
+		t.Errorf("DetailCase = %q, want create_action", plain.DetailCase)
+	}
+
+	// Roundtrip: verify deserialization back
+	pb2 := plain.IntoPb()
+	if pb2.GetCreateAction() == nil {
+		t.Fatal("IntoPb().GetCreateAction() should not be nil")
+	}
+	if pb2.GetCreateAction().CreatedName != "test-entity" {
+		t.Errorf("roundtrip CreatedName = %q, want test-entity", pb2.GetCreateAction().CreatedName)
+	}
+}
+
+// TestIntoPlainOneofSerializedDeleteAction verifies the other oneof variant.
+func TestIntoPlainOneofSerializedDeleteAction(t *testing.T) {
+	pb := &AuditLog{
+		Id:     2,
+		Action: "delete",
+		Detail: &AuditLog_DeleteAction{
+			DeleteAction: &AuditDeleteAction{DeletedId: 42, Reason: "expired"},
+		},
+	}
+	plain := pb.IntoPlain()
+
+	if len(plain.DeleteActionDeleteAction) == 0 {
+		t.Fatal("DeleteActionDeleteAction should be non-empty bytes")
+	}
+	if len(plain.CreateActionCreateAction) != 0 {
+		t.Error("CreateActionCreateAction should be empty for delete variant")
+	}
+	if plain.DetailCase != "delete_action" {
+		t.Errorf("DetailCase = %q, want delete_action", plain.DetailCase)
+	}
+
+	pb2 := plain.IntoPb()
+	if pb2.GetDeleteAction() == nil {
+		t.Fatal("IntoPb().GetDeleteAction() should not be nil")
+	}
+	if pb2.GetDeleteAction().DeletedId != 42 {
+		t.Errorf("roundtrip DeletedId = %d, want 42", pb2.GetDeleteAction().DeletedId)
+	}
+	if pb2.GetDeleteAction().Reason != "expired" {
+		t.Errorf("roundtrip Reason = %q, want expired", pb2.GetDeleteAction().Reason)
+	}
+}
+
+// TestIntoPlainOneofSerializedEmpty verifies no variant set → empty []byte (not nil).
+func TestIntoPlainOneofSerializedEmpty(t *testing.T) {
+	pb := &AuditLog{Id: 3, Action: "noop"}
+	plain := pb.IntoPlain()
+
+	if plain.CreateActionCreateAction == nil {
+		t.Error("CreateActionCreateAction should be non-nil empty slice, got nil")
+	}
+	if plain.DeleteActionDeleteAction == nil {
+		t.Error("DeleteActionDeleteAction should be non-nil empty slice, got nil")
+	}
+	if plain.DetailCase != "" {
+		t.Errorf("DetailCase should be empty, got %q", plain.DetailCase)
+	}
+}
