@@ -66,6 +66,35 @@ message Product {
 }
 ```
 
+### Enum Types
+
+Protobuf enum fields are stored as `TEXT` in PostgreSQL. Ratel automatically
+converts enum values to their string names for storage and back to enum values
+when reading.
+
+| Proto Type | Scanner Type | SQL Type | Column Constructor |
+|-----------|-------------|----------|-------------------|
+| `enum` | `string` | `TEXT` | `TextColumn` |
+
+```protobuf
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  ORDER_STATUS_NEW = 1;
+  ORDER_STATUS_PAID = 2;
+}
+
+message Order {
+  OrderStatus status = 3;  // → TEXT NOT NULL, Scanner field: string
+}
+```
+
+The generated `IntoPlain()` converts enum to string (`pb.Status.String()`),
+and `IntoPb()` converts back (`OrderStatus_value[p.Status]`).
+Unknown string values map to the zero enum value (typically `UNSPECIFIED`).
+
+No `enum_as_string` annotation is needed — `protoc-gen-ratel` enables this
+automatically for all enum fields in ratel tables.
+
 ### Serial Types
 
 Primary key fields with integer types automatically use serial variants:
