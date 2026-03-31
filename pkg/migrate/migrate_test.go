@@ -161,3 +161,45 @@ func TestMigrateRetryAfterPartialFailure(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, exists, "conflicting_table should exist after successful retry")
 }
+
+// TestMigrateMultipleFS verifies that passing multiple embed.FS (each with its
+// own atlas.sum) works correctly — simulates the komeet-backend pattern where
+// main migrations and outbox migrations are separate packages.
+func TestMigrateMultipleFS(t *testing.T) {
+	if testing.Short() {
+		t.Skip("requires docker")
+	}
+
+	pool, cleanup := setupTestDB(t)
+	defer cleanup()
+
+	lg := zap.NewNop()
+
+	// First FS — main migrations (has its own atlas.sum).
+	mainFS := makeMigrationFS(t, map[string]string{
+		"20260101000000_schema.sql": `CREATE TABLE users (id SERIAL PRIMARY KEY, email TEXT NOT NULL);`,
+	})
+
+	// Second FS — outbox migrations (has its own atlas.sum).
+	outboxFS := makeMigrationFS(t, map[string]string{
+		"20240726143237_outbox.sql": `CREATE TABLE outbox (id UUID PRIMARY KEY, message BYTEA NOT NULL);`,
+	})
+
+	// Single Migrate call with both FS merged — should apply all files.
+	err := Migrate(pool, lg, "", mainFS, outboxFS)
+	require.NoError(t, err, "Migrate with multiple FS should succeed")
+
+	// Verify both tables created.
+	ctx := context.Background()
+	for _, tbl := range []string{"users", "outbox"} {
+		var exists bool
+		err = pool.QueryRow(ctx,
+			`SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)`, tbl).Scan(&exists)
+		require.NoError(t, err)
+		assert.True(t, exists, "table %s should exist", tbl)
+	}
+
+	// Second call — idempotent.
+	err = Migrate(pool, lg, "", mainFS, outboxFS)
+	require.NoError(t, err, "second Migrate with multiple FS should succeed (idempotent)")
+}
