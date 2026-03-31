@@ -68,7 +68,11 @@ func arrtoToPg(s []string) pgtype.Array[string] {
 	if s == nil {
 		return pgtype.Array[string]{}
 	}
-	return pgtype.Array[string]{Elements: s, Valid: true}
+	return pgtype.Array[string]{
+		Elements: s,
+		Dims:     []pgtype.ArrayDimension{{Length: int32(len(s)), LowerBound: 1}},
+		Valid:    true,
+	}
 }
 
 func intToPg(i int) pgtype.Int8 {
