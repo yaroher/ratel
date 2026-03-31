@@ -86,7 +86,7 @@ func TestMigrateIdempotent(t *testing.T) {
 	})
 
 	// First call — should apply the migration.
-	err := Migrate(pool, lg, migrations)
+	err := Migrate(pool, lg, "", migrations)
 	require.NoError(t, err, "first Migrate call should succeed")
 
 	// Verify table was created.
@@ -97,7 +97,7 @@ func TestMigrateIdempotent(t *testing.T) {
 	require.True(t, exists, "test_users table should exist after first migration")
 
 	// Second call — should be idempotent (no pending files).
-	err = Migrate(pool, lg, migrations)
+	err = Migrate(pool, lg, "", migrations)
 	require.NoError(t, err, "second Migrate call should succeed (idempotent)")
 }
 
@@ -129,7 +129,7 @@ func TestMigrateRetryAfterPartialFailure(t *testing.T) {
 	})
 
 	// First call — should fail on the third statement.
-	err = Migrate(pool, lg, migrations)
+	err = Migrate(pool, lg, "", migrations)
 	require.Error(t, err, "first Migrate should fail due to conflict")
 	assert.Contains(t, err.Error(), "conflicting_table")
 
@@ -150,7 +150,7 @@ func TestMigrateRetryAfterPartialFailure(t *testing.T) {
 	// Before the fix, this panicked: "index out of range [0] with length 0"
 	// because PartialHashes was NULL in the database.
 	require.NotPanics(t, func() {
-		err = Migrate(pool, lg, migrations)
+		err = Migrate(pool, lg, "", migrations)
 	}, "second Migrate should not panic")
 	require.NoError(t, err, "second Migrate should succeed after removing conflict")
 

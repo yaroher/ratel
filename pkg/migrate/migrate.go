@@ -18,8 +18,13 @@ import (
 )
 
 // Migrate Run migration. usual uses in service startup.
-func Migrate(pool *pgxpool.Pool, lg *zap.Logger, migrations ...fs.FS) error {
-	revision, err := atlas.NewRevisionReaderWriter(sqlexec.NewTxExecutor(pool))
+func Migrate(
+	pool *pgxpool.Pool,
+	lg *zap.Logger,
+	schema string,
+	migrations ...fs.FS,
+) error {
+	revision, err := atlas.NewRevisionReaderWriter(sqlexec.NewTxExecutor(pool), schema)
 	if err != nil {
 		return fmt.Errorf("failed to create revision reader writer in AtlasMigrate: %v", err)
 	}

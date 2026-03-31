@@ -3,6 +3,7 @@ package atlas
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -12,56 +13,6 @@ import (
 
 	"ariga.io/atlas/sql/migrate"
 	"github.com/jackc/pgx/v5/pgtype"
-)
-
-const (
-	createTableSQL = `CREATE TABLE IF NOT EXISTS atlas_migrations (
-		version TEXT NOT NULL PRIMARY KEY,
-		description TEXT NOT NULL,
-		type BIGINT NOT NULL,
-		applied BIGINT NOT NULL,
-		total BIGINT NOT NULL,
-		executed_at TIMESTAMPTZ NOT NULL,
-		execution_time BIGINT NOT NULL,
-		error TEXT NOT NULL,
-		error_stmt TEXT NOT NULL,
-		hash TEXT NOT NULL,
-		partial_hashes TEXT[] DEFAULT '{}',
-		operator_version TEXT NOT NULL
-	)`
-
-	selectAllRevisionsSQL = `SELECT 
-		version, description, type, applied, total, 
-		executed_at, execution_time, error, error_stmt, 
-		hash, partial_hashes, operator_version 
-	FROM atlas_migrations`
-
-	selectRevisionByVersionSQL = `SELECT 
-		version, description, type, applied, total, 
-		executed_at, execution_time, error, error_stmt, 
-		hash, partial_hashes, operator_version 
-	FROM atlas_migrations 
-	WHERE version = $1`
-
-	upsertRevisionSQL = `INSERT INTO atlas_migrations (
-		version, description, type, applied, total, 
-		executed_at, execution_time, error, error_stmt, 
-		hash, partial_hashes, operator_version
-	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-	ON CONFLICT (version) DO UPDATE SET
-		description = EXCLUDED.description,
-		type = EXCLUDED.type,
-		applied = EXCLUDED.applied,
-		total = EXCLUDED.total,
-		executed_at = EXCLUDED.executed_at,
-		execution_time = EXCLUDED.execution_time,
-		error = EXCLUDED.error,
-		error_stmt = EXCLUDED.error_stmt,
-		hash = EXCLUDED.hash,
-		partial_hashes = EXCLUDED.partial_hashes,
-		operator_version = EXCLUDED.operator_version`
-
-	deleteRevisionSQL = `DELETE FROM atlas_migrations WHERE version = $1`
 )
 
 func arrtoToPg(s []string) pgtype.Array[string] {
@@ -128,33 +79,94 @@ func revisionToDb(r *migrate.Revision) *Revision {
 	}
 }
 
-const (
-	migrationsTableName = "atlas_migrations"
-	publicSchema        = "public"
-)
+const migrationsTableName = "atlas_migrations"
+
+// revisionSQL holds schema-qualified SQL statements for a specific schema.
+type revisionSQL struct {
+	schema          string
+	createTable     string
+	selectAll       string
+	selectByVersion string
+	upsert          string
+	deleteByVersion string
+}
+
+func newRevisionSQL(schema string) revisionSQL {
+	table := fmt.Sprintf("%q.%q", schema, migrationsTableName)
+	return revisionSQL{
+		schema: schema,
+		createTable: fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+		version TEXT NOT NULL PRIMARY KEY,
+		description TEXT NOT NULL,
+		type BIGINT NOT NULL,
+		applied BIGINT NOT NULL,
+		total BIGINT NOT NULL,
+		executed_at TIMESTAMPTZ NOT NULL,
+		execution_time BIGINT NOT NULL,
+		error TEXT NOT NULL,
+		error_stmt TEXT NOT NULL,
+		hash TEXT NOT NULL,
+		partial_hashes TEXT[] DEFAULT '{}',
+		operator_version TEXT NOT NULL
+	)`, table),
+		selectAll: fmt.Sprintf(`SELECT
+		version, description, type, applied, total,
+		executed_at, execution_time, error, error_stmt,
+		hash, partial_hashes, operator_version
+	FROM %s`, table),
+		selectByVersion: fmt.Sprintf(`SELECT
+		version, description, type, applied, total,
+		executed_at, execution_time, error, error_stmt,
+		hash, partial_hashes, operator_version
+	FROM %s
+	WHERE version = $1`, table),
+		upsert: fmt.Sprintf(`INSERT INTO %s (
+		version, description, type, applied, total,
+		executed_at, execution_time, error, error_stmt,
+		hash, partial_hashes, operator_version
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	ON CONFLICT (version) DO UPDATE SET
+		description = EXCLUDED.description,
+		type = EXCLUDED.type,
+		applied = EXCLUDED.applied,
+		total = EXCLUDED.total,
+		executed_at = EXCLUDED.executed_at,
+		execution_time = EXCLUDED.execution_time,
+		error = EXCLUDED.error,
+		error_stmt = EXCLUDED.error_stmt,
+		hash = EXCLUDED.hash,
+		partial_hashes = EXCLUDED.partial_hashes,
+		operator_version = EXCLUDED.operator_version`, table),
+		deleteByVersion: fmt.Sprintf(`DELETE FROM %s WHERE version = $1`, table),
+	}
+}
 
 type RevisionReaderWriter struct {
 	exec sqlexec.Executor
+	sql  revisionSQL
 }
 
-func NewRevisionReaderWriter(exec sqlexec.Executor) (*RevisionReaderWriter, error) {
-	_, err := exec.Exec(context.Background(), createTableSQL)
+func NewRevisionReaderWriter(exec sqlexec.Executor, schema string) (*RevisionReaderWriter, error) {
+	s := "public"
+	if schema != "" {
+		s = schema
+	}
+	sq := newRevisionSQL(s)
+	_, err := exec.Exec(context.Background(), sq.createTable)
 	if err != nil {
 		return nil, err
 	}
-	return &RevisionReaderWriter{
-		exec: exec,
-	}, nil
+	return &RevisionReaderWriter{exec: exec, sql: sq}, nil
 }
 
 func (r *RevisionReaderWriter) Ident() *migrate.TableIdent {
 	return &migrate.TableIdent{
-		Name: migrationsTableName, Schema: publicSchema,
+		Name: migrationsTableName, Schema: r.sql.schema,
 	}
 }
 
 func (r *RevisionReaderWriter) ReadRevisions(ctx context.Context) ([]*migrate.Revision, error) {
-	rows, err := r.exec.Query(ctx, selectAllRevisionsSQL)
+	rows, err := r.exec.Query(ctx, r.sql.selectAll)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +185,7 @@ func (r *RevisionReaderWriter) ReadRevisions(ctx context.Context) ([]*migrate.Re
 }
 
 func (r *RevisionReaderWriter) ReadRevision(ctx context.Context, version string) (*migrate.Revision, error) {
-	rows, err := r.exec.Query(ctx, selectRevisionByVersionSQL, version)
+	rows, err := r.exec.Query(ctx, r.sql.selectByVersion, version)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +203,7 @@ func (r *RevisionReaderWriter) ReadRevision(ctx context.Context, version string)
 
 func (r *RevisionReaderWriter) WriteRevision(ctx context.Context, revision *migrate.Revision) error {
 	rev := revisionToDb(revision)
-	_, err := r.exec.Exec(ctx, upsertRevisionSQL,
+	_, err := r.exec.Exec(ctx, r.sql.upsert,
 		rev.Version,
 		rev.Description,
 		rev.Type,
@@ -209,6 +221,6 @@ func (r *RevisionReaderWriter) WriteRevision(ctx context.Context, revision *migr
 }
 
 func (r *RevisionReaderWriter) DeleteRevision(ctx context.Context, version string) error {
-	_, err := r.exec.Exec(ctx, deleteRevisionSQL, version)
+	_, err := r.exec.Exec(ctx, r.sql.deleteByVersion, version)
 	return err
 }

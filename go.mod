@@ -3,7 +3,7 @@ module github.com/yaroher/ratel
 go 1.25.5
 
 require (
-	ariga.io/atlas v0.37.0
+	ariga.io/atlas v1.0.0
 	github.com/avito-tech/go-transaction-manager v1.5.1
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
