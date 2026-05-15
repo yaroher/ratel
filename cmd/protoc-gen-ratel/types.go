@@ -54,6 +54,9 @@ func isWrapperType(field *protogen.Field) bool {
 // isFieldNullable determines if a column should be nullable.
 // Sources: wrapper type (e.g. StringValue), proto3 optional keyword.
 func isFieldNullable(col *RatelColumn) bool {
+	if col.IsOneofVariant {
+		return true
+	}
 	return isWrapperType(col.Field) || col.Field.Desc.HasOptionalKeyword()
 }
 

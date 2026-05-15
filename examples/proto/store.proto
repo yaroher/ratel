@@ -526,3 +526,73 @@ message UserPreferences {
   // embed с serialize полями внутри
   AppearanceSettings appearance = 3 [(goplain.field).embed = true];
 }
+
+// ============================================================================
+// Тест: oneof embed внутри embedded message + mixed FK/serialize variants
+//   Шаблон: ссылка на предзаготовку ИЛИ inline-значение
+// ============================================================================
+message StencilId {
+  option (goplain.message) = {
+    generate: true
+    type_alias: true
+  };
+  string value = 1;
+}
+
+message Stencil {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "stencils"
+    schema: "store"
+  };
+
+  StencilId id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+
+  string title = 2;
+}
+
+message InlineShape {
+  option (goplain.message).generate = true;
+
+  string outline = 1;
+  int32 size = 2;
+}
+
+// Mixed oneof: FK type-alias variant + serialize variant
+message ShapeOrStencil {
+  option (goplain.message).generate = true;
+
+  oneof shape_variant {
+    option (goplain.oneof).embed = true;
+    StencilId stencil_id = 10 [(ratel.column) = {
+      constraints: {
+        references_table: "stencils"
+        references_column: "id"
+        references_schema: "store"
+        on_delete: RESTRICT
+      }
+    }];
+    InlineShape inline = 11 [(goplain.field).serialize = true];
+  }
+}
+
+message Drawing {
+  option (goplain.message).generate = true;
+  option (ratel.table) = {
+    generate: true
+    table_name: "drawings"
+    schema: "store"
+  };
+
+  int64 id = 1 [(ratel.column) = {
+    constraints: { primary_key: true }
+  }];
+
+  string label = 2;
+
+  // embed with oneof inside — FK variant + serialize variant
+  ShapeOrStencil shape = 3 [(goplain.field).embed = true];
+}

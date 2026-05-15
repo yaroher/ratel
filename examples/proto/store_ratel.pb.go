@@ -2028,6 +2028,238 @@ var UserPreferencesConverter = repository.Converter[*UserPreferencesScanner, *Us
 	ToProto:   (*UserPreferencesScanner).IntoPb,
 }
 
+// StencilAlias is the table alias type for the stencils table
+type StencilAlias string
+
+func (a StencilAlias) String() string { return string(a) }
+
+const StencilAliasName StencilAlias = "stencils"
+
+// StencilColumnAlias represents column names for the stencils table
+type StencilColumnAlias string
+
+func (c StencilColumnAlias) String() string { return string(c) }
+
+const (
+	StencilColumnId    StencilColumnAlias = "id"
+	StencilColumnTitle StencilColumnAlias = "title"
+)
+
+func (s *StencilScanner) GetTarget(col string) func() any {
+	switch StencilColumnAlias(col) {
+	case StencilColumnId:
+		return func() any { return &s.Id }
+	case StencilColumnTitle:
+		return func() any { return &s.Title }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *StencilScanner) GetSetter(f StencilColumnAlias) func() set.ValueSetter[StencilColumnAlias] {
+	switch f {
+	case StencilColumnId:
+		return func() set.ValueSetter[StencilColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case StencilColumnTitle:
+		return func() set.ValueSetter[StencilColumnAlias] { return set.NewSetter(f, &s.Title) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *StencilScanner) GetValue(f StencilColumnAlias) func() any {
+	switch f {
+	case StencilColumnId:
+		return func() any { return s.Id }
+	case StencilColumnTitle:
+		return func() any { return s.Title }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *StencilScanner) AllSetters() []set.ValueSetter[StencilColumnAlias] {
+	return []set.ValueSetter[StencilColumnAlias]{
+		set.NewSetter[StencilColumnAlias](StencilColumnId, s.Id),
+		set.NewSetter[StencilColumnAlias](StencilColumnTitle, s.Title),
+	}
+}
+
+// Relations returns the relation loaders for the stencils table
+func (s *StencilScanner) Relations() []exec.RelationLoader[*StencilScanner] {
+	return nil
+}
+
+// StencilsTable represents the stencils table with its columns
+type StencilsTable struct {
+	*schema.Table[StencilAlias, StencilColumnAlias, *StencilScanner]
+	Id    schema.TextColumnI[StencilColumnAlias]
+	Title schema.TextColumnI[StencilColumnAlias]
+}
+
+// Stencils is the global stencils table instance
+var Stencils = func() StencilsTable {
+	idCol := schema.TextColumn(StencilColumnId, ddl.WithPrimaryKey[StencilColumnAlias]())
+	titleCol := schema.TextColumn(StencilColumnTitle, ddl.WithNotNull[StencilColumnAlias]())
+
+	return StencilsTable{
+		Table: schema.NewTable[StencilAlias, StencilColumnAlias, *StencilScanner](
+			StencilAliasName,
+			func() *StencilScanner { return &StencilScanner{} },
+			[]*ddl.ColumnDDL[StencilColumnAlias]{
+				idCol.DDL(),
+				titleCol.DDL(),
+			},
+			ddl.WithSchema[StencilAlias, StencilColumnAlias]("store"),
+		),
+		Id:    idCol,
+		Title: titleCol,
+	}
+}()
+
+// StencilsRef is a reference to the stencils table for relations
+var StencilsRef schema.RelationTableAlias[StencilAlias] = Stencils.Table
+
+// StencilConverter provides conversion between Stencil and StencilScanner
+var StencilConverter = repository.Converter[*StencilScanner, *Stencil]{
+	ToScanner: (*Stencil).IntoPlain,
+	ToProto:   (*StencilScanner).IntoPb,
+}
+
+// DrawingAlias is the table alias type for the drawings table
+type DrawingAlias string
+
+func (a DrawingAlias) String() string { return string(a) }
+
+const DrawingAliasName DrawingAlias = "drawings"
+
+// DrawingColumnAlias represents column names for the drawings table
+type DrawingColumnAlias string
+
+func (c DrawingColumnAlias) String() string { return string(c) }
+
+const (
+	DrawingColumnId               DrawingColumnAlias = "id"
+	DrawingColumnLabel            DrawingColumnAlias = "label"
+	DrawingColumnStencilId        DrawingColumnAlias = "stencil_id_stencil_id"
+	DrawingColumnInlineInline     DrawingColumnAlias = "inline_inline"
+	DrawingColumnShapeVariantCase DrawingColumnAlias = "shape_variant_case"
+)
+
+func (s *DrawingScanner) GetTarget(col string) func() any {
+	switch DrawingColumnAlias(col) {
+	case DrawingColumnId:
+		return func() any { return &s.Id }
+	case DrawingColumnLabel:
+		return func() any { return &s.Label }
+	case DrawingColumnStencilId:
+		return func() any { return &s.StencilIdStencilId }
+	case DrawingColumnInlineInline:
+		return func() any { return &s.InlineInline }
+	case DrawingColumnShapeVariantCase:
+		return func() any { return &s.ShapeVariantCase }
+	default:
+		panic("unknown field: " + col)
+	}
+}
+
+func (s *DrawingScanner) GetSetter(f DrawingColumnAlias) func() set.ValueSetter[DrawingColumnAlias] {
+	switch f {
+	case DrawingColumnId:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.Id) }
+	case DrawingColumnLabel:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.Label) }
+	case DrawingColumnStencilId:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.StencilIdStencilId) }
+	case DrawingColumnInlineInline:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.InlineInline) }
+	case DrawingColumnShapeVariantCase:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.ShapeVariantCase) }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *DrawingScanner) GetValue(f DrawingColumnAlias) func() any {
+	switch f {
+	case DrawingColumnId:
+		return func() any { return s.Id }
+	case DrawingColumnLabel:
+		return func() any { return s.Label }
+	case DrawingColumnStencilId:
+		return func() any { return s.StencilIdStencilId }
+	case DrawingColumnInlineInline:
+		return func() any { return s.InlineInline }
+	case DrawingColumnShapeVariantCase:
+		return func() any { return s.ShapeVariantCase }
+	default:
+		panic("unknown field: " + string(f))
+	}
+}
+
+func (s *DrawingScanner) AllSetters() []set.ValueSetter[DrawingColumnAlias] {
+	return []set.ValueSetter[DrawingColumnAlias]{
+		set.NewSetter[DrawingColumnAlias](DrawingColumnId, s.Id),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnLabel, s.Label),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnStencilId, s.StencilIdStencilId),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnInlineInline, s.InlineInline),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnShapeVariantCase, s.ShapeVariantCase),
+	}
+}
+
+// Relations returns the relation loaders for the drawings table
+func (s *DrawingScanner) Relations() []exec.RelationLoader[*DrawingScanner] {
+	return nil
+}
+
+// DrawingsTable represents the drawings table with its columns
+type DrawingsTable struct {
+	*schema.Table[DrawingAlias, DrawingColumnAlias, *DrawingScanner]
+	Id                 schema.BigSerialColumnI[DrawingColumnAlias]
+	Label              schema.TextColumnI[DrawingColumnAlias]
+	StencilIdStencilId schema.NullTextColumnI[DrawingColumnAlias]
+	InlineInline       schema.NullJSONBColumnI[DrawingColumnAlias]
+	ShapeVariantCase   schema.TextColumnI[DrawingColumnAlias]
+}
+
+// Drawings is the global drawings table instance
+var Drawings = func() DrawingsTable {
+	idCol := schema.BigSerialColumn(DrawingColumnId, ddl.WithPrimaryKey[DrawingColumnAlias]())
+	labelCol := schema.TextColumn(DrawingColumnLabel, ddl.WithNotNull[DrawingColumnAlias]())
+	stencilIdStencilIdCol := schema.NullTextColumn(DrawingColumnStencilId, ddl.WithReferences[DrawingColumnAlias]("\"store\".\"stencils\"", "id"), ddl.WithOnDelete[DrawingColumnAlias]("RESTRICT"))
+	inlineInlineCol := schema.NullJSONBColumn(DrawingColumnInlineInline)
+	shapeVariantCaseCol := schema.TextColumn(DrawingColumnShapeVariantCase, ddl.WithNotNull[DrawingColumnAlias]())
+
+	return DrawingsTable{
+		Table: schema.NewTable[DrawingAlias, DrawingColumnAlias, *DrawingScanner](
+			DrawingAliasName,
+			func() *DrawingScanner { return &DrawingScanner{} },
+			[]*ddl.ColumnDDL[DrawingColumnAlias]{
+				idCol.DDL(),
+				labelCol.DDL(),
+				stencilIdStencilIdCol.DDL(),
+				inlineInlineCol.DDL(),
+				shapeVariantCaseCol.DDL(),
+			},
+			ddl.WithSchema[DrawingAlias, DrawingColumnAlias]("store"),
+		),
+		Id:                 idCol,
+		Label:              labelCol,
+		StencilIdStencilId: stencilIdStencilIdCol,
+		InlineInline:       inlineInlineCol,
+		ShapeVariantCase:   shapeVariantCaseCol,
+	}
+}()
+
+// DrawingsRef is a reference to the drawings table for relations
+var DrawingsRef schema.RelationTableAlias[DrawingAlias] = Drawings.Table
+
+// DrawingConverter provides conversion between Drawing and DrawingScanner
+var DrawingConverter = repository.Converter[*DrawingScanner, *Drawing]{
+	ToScanner: (*Drawing).IntoPlain,
+	ToProto:   (*DrawingScanner).IntoPb,
+}
+
 // ============================================================================
 // User Relations
 // ============================================================================
@@ -2159,6 +2391,8 @@ const (
 	UserSettingsConstraintPkey             = "user_settings_pkey"
 	AuditLogConstraintPkey                 = "audit_logs_pkey"
 	UserPreferencesConstraintPkey          = "user_preferences_pkey"
+	StencilConstraintPkey                  = "stencils_pkey"
+	DrawingConstraintPkey                  = "drawings_pkey"
 )
 
 // ============================================================================
@@ -2188,6 +2422,8 @@ var (
 	ErrUserSettingsPrimaryKey          = errors.New("primary key constraint violated: user_settings_pkey")
 	ErrAuditLogPrimaryKey              = errors.New("primary key constraint violated: audit_logs_pkey")
 	ErrUserPreferencesPrimaryKey       = errors.New("primary key constraint violated: user_preferences_pkey")
+	ErrStencilPrimaryKey               = errors.New("primary key constraint violated: stencils_pkey")
+	ErrDrawingPrimaryKey               = errors.New("primary key constraint violated: drawings_pkey")
 )
 
 // ============================================================================
@@ -2302,4 +2538,14 @@ func IsAuditLogPrimaryKeyError(err error) bool {
 // IsUserPreferencesPrimaryKeyError checks if the error is a primary_key constraint violation on user_preferences
 func IsUserPreferencesPrimaryKeyError(err error) bool {
 	return sqlerr.IsConstraintNamed(err, UserPreferencesConstraintPkey)
+}
+
+// IsStencilPrimaryKeyError checks if the error is a primary_key constraint violation on stencils
+func IsStencilPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, StencilConstraintPkey)
+}
+
+// IsDrawingPrimaryKeyError checks if the error is a primary_key constraint violation on drawings
+func IsDrawingPrimaryKeyError(err error) bool {
+	return sqlerr.IsConstraintNamed(err, DrawingConstraintPkey)
 }

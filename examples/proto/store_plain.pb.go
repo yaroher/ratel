@@ -1140,3 +1140,199 @@ func (p *UserPreferencesScanner) IntoPb() *UserPreferences {
 	}
 	return pb
 }
+
+type StencilScanner struct {
+	Id    string `json:"id"` // origin: type_alias, empath: id
+	Title string `json:"title"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *Stencil) IntoPlain() *StencilScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &StencilScanner{}
+
+	// Id type alias from id
+	if pb.GetId() != nil {
+		p.Id = pb.GetId().GetValue()
+	}
+	p.Title = pb.Title
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *StencilScanner) IntoPb() *Stencil {
+	if p == nil {
+		return nil
+	}
+	pb := &Stencil{}
+
+	// Id type alias -> id
+	if p.Id != "" {
+		pb.Id = &StencilId{Value: p.Id}
+	}
+	pb.Title = p.Title
+	return pb
+}
+
+type InlineShapeScanner struct {
+	Outline string `json:"outline"`
+	Size    int32  `json:"size"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *InlineShape) IntoPlain() *InlineShapeScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &InlineShapeScanner{}
+
+	p.Outline = pb.Outline
+	p.Size = pb.Size
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *InlineShapeScanner) IntoPb() *InlineShape {
+	if p == nil {
+		return nil
+	}
+	pb := &InlineShape{}
+
+	pb.Outline = p.Outline
+	pb.Size = p.Size
+	return pb
+}
+
+// Mixed oneof: FK type-alias variant + serialize variant
+type ShapeOrStencilScanner struct {
+	StencilIdStencilId string `json:"stencilIdStencilId"` // origin: type_alias, empath: stencil_id.stencil_id
+	InlineInline       []byte `json:"inlineInline"`       // origin: serialized, empath: inline.inline
+	// ShapeVariantCase indicates which variant of shape_variant oneof is set
+	ShapeVariantCase string `json:"shape_variant_case,omitempty"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *ShapeOrStencil) IntoPlain() *ShapeOrStencilScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &ShapeOrStencilScanner{}
+
+	// Detect shape_variant oneof case
+	switch pb.ShapeVariant.(type) {
+	case *ShapeOrStencil_StencilId:
+		p.ShapeVariantCase = "stencil_id"
+	case *ShapeOrStencil_Inline:
+		p.ShapeVariantCase = "inline"
+	}
+
+	// StencilIdStencilId type alias from stencil_id.stencil_id
+	if pb.GetStencilId() != nil {
+		p.StencilIdStencilId = pb.GetStencilId().GetValue()
+	}
+	// InlineInline serialized from inline.inline
+	if pb.GetInline() != nil {
+		if data, err := protojson.Marshal(pb.GetInline()); err == nil {
+			p.InlineInline = data
+		}
+	} else {
+		p.InlineInline = []byte{}
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *ShapeOrStencilScanner) IntoPb() *ShapeOrStencil {
+	if p == nil {
+		return nil
+	}
+	pb := &ShapeOrStencil{}
+
+	// StencilIdStencilId type alias -> stencil_id.stencil_id
+	if p.ShapeVariantCase == "stencil_id" {
+		pb.ShapeVariant = &ShapeOrStencil_StencilId{StencilId: &StencilId{Value: p.StencilIdStencilId}}
+	}
+	// InlineInline deserialize -> inline.inline
+	if len(p.InlineInline) > 0 {
+		var msg InlineShape
+		if err := protojson.Unmarshal(p.InlineInline, &msg); err == nil {
+			pb.ShapeVariant = &ShapeOrStencil_Inline{Inline: &msg}
+		}
+	}
+	return pb
+}
+
+type DrawingScanner struct {
+	Id                 int64  `json:"id"`
+	Label              string `json:"label"`
+	StencilIdStencilId string `json:"stencilIdStencilId"` // origin: oneof_embed, empath: stencil_id.stencil_id
+	InlineInline       []byte `json:"inlineInline"`       // origin: serialized, empath: inline.inline
+	// ShapeVariantCase indicates which variant of shape_variant oneof is set
+	ShapeVariantCase string `json:"shape_variant_case,omitempty"`
+}
+
+// IntoPlain converts protobuf message to plain struct
+func (pb *Drawing) IntoPlain() *DrawingScanner {
+	if pb == nil {
+		return nil
+	}
+	p := &DrawingScanner{}
+
+	// Detect shape_variant oneof case
+	switch pb.GetShape().GetShapeVariant().(type) {
+	case *ShapeOrStencil_StencilId:
+		p.ShapeVariantCase = "stencil_id"
+	case *ShapeOrStencil_Inline:
+		p.ShapeVariantCase = "inline"
+	}
+
+	p.Id = pb.Id
+	p.Label = pb.Label
+	// StencilIdStencilId from stencil_id.stencil_id
+	if pb.GetShape() != nil && pb.GetShape().GetStencilId() != nil {
+		p.StencilIdStencilId = pb.GetShape().GetStencilId().GetValue()
+	}
+	// InlineInline serialized from inline.inline
+	if pb.GetShape() != nil && pb.GetShape().GetInline() != nil {
+		if data, err := protojson.Marshal(pb.GetShape().GetInline()); err == nil {
+			p.InlineInline = data
+		}
+	} else {
+		p.InlineInline = []byte{}
+	}
+	return p
+}
+
+// IntoPb converts plain struct to protobuf message
+func (p *DrawingScanner) IntoPb() *Drawing {
+	if p == nil {
+		return nil
+	}
+	pb := &Drawing{}
+
+	pb.Id = p.Id
+	pb.Label = p.Label
+	// StencilIdStencilId -> stencil_id.stencil_id
+	if p.ShapeVariantCase == "stencil_id" {
+		if pb.Shape == nil {
+			pb.Shape = &ShapeOrStencil{}
+		}
+		if _, ok := pb.Shape.ShapeVariant.(*ShapeOrStencil_StencilId); !ok || pb.Shape.ShapeVariant == nil {
+			pb.Shape.ShapeVariant = &ShapeOrStencil_StencilId{StencilId: &StencilId{}}
+		}
+		pb.Shape.ShapeVariant.(*ShapeOrStencil_StencilId).StencilId.Value = p.StencilIdStencilId
+	}
+	// InlineInline deserialize -> inline.inline
+	if len(p.InlineInline) > 0 {
+		var msg InlineShape
+		if err := protojson.Unmarshal(p.InlineInline, &msg); err == nil {
+			if pb.Shape == nil {
+				pb.Shape = &ShapeOrStencil{}
+			}
+			pb.Shape.ShapeVariant = &ShapeOrStencil_Inline{Inline: &msg}
+		}
+	}
+	return pb
+}

@@ -1415,6 +1415,304 @@ func (x *UserPreferences) GetAppearance() *AppearanceSettings {
 	return nil
 }
 
+// ============================================================================
+// Тест: oneof embed внутри embedded message + mixed FK/serialize variants
+//
+//	Шаблон: ссылка на предзаготовку ИЛИ inline-значение
+//
+// ============================================================================
+type StencilId struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StencilId) Reset() {
+	*x = StencilId{}
+	mi := &file_examples_proto_store_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StencilId) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StencilId) ProtoMessage() {}
+
+func (x *StencilId) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StencilId.ProtoReflect.Descriptor instead.
+func (*StencilId) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *StencilId) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type Stencil struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            *StencilId             `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Stencil) Reset() {
+	*x = Stencil{}
+	mi := &file_examples_proto_store_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Stencil) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Stencil) ProtoMessage() {}
+
+func (x *Stencil) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Stencil.ProtoReflect.Descriptor instead.
+func (*Stencil) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *Stencil) GetId() *StencilId {
+	if x != nil {
+		return x.Id
+	}
+	return nil
+}
+
+func (x *Stencil) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+type InlineShape struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Outline       string                 `protobuf:"bytes,1,opt,name=outline,proto3" json:"outline,omitempty"`
+	Size          int32                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InlineShape) Reset() {
+	*x = InlineShape{}
+	mi := &file_examples_proto_store_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InlineShape) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InlineShape) ProtoMessage() {}
+
+func (x *InlineShape) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InlineShape.ProtoReflect.Descriptor instead.
+func (*InlineShape) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *InlineShape) GetOutline() string {
+	if x != nil {
+		return x.Outline
+	}
+	return ""
+}
+
+func (x *InlineShape) GetSize() int32 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+// Mixed oneof: FK type-alias variant + serialize variant
+type ShapeOrStencil struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to ShapeVariant:
+	//
+	//	*ShapeOrStencil_StencilId
+	//	*ShapeOrStencil_Inline
+	ShapeVariant  isShapeOrStencil_ShapeVariant `protobuf_oneof:"shape_variant"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShapeOrStencil) Reset() {
+	*x = ShapeOrStencil{}
+	mi := &file_examples_proto_store_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShapeOrStencil) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShapeOrStencil) ProtoMessage() {}
+
+func (x *ShapeOrStencil) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShapeOrStencil.ProtoReflect.Descriptor instead.
+func (*ShapeOrStencil) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ShapeOrStencil) GetShapeVariant() isShapeOrStencil_ShapeVariant {
+	if x != nil {
+		return x.ShapeVariant
+	}
+	return nil
+}
+
+func (x *ShapeOrStencil) GetStencilId() *StencilId {
+	if x != nil {
+		if x, ok := x.ShapeVariant.(*ShapeOrStencil_StencilId); ok {
+			return x.StencilId
+		}
+	}
+	return nil
+}
+
+func (x *ShapeOrStencil) GetInline() *InlineShape {
+	if x != nil {
+		if x, ok := x.ShapeVariant.(*ShapeOrStencil_Inline); ok {
+			return x.Inline
+		}
+	}
+	return nil
+}
+
+type isShapeOrStencil_ShapeVariant interface {
+	isShapeOrStencil_ShapeVariant()
+}
+
+type ShapeOrStencil_StencilId struct {
+	StencilId *StencilId `protobuf:"bytes,10,opt,name=stencil_id,json=stencilId,proto3,oneof"`
+}
+
+type ShapeOrStencil_Inline struct {
+	Inline *InlineShape `protobuf:"bytes,11,opt,name=inline,proto3,oneof"`
+}
+
+func (*ShapeOrStencil_StencilId) isShapeOrStencil_ShapeVariant() {}
+
+func (*ShapeOrStencil_Inline) isShapeOrStencil_ShapeVariant() {}
+
+type Drawing struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Label string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	// embed with oneof inside — FK variant + serialize variant
+	Shape         *ShapeOrStencil `protobuf:"bytes,3,opt,name=shape,proto3" json:"shape,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Drawing) Reset() {
+	*x = Drawing{}
+	mi := &file_examples_proto_store_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Drawing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Drawing) ProtoMessage() {}
+
+func (x *Drawing) ProtoReflect() protoreflect.Message {
+	mi := &file_examples_proto_store_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Drawing.ProtoReflect.Descriptor instead.
+func (*Drawing) Descriptor() ([]byte, []int) {
+	return file_examples_proto_store_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *Drawing) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *Drawing) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *Drawing) GetShape() *ShapeOrStencil {
+	if x != nil {
+		return x.Shape
+	}
+	return nil
+}
+
 var File_examples_proto_store_proto protoreflect.FileDescriptor
 
 const file_examples_proto_store_proto_rawDesc = "" +
@@ -1569,7 +1867,25 @@ const file_examples_proto_store_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12A\n" +
 	"\n" +
 	"appearance\x18\x03 \x01(\v2\x19.store.AppearanceSettingsB\x06\x82\xa6\x1d\x02 \x01R\n" +
-	"appearance:%\x92\xb5\x18\x1b\b\x01\x12\x10user_preferencesB\x05store\x82\xa6\x1d\x02\b\x01*\x98\x01\n" +
+	"appearance:%\x92\xb5\x18\x1b\b\x01\x12\x10user_preferencesB\x05store\x82\xa6\x1d\x02\b\x01\"+\n" +
+	"\tStencilId\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value:\b\x82\xa6\x1d\x04\b\x01\x10\x01\"j\n" +
+	"\aStencil\x12*\n" +
+	"\x02id\x18\x01 \x01(\v2\x10.store.StencilIdB\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title:\x1d\x92\xb5\x18\x13\b\x01\x12\bstencilsB\x05store\x82\xa6\x1d\x02\b\x01\"C\n" +
+	"\vInlineShape\x12\x18\n" +
+	"\aoutline\x18\x01 \x01(\tR\aoutline\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x05R\x04size:\x06\x82\xa6\x1d\x02\b\x01\"\xb9\x01\n" +
+	"\x0eShapeOrStencil\x12P\n" +
+	"\n" +
+	"stencil_id\x18\n" +
+	" \x01(\v2\x10.store.StencilIdB\x1d\x9a\xb5\x18\x19\x12\x172\bstencils:\x02id@\x04R\x05storeH\x00R\tstencilId\x124\n" +
+	"\x06inline\x18\v \x01(\v2\x12.store.InlineShapeB\x06\x82\xa6\x1d\x02\x10\x01H\x00R\x06inline:\x06\x82\xa6\x1d\x02\b\x01B\x17\n" +
+	"\rshape_variant\x12\x06\x82\xb5\x18\x02\b\x01\"\x8d\x01\n" +
+	"\aDrawing\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\x03B\b\x9a\xb5\x18\x04\x12\x02\x10\x01R\x02id\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x123\n" +
+	"\x05shape\x18\x03 \x01(\v2\x15.store.ShapeOrStencilB\x06\x82\xa6\x1d\x02 \x01R\x05shape:\x1d\x92\xb5\x18\x13\b\x01\x12\bdrawingsB\x05store\x82\xa6\x1d\x02\b\x01*\x98\x01\n" +
 	"\rAuditSeverity\x12\x1e\n" +
 	"\x1aAUDIT_SEVERITY_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12AUDIT_SEVERITY_LOW\x10\x01\x12\x19\n" +
@@ -1590,7 +1906,7 @@ func file_examples_proto_store_proto_rawDescGZIP() []byte {
 }
 
 var file_examples_proto_store_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_examples_proto_store_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_examples_proto_store_proto_goTypes = []any{
 	(AuditSeverity)(0),            // 0: store.AuditSeverity
 	(*EntityID)(nil),              // 1: store.EntityID
@@ -1611,24 +1927,29 @@ var file_examples_proto_store_proto_goTypes = []any{
 	(*AuditLog)(nil),              // 16: store.AuditLog
 	(*AppearanceSettings)(nil),    // 17: store.AppearanceSettings
 	(*UserPreferences)(nil),       // 18: store.UserPreferences
-	(*timestamppb.Timestamp)(nil), // 19: google.protobuf.Timestamp
-	(*wrapperspb.Int64Value)(nil), // 20: google.protobuf.Int64Value
+	(*StencilId)(nil),             // 19: store.StencilId
+	(*Stencil)(nil),               // 20: store.Stencil
+	(*InlineShape)(nil),           // 21: store.InlineShape
+	(*ShapeOrStencil)(nil),        // 22: store.ShapeOrStencil
+	(*Drawing)(nil),               // 23: store.Drawing
+	(*timestamppb.Timestamp)(nil), // 24: google.protobuf.Timestamp
+	(*wrapperspb.Int64Value)(nil), // 25: google.protobuf.Int64Value
 }
 var file_examples_proto_store_proto_depIdxs = []int32{
-	19, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
-	19, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
+	24, // 0: store.Timestamps.created_at:type_name -> google.protobuf.Timestamp
+	24, // 1: store.Timestamps.updated_at:type_name -> google.protobuf.Timestamp
 	1,  // 2: store.BaseEntity.id:type_name -> store.EntityID
 	2,  // 3: store.BaseEntity.timestamps:type_name -> store.Timestamps
 	3,  // 4: store.User.base:type_name -> store.BaseEntity
-	19, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
-	19, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
+	24, // 5: store.User.email_confirmed_at:type_name -> google.protobuf.Timestamp
+	24, // 6: store.User.deleted_at:type_name -> google.protobuf.Timestamp
 	10, // 7: store.User.orders:type_name -> store.Order
 	6,  // 8: store.User.profile:type_name -> store.Profile
 	3,  // 9: store.Profile.base:type_name -> store.BaseEntity
 	1,  // 10: store.Profile.user_id:type_name -> store.EntityID
 	5,  // 11: store.Profile.user:type_name -> store.User
 	3,  // 12: store.Category.base:type_name -> store.BaseEntity
-	20, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
+	25, // 13: store.Category.parent_id:type_name -> google.protobuf.Int64Value
 	3,  // 14: store.Tag.base:type_name -> store.BaseEntity
 	3,  // 15: store.Product.base:type_name -> store.BaseEntity
 	7,  // 16: store.Product.categories:type_name -> store.Category
@@ -1650,11 +1971,15 @@ var file_examples_proto_store_proto_depIdxs = []int32{
 	12, // 32: store.AppearanceSettings.selected_theme:type_name -> store.ThemeConfig
 	12, // 33: store.AppearanceSettings.fallback_theme:type_name -> store.ThemeConfig
 	17, // 34: store.UserPreferences.appearance:type_name -> store.AppearanceSettings
-	35, // [35:35] is the sub-list for method output_type
-	35, // [35:35] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	19, // 35: store.Stencil.id:type_name -> store.StencilId
+	19, // 36: store.ShapeOrStencil.stencil_id:type_name -> store.StencilId
+	21, // 37: store.ShapeOrStencil.inline:type_name -> store.InlineShape
+	22, // 38: store.Drawing.shape:type_name -> store.ShapeOrStencil
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_examples_proto_store_proto_init() }
@@ -1667,13 +1992,17 @@ func file_examples_proto_store_proto_init() {
 		(*AuditLog_CreateAction)(nil),
 		(*AuditLog_DeleteAction)(nil),
 	}
+	file_examples_proto_store_proto_msgTypes[21].OneofWrappers = []any{
+		(*ShapeOrStencil_StencilId)(nil),
+		(*ShapeOrStencil_Inline)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_examples_proto_store_proto_rawDesc), len(file_examples_proto_store_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   18,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

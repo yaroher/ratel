@@ -19,16 +19,17 @@ type RatelTable struct {
 
 // RatelColumn represents a column in a ratel table
 type RatelColumn struct {
-	Field      *protogen.Field
-	Options    *ratelproto.Column
-	SQLName    string
-	SQLType    string
-	GoType     string
-	GoName     string // Override for embedded fields
-	IsSkipped  bool
-	IsEmbedded bool // True if this column comes from an embedded message
-	IsVirtual  bool // True if this is a virtual column (no proto field, DDL-only)
-	VirtualDef *ratelproto.VirtualColumn
+	Field          *protogen.Field
+	Options        *ratelproto.Column
+	SQLName        string
+	SQLType        string
+	GoType         string
+	GoName         string // Override for embedded fields
+	IsSkipped      bool
+	IsEmbedded     bool // True if this column comes from an embedded message
+	IsVirtual      bool // True if this is a virtual column (no proto field, DDL-only)
+	IsOneofVariant bool // True if column belongs to an embedded oneof variant (always nullable)
+	VirtualDef     *ratelproto.VirtualColumn
 }
 
 // RatelRelation represents a relation in a ratel table
@@ -154,8 +155,18 @@ func isEmbeddedField(field *protogen.Field) bool {
 func collectEmbeddedColumns(msg *protogen.Message, _ string) []*RatelColumn {
 	var cols []*RatelColumn
 
+	for _, oneof := range msg.Oneofs {
+		if oneof.Desc.IsSynthetic() {
+			continue
+		}
+		if !isEmbeddedOneof(oneof) {
+			continue
+		}
+		cols = append(cols, collectOneofColumns(oneof)...)
+	}
+
 	for _, field := range msg.Fields {
-		// Skip oneof fields
+		// Skip oneof fields (embedded oneofs handled above)
 		if field.Oneof != nil && !field.Oneof.Desc.IsSynthetic() {
 			continue
 		}
@@ -238,6 +249,22 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 					IsNullable: true,
 				},
 			})
+		} else if field.Message != nil && isTypeAlias(field.Message) {
+			// Type-alias variant → single nullable column with outer field options (e.g. FK)
+			goName := strcase.ToCamel(variantName) + field.GoName
+			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(field.Desc.Name()))
+
+			col := &RatelColumn{
+				Field:          field,
+				Options:        getRatelColumnOptions(field),
+				SQLName:        sqlName,
+				SQLType:        protoFieldToSQLType(field),
+				GoName:         goName,
+				IsEmbedded:     true,
+				IsOneofVariant: true,
+			}
+			col.GoType = computeGoType(col)
+			cols = append(cols, col)
 		} else if field.Message != nil {
 			// Non-serialized message variant — flatten inner fields as nullable
 			for _, innerField := range field.Message.Fields {
@@ -246,6 +273,7 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 
 				col := &RatelColumn{
 					Field:      innerField,
+					Options:    getRatelColumnOptions(innerField),
 					SQLName:    sqlName,
 					SQLType:    protoFieldToSQLType(innerField),
 					GoName:     goName,
@@ -260,11 +288,13 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(field.Desc.Name()))
 
 			col := &RatelColumn{
-				Field:      field,
-				SQLName:    sqlName,
-				SQLType:    protoFieldToSQLType(field),
-				GoName:     goName,
-				IsEmbedded: true,
+				Field:          field,
+				Options:        getRatelColumnOptions(field),
+				SQLName:        sqlName,
+				SQLType:        protoFieldToSQLType(field),
+				GoName:         goName,
+				IsEmbedded:     true,
+				IsOneofVariant: true,
 			}
 			col.GoType = computeGoType(col)
 			cols = append(cols, col)
