@@ -225,6 +225,9 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 
 	oneofName := string(oneof.Desc.Name())
 
+	sqlPrefix := strcase.ToSnake(oneofName)
+	goPrefix := strcase.ToCamel(oneofName)
+
 	for _, field := range oneof.Fields {
 		variantName := string(field.Desc.Name())
 
@@ -234,8 +237,8 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 
 		if isSerialized {
 			// Serialized message variant → JSONB NULL column (treated as virtual for codegen)
-			goName := strcase.ToCamel(variantName) + field.GoName
-			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(field.GoName)
+			goName := goPrefix + field.GoName
+			sqlName := sqlPrefix + "_" + strcase.ToSnake(variantName)
 
 			cols = append(cols, &RatelColumn{
 				SQLName:   sqlName,
@@ -251,8 +254,8 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 			})
 		} else if field.Message != nil && isTypeAlias(field.Message) {
 			// Type-alias variant → single nullable column with outer field options (e.g. FK)
-			goName := strcase.ToCamel(variantName) + field.GoName
-			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(field.Desc.Name()))
+			goName := goPrefix + field.GoName
+			sqlName := sqlPrefix + "_" + strcase.ToSnake(variantName)
 
 			col := &RatelColumn{
 				Field:          field,
@@ -268,8 +271,8 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 		} else if field.Message != nil {
 			// Non-serialized message variant — flatten inner fields as nullable
 			for _, innerField := range field.Message.Fields {
-				goName := strcase.ToCamel(variantName) + innerField.GoName
-				sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(innerField.Desc.Name()))
+				goName := goPrefix + strcase.ToCamel(variantName) + innerField.GoName
+				sqlName := sqlPrefix + "_" + strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(innerField.Desc.Name()))
 
 				col := &RatelColumn{
 					Field:      innerField,
@@ -284,8 +287,8 @@ func collectOneofColumns(oneof *protogen.Oneof) []*RatelColumn {
 			}
 		} else {
 			// Scalar variant → nullable column
-			goName := strcase.ToCamel(variantName) + field.GoName
-			sqlName := strcase.ToSnake(variantName) + "_" + strcase.ToSnake(string(field.Desc.Name()))
+			goName := goPrefix + field.GoName
+			sqlName := sqlPrefix + "_" + strcase.ToSnake(variantName)
 
 			col := &RatelColumn{
 				Field:          field,

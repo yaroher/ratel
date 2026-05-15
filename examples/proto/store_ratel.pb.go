@@ -1689,27 +1689,27 @@ type AuditLogColumnAlias string
 func (c AuditLogColumnAlias) String() string { return string(c) }
 
 const (
-	AuditLogColumnCreateActionCreateAction AuditLogColumnAlias = "create_action_create_action"
-	AuditLogColumnDeleteActionDeleteAction AuditLogColumnAlias = "delete_action_delete_action"
-	AuditLogColumnDetailCase               AuditLogColumnAlias = "detail_case"
-	AuditLogColumnId                       AuditLogColumnAlias = "id"
-	AuditLogColumnAction                   AuditLogColumnAlias = "action"
-	AuditLogColumnEntityType               AuditLogColumnAlias = "entity_type"
-	AuditLogColumnEntityId                 AuditLogColumnAlias = "entity_id"
-	AuditLogColumnTags                     AuditLogColumnAlias = "tags"
-	AuditLogColumnRelatedIds               AuditLogColumnAlias = "related_ids"
-	AuditLogColumnSeverity                 AuditLogColumnAlias = "severity"
-	AuditLogColumnAffectedLevels           AuditLogColumnAlias = "affected_levels"
-	AuditLogColumnDbCreatedAt              AuditLogColumnAlias = "db_created_at"
-	AuditLogColumnDbUpdatedAt              AuditLogColumnAlias = "db_updated_at"
+	AuditLogColumnDetailCreateAction AuditLogColumnAlias = "detail_create_action"
+	AuditLogColumnDetailDeleteAction AuditLogColumnAlias = "detail_delete_action"
+	AuditLogColumnDetailCase         AuditLogColumnAlias = "detail_case"
+	AuditLogColumnId                 AuditLogColumnAlias = "id"
+	AuditLogColumnAction             AuditLogColumnAlias = "action"
+	AuditLogColumnEntityType         AuditLogColumnAlias = "entity_type"
+	AuditLogColumnEntityId           AuditLogColumnAlias = "entity_id"
+	AuditLogColumnTags               AuditLogColumnAlias = "tags"
+	AuditLogColumnRelatedIds         AuditLogColumnAlias = "related_ids"
+	AuditLogColumnSeverity           AuditLogColumnAlias = "severity"
+	AuditLogColumnAffectedLevels     AuditLogColumnAlias = "affected_levels"
+	AuditLogColumnDbCreatedAt        AuditLogColumnAlias = "db_created_at"
+	AuditLogColumnDbUpdatedAt        AuditLogColumnAlias = "db_updated_at"
 )
 
 func (s *AuditLogScanner) GetTarget(col string) func() any {
 	switch AuditLogColumnAlias(col) {
-	case AuditLogColumnCreateActionCreateAction:
-		return func() any { return &s.CreateActionCreateAction }
-	case AuditLogColumnDeleteActionDeleteAction:
-		return func() any { return &s.DeleteActionDeleteAction }
+	case AuditLogColumnDetailCreateAction:
+		return func() any { return &s.DetailCreateAction }
+	case AuditLogColumnDetailDeleteAction:
+		return func() any { return &s.DetailDeleteAction }
 	case AuditLogColumnDetailCase:
 		return func() any { return &s.DetailCase }
 	case AuditLogColumnId:
@@ -1739,10 +1739,10 @@ func (s *AuditLogScanner) GetTarget(col string) func() any {
 
 func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSetter[AuditLogColumnAlias] {
 	switch f {
-	case AuditLogColumnCreateActionCreateAction:
-		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.CreateActionCreateAction) }
-	case AuditLogColumnDeleteActionDeleteAction:
-		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DeleteActionDeleteAction) }
+	case AuditLogColumnDetailCreateAction:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DetailCreateAction) }
+	case AuditLogColumnDetailDeleteAction:
+		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DetailDeleteAction) }
 	case AuditLogColumnDetailCase:
 		return func() set.ValueSetter[AuditLogColumnAlias] { return set.NewSetter(f, &s.DetailCase) }
 	case AuditLogColumnId:
@@ -1772,10 +1772,10 @@ func (s *AuditLogScanner) GetSetter(f AuditLogColumnAlias) func() set.ValueSette
 
 func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 	switch f {
-	case AuditLogColumnCreateActionCreateAction:
-		return func() any { return s.CreateActionCreateAction }
-	case AuditLogColumnDeleteActionDeleteAction:
-		return func() any { return s.DeleteActionDeleteAction }
+	case AuditLogColumnDetailCreateAction:
+		return func() any { return s.DetailCreateAction }
+	case AuditLogColumnDetailDeleteAction:
+		return func() any { return s.DetailDeleteAction }
 	case AuditLogColumnDetailCase:
 		return func() any { return s.DetailCase }
 	case AuditLogColumnId:
@@ -1805,8 +1805,8 @@ func (s *AuditLogScanner) GetValue(f AuditLogColumnAlias) func() any {
 
 func (s *AuditLogScanner) AllSetters() []set.ValueSetter[AuditLogColumnAlias] {
 	return []set.ValueSetter[AuditLogColumnAlias]{
-		set.NewSetter[AuditLogColumnAlias](AuditLogColumnCreateActionCreateAction, s.CreateActionCreateAction),
-		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDeleteActionDeleteAction, s.DeleteActionDeleteAction),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDetailCreateAction, s.DetailCreateAction),
+		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDetailDeleteAction, s.DetailDeleteAction),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnDetailCase, s.DetailCase),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnId, s.Id),
 		set.NewSetter[AuditLogColumnAlias](AuditLogColumnAction, s.Action),
@@ -1829,25 +1829,25 @@ func (s *AuditLogScanner) Relations() []exec.RelationLoader[*AuditLogScanner] {
 // AuditLogsTable represents the audit_logs table with its columns
 type AuditLogsTable struct {
 	*schema.Table[AuditLogAlias, AuditLogColumnAlias, *AuditLogScanner]
-	CreateActionCreateAction schema.NullJSONBColumnI[AuditLogColumnAlias]
-	DeleteActionDeleteAction schema.NullJSONBColumnI[AuditLogColumnAlias]
-	DetailCase               schema.TextColumnI[AuditLogColumnAlias]
-	Id                       schema.BigSerialColumnI[AuditLogColumnAlias]
-	Action                   schema.TextColumnI[AuditLogColumnAlias]
-	EntityType               schema.TextColumnI[AuditLogColumnAlias]
-	EntityId                 schema.BigIntColumnI[AuditLogColumnAlias]
-	Tags                     schema.TextArrayColumnI[AuditLogColumnAlias]
-	RelatedIds               schema.BigIntArrayColumnI[AuditLogColumnAlias]
-	Severity                 schema.TextColumnI[AuditLogColumnAlias]
-	AffectedLevels           schema.TextArrayColumnI[AuditLogColumnAlias]
-	DbCreatedAt              schema.TimestamptzColumnI[AuditLogColumnAlias]
-	DbUpdatedAt              schema.TimestamptzColumnI[AuditLogColumnAlias]
+	DetailCreateAction schema.NullJSONBColumnI[AuditLogColumnAlias]
+	DetailDeleteAction schema.NullJSONBColumnI[AuditLogColumnAlias]
+	DetailCase         schema.TextColumnI[AuditLogColumnAlias]
+	Id                 schema.BigSerialColumnI[AuditLogColumnAlias]
+	Action             schema.TextColumnI[AuditLogColumnAlias]
+	EntityType         schema.TextColumnI[AuditLogColumnAlias]
+	EntityId           schema.BigIntColumnI[AuditLogColumnAlias]
+	Tags               schema.TextArrayColumnI[AuditLogColumnAlias]
+	RelatedIds         schema.BigIntArrayColumnI[AuditLogColumnAlias]
+	Severity           schema.TextColumnI[AuditLogColumnAlias]
+	AffectedLevels     schema.TextArrayColumnI[AuditLogColumnAlias]
+	DbCreatedAt        schema.TimestamptzColumnI[AuditLogColumnAlias]
+	DbUpdatedAt        schema.TimestamptzColumnI[AuditLogColumnAlias]
 }
 
 // AuditLogs is the global audit_logs table instance
 var AuditLogs = func() AuditLogsTable {
-	createActionCreateActionCol := schema.NullJSONBColumn(AuditLogColumnCreateActionCreateAction)
-	deleteActionDeleteActionCol := schema.NullJSONBColumn(AuditLogColumnDeleteActionDeleteAction)
+	detailCreateActionCol := schema.NullJSONBColumn(AuditLogColumnDetailCreateAction)
+	detailDeleteActionCol := schema.NullJSONBColumn(AuditLogColumnDetailDeleteAction)
 	detailCaseCol := schema.TextColumn(AuditLogColumnDetailCase, ddl.WithNotNull[AuditLogColumnAlias]())
 	idCol := schema.BigSerialColumn(AuditLogColumnId, ddl.WithPrimaryKey[AuditLogColumnAlias]())
 	actionCol := schema.TextColumn(AuditLogColumnAction, ddl.WithNotNull[AuditLogColumnAlias]())
@@ -1865,8 +1865,8 @@ var AuditLogs = func() AuditLogsTable {
 			AuditLogAliasName,
 			func() *AuditLogScanner { return &AuditLogScanner{} },
 			[]*ddl.ColumnDDL[AuditLogColumnAlias]{
-				createActionCreateActionCol.DDL(),
-				deleteActionDeleteActionCol.DDL(),
+				detailCreateActionCol.DDL(),
+				detailDeleteActionCol.DDL(),
 				detailCaseCol.DDL(),
 				idCol.DDL(),
 				actionCol.DDL(),
@@ -1881,19 +1881,19 @@ var AuditLogs = func() AuditLogsTable {
 			},
 			ddl.WithSchema[AuditLogAlias, AuditLogColumnAlias]("store"),
 		),
-		CreateActionCreateAction: createActionCreateActionCol,
-		DeleteActionDeleteAction: deleteActionDeleteActionCol,
-		DetailCase:               detailCaseCol,
-		Id:                       idCol,
-		Action:                   actionCol,
-		EntityType:               entityTypeCol,
-		EntityId:                 entityIdCol,
-		Tags:                     tagsCol,
-		RelatedIds:               relatedIdsCol,
-		Severity:                 severityCol,
-		AffectedLevels:           affectedLevelsCol,
-		DbCreatedAt:              dbCreatedAtCol,
-		DbUpdatedAt:              dbUpdatedAtCol,
+		DetailCreateAction: detailCreateActionCol,
+		DetailDeleteAction: detailDeleteActionCol,
+		DetailCase:         detailCaseCol,
+		Id:                 idCol,
+		Action:             actionCol,
+		EntityType:         entityTypeCol,
+		EntityId:           entityIdCol,
+		Tags:               tagsCol,
+		RelatedIds:         relatedIdsCol,
+		Severity:           severityCol,
+		AffectedLevels:     affectedLevelsCol,
+		DbCreatedAt:        dbCreatedAtCol,
+		DbUpdatedAt:        dbUpdatedAtCol,
 	}
 }()
 
@@ -2139,11 +2139,11 @@ type DrawingColumnAlias string
 func (c DrawingColumnAlias) String() string { return string(c) }
 
 const (
-	DrawingColumnId               DrawingColumnAlias = "id"
-	DrawingColumnLabel            DrawingColumnAlias = "label"
-	DrawingColumnStencilId        DrawingColumnAlias = "stencil_id_stencil_id"
-	DrawingColumnInlineInline     DrawingColumnAlias = "inline_inline"
-	DrawingColumnShapeVariantCase DrawingColumnAlias = "shape_variant_case"
+	DrawingColumnId                    DrawingColumnAlias = "id"
+	DrawingColumnLabel                 DrawingColumnAlias = "label"
+	DrawingColumnShapeVariantStencilId DrawingColumnAlias = "shape_variant_stencil_id"
+	DrawingColumnShapeVariantInline    DrawingColumnAlias = "shape_variant_inline"
+	DrawingColumnShapeVariantCase      DrawingColumnAlias = "shape_variant_case"
 )
 
 func (s *DrawingScanner) GetTarget(col string) func() any {
@@ -2152,10 +2152,10 @@ func (s *DrawingScanner) GetTarget(col string) func() any {
 		return func() any { return &s.Id }
 	case DrawingColumnLabel:
 		return func() any { return &s.Label }
-	case DrawingColumnStencilId:
-		return func() any { return &s.StencilIdStencilId }
-	case DrawingColumnInlineInline:
-		return func() any { return &s.InlineInline }
+	case DrawingColumnShapeVariantStencilId:
+		return func() any { return &s.ShapeVariantStencilId }
+	case DrawingColumnShapeVariantInline:
+		return func() any { return &s.ShapeVariantInline }
 	case DrawingColumnShapeVariantCase:
 		return func() any { return &s.ShapeVariantCase }
 	default:
@@ -2169,10 +2169,10 @@ func (s *DrawingScanner) GetSetter(f DrawingColumnAlias) func() set.ValueSetter[
 		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.Id) }
 	case DrawingColumnLabel:
 		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.Label) }
-	case DrawingColumnStencilId:
-		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.StencilIdStencilId) }
-	case DrawingColumnInlineInline:
-		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.InlineInline) }
+	case DrawingColumnShapeVariantStencilId:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.ShapeVariantStencilId) }
+	case DrawingColumnShapeVariantInline:
+		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.ShapeVariantInline) }
 	case DrawingColumnShapeVariantCase:
 		return func() set.ValueSetter[DrawingColumnAlias] { return set.NewSetter(f, &s.ShapeVariantCase) }
 	default:
@@ -2186,10 +2186,10 @@ func (s *DrawingScanner) GetValue(f DrawingColumnAlias) func() any {
 		return func() any { return s.Id }
 	case DrawingColumnLabel:
 		return func() any { return s.Label }
-	case DrawingColumnStencilId:
-		return func() any { return s.StencilIdStencilId }
-	case DrawingColumnInlineInline:
-		return func() any { return s.InlineInline }
+	case DrawingColumnShapeVariantStencilId:
+		return func() any { return s.ShapeVariantStencilId }
+	case DrawingColumnShapeVariantInline:
+		return func() any { return s.ShapeVariantInline }
 	case DrawingColumnShapeVariantCase:
 		return func() any { return s.ShapeVariantCase }
 	default:
@@ -2201,8 +2201,8 @@ func (s *DrawingScanner) AllSetters() []set.ValueSetter[DrawingColumnAlias] {
 	return []set.ValueSetter[DrawingColumnAlias]{
 		set.NewSetter[DrawingColumnAlias](DrawingColumnId, s.Id),
 		set.NewSetter[DrawingColumnAlias](DrawingColumnLabel, s.Label),
-		set.NewSetter[DrawingColumnAlias](DrawingColumnStencilId, s.StencilIdStencilId),
-		set.NewSetter[DrawingColumnAlias](DrawingColumnInlineInline, s.InlineInline),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnShapeVariantStencilId, s.ShapeVariantStencilId),
+		set.NewSetter[DrawingColumnAlias](DrawingColumnShapeVariantInline, s.ShapeVariantInline),
 		set.NewSetter[DrawingColumnAlias](DrawingColumnShapeVariantCase, s.ShapeVariantCase),
 	}
 }
@@ -2215,19 +2215,19 @@ func (s *DrawingScanner) Relations() []exec.RelationLoader[*DrawingScanner] {
 // DrawingsTable represents the drawings table with its columns
 type DrawingsTable struct {
 	*schema.Table[DrawingAlias, DrawingColumnAlias, *DrawingScanner]
-	Id                 schema.BigSerialColumnI[DrawingColumnAlias]
-	Label              schema.TextColumnI[DrawingColumnAlias]
-	StencilIdStencilId schema.NullTextColumnI[DrawingColumnAlias]
-	InlineInline       schema.NullJSONBColumnI[DrawingColumnAlias]
-	ShapeVariantCase   schema.TextColumnI[DrawingColumnAlias]
+	Id                    schema.BigSerialColumnI[DrawingColumnAlias]
+	Label                 schema.TextColumnI[DrawingColumnAlias]
+	ShapeVariantStencilId schema.NullTextColumnI[DrawingColumnAlias]
+	ShapeVariantInline    schema.NullJSONBColumnI[DrawingColumnAlias]
+	ShapeVariantCase      schema.TextColumnI[DrawingColumnAlias]
 }
 
 // Drawings is the global drawings table instance
 var Drawings = func() DrawingsTable {
 	idCol := schema.BigSerialColumn(DrawingColumnId, ddl.WithPrimaryKey[DrawingColumnAlias]())
 	labelCol := schema.TextColumn(DrawingColumnLabel, ddl.WithNotNull[DrawingColumnAlias]())
-	stencilIdStencilIdCol := schema.NullTextColumn(DrawingColumnStencilId, ddl.WithReferences[DrawingColumnAlias]("\"store\".\"stencils\"", "id"), ddl.WithOnDelete[DrawingColumnAlias]("RESTRICT"))
-	inlineInlineCol := schema.NullJSONBColumn(DrawingColumnInlineInline)
+	shapeVariantStencilIdCol := schema.NullTextColumn(DrawingColumnShapeVariantStencilId, ddl.WithReferences[DrawingColumnAlias]("\"store\".\"stencils\"", "id"), ddl.WithOnDelete[DrawingColumnAlias]("RESTRICT"))
+	shapeVariantInlineCol := schema.NullJSONBColumn(DrawingColumnShapeVariantInline)
 	shapeVariantCaseCol := schema.TextColumn(DrawingColumnShapeVariantCase, ddl.WithNotNull[DrawingColumnAlias]())
 
 	return DrawingsTable{
@@ -2237,17 +2237,17 @@ var Drawings = func() DrawingsTable {
 			[]*ddl.ColumnDDL[DrawingColumnAlias]{
 				idCol.DDL(),
 				labelCol.DDL(),
-				stencilIdStencilIdCol.DDL(),
-				inlineInlineCol.DDL(),
+				shapeVariantStencilIdCol.DDL(),
+				shapeVariantInlineCol.DDL(),
 				shapeVariantCaseCol.DDL(),
 			},
 			ddl.WithSchema[DrawingAlias, DrawingColumnAlias]("store"),
 		),
-		Id:                 idCol,
-		Label:              labelCol,
-		StencilIdStencilId: stencilIdStencilIdCol,
-		InlineInline:       inlineInlineCol,
-		ShapeVariantCase:   shapeVariantCaseCol,
+		Id:                    idCol,
+		Label:                 labelCol,
+		ShapeVariantStencilId: shapeVariantStencilIdCol,
+		ShapeVariantInline:    shapeVariantInlineCol,
+		ShapeVariantCase:      shapeVariantCaseCol,
 	}
 }()
 

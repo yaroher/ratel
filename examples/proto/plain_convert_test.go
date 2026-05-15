@@ -234,11 +234,11 @@ func TestIntoPlainOneofSerializedCreateAction(t *testing.T) {
 	}
 	plain := pb.IntoPlain()
 
-	if len(plain.CreateActionCreateAction) == 0 {
-		t.Fatal("CreateActionCreateAction should be non-empty bytes")
+	if len(plain.DetailCreateAction) == 0 {
+		t.Fatal("DetailCreateAction should be non-empty bytes")
 	}
-	if len(plain.DeleteActionDeleteAction) != 0 {
-		t.Error("DeleteActionDeleteAction should be empty for create variant")
+	if len(plain.DetailDeleteAction) != 0 {
+		t.Error("DetailDeleteAction should be empty for create variant")
 	}
 	if plain.DetailCase != "create_action" {
 		t.Errorf("DetailCase = %q, want create_action", plain.DetailCase)
@@ -265,11 +265,11 @@ func TestIntoPlainOneofSerializedDeleteAction(t *testing.T) {
 	}
 	plain := pb.IntoPlain()
 
-	if len(plain.DeleteActionDeleteAction) == 0 {
-		t.Fatal("DeleteActionDeleteAction should be non-empty bytes")
+	if len(plain.DetailDeleteAction) == 0 {
+		t.Fatal("DetailDeleteAction should be non-empty bytes")
 	}
-	if len(plain.CreateActionCreateAction) != 0 {
-		t.Error("CreateActionCreateAction should be empty for delete variant")
+	if len(plain.DetailCreateAction) != 0 {
+		t.Error("DetailCreateAction should be empty for delete variant")
 	}
 	if plain.DetailCase != "delete_action" {
 		t.Errorf("DetailCase = %q, want delete_action", plain.DetailCase)
@@ -292,11 +292,11 @@ func TestIntoPlainOneofSerializedEmpty(t *testing.T) {
 	pb := &AuditLog{Id: 3, Action: "noop"}
 	plain := pb.IntoPlain()
 
-	if plain.CreateActionCreateAction == nil {
-		t.Error("CreateActionCreateAction should be non-nil empty slice, got nil")
+	if plain.DetailCreateAction == nil {
+		t.Error("DetailCreateAction should be non-nil empty slice, got nil")
 	}
-	if plain.DeleteActionDeleteAction == nil {
-		t.Error("DeleteActionDeleteAction should be non-nil empty slice, got nil")
+	if plain.DetailDeleteAction == nil {
+		t.Error("DetailDeleteAction should be non-nil empty slice, got nil")
 	}
 	if plain.DetailCase != "" {
 		t.Errorf("DetailCase should be empty, got %q", plain.DetailCase)

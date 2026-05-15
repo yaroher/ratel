@@ -892,18 +892,18 @@ func (p *AuditDeleteActionScanner) IntoPb() *AuditDeleteAction {
 
 // Тест: virtual_columns — колонки без proto field, только DDL
 type AuditLogScanner struct {
-	Id                       int64    `json:"id"`
-	Action                   string   `json:"action"`
-	EntityType               string   `json:"entityType"`
-	EntityId                 int64    `json:"entityId"`
-	Tags                     []string `json:"tags"`
-	RelatedIds               []int64  `json:"relatedIds"`
-	Severity                 string   `json:"severity"`
-	AffectedLevels           []string `json:"affectedLevels"`
-	CreateActionCreateAction []byte   `json:"createActionCreateAction"` // origin: serialized, empath: create_action.create_action
-	DeleteActionDeleteAction []byte   `json:"deleteActionDeleteAction"` // origin: serialized, empath: delete_action.delete_action
-	DbCreatedAt              string   `json:"dbCreatedAt"`              // origin: virtual, empath: virtual
-	DbUpdatedAt              string   `json:"dbUpdatedAt"`              // origin: virtual, empath: virtual
+	Id                 int64    `json:"id"`
+	Action             string   `json:"action"`
+	EntityType         string   `json:"entityType"`
+	EntityId           int64    `json:"entityId"`
+	Tags               []string `json:"tags"`
+	RelatedIds         []int64  `json:"relatedIds"`
+	Severity           string   `json:"severity"`
+	AffectedLevels     []string `json:"affectedLevels"`
+	DetailCreateAction []byte   `json:"detailCreateAction"` // origin: serialized, empath: detail.create_action
+	DetailDeleteAction []byte   `json:"detailDeleteAction"` // origin: serialized, empath: detail.delete_action
+	DbCreatedAt        string   `json:"dbCreatedAt"`        // origin: virtual, empath: virtual
+	DbUpdatedAt        string   `json:"dbUpdatedAt"`        // origin: virtual, empath: virtual
 	// DetailCase indicates which variant of detail oneof is set
 	DetailCase string `json:"detail_case,omitempty"`
 }
@@ -946,21 +946,21 @@ func (pb *AuditLog) IntoPlain() *AuditLogScanner {
 	} else {
 		p.AffectedLevels = []string{}
 	}
-	// CreateActionCreateAction serialized from create_action.create_action
+	// DetailCreateAction serialized from detail.create_action
 	if pb.GetCreateAction() != nil {
 		if data, err := protojson.Marshal(pb.GetCreateAction()); err == nil {
-			p.CreateActionCreateAction = data
+			p.DetailCreateAction = data
 		}
 	} else {
-		p.CreateActionCreateAction = []byte{}
+		p.DetailCreateAction = []byte{}
 	}
-	// DeleteActionDeleteAction serialized from delete_action.delete_action
+	// DetailDeleteAction serialized from detail.delete_action
 	if pb.GetDeleteAction() != nil {
 		if data, err := protojson.Marshal(pb.GetDeleteAction()); err == nil {
-			p.DeleteActionDeleteAction = data
+			p.DetailDeleteAction = data
 		}
 	} else {
-		p.DeleteActionDeleteAction = []byte{}
+		p.DetailDeleteAction = []byte{}
 	}
 	// DbCreatedAt is virtual, no source in protobuf
 	// DbUpdatedAt is virtual, no source in protobuf
@@ -987,17 +987,17 @@ func (p *AuditLogScanner) IntoPb() *AuditLog {
 			pb.AffectedLevels[i] = AuditSeverity(AuditSeverity_value[v])
 		}
 	}
-	// CreateActionCreateAction deserialize -> create_action.create_action
-	if len(p.CreateActionCreateAction) > 0 {
+	// DetailCreateAction deserialize -> detail.create_action
+	if len(p.DetailCreateAction) > 0 {
 		var msg AuditCreateAction
-		if err := protojson.Unmarshal(p.CreateActionCreateAction, &msg); err == nil {
+		if err := protojson.Unmarshal(p.DetailCreateAction, &msg); err == nil {
 			pb.Detail = &AuditLog_CreateAction{CreateAction: &msg}
 		}
 	}
-	// DeleteActionDeleteAction deserialize -> delete_action.delete_action
-	if len(p.DeleteActionDeleteAction) > 0 {
+	// DetailDeleteAction deserialize -> detail.delete_action
+	if len(p.DetailDeleteAction) > 0 {
 		var msg AuditDeleteAction
-		if err := protojson.Unmarshal(p.DeleteActionDeleteAction, &msg); err == nil {
+		if err := protojson.Unmarshal(p.DetailDeleteAction, &msg); err == nil {
 			pb.Detail = &AuditLog_DeleteAction{DeleteAction: &msg}
 		}
 	}
@@ -1207,8 +1207,8 @@ func (p *InlineShapeScanner) IntoPb() *InlineShape {
 
 // Mixed oneof: FK type-alias variant + serialize variant
 type ShapeOrStencilScanner struct {
-	StencilIdStencilId string `json:"stencilIdStencilId"` // origin: type_alias, empath: stencil_id.stencil_id
-	InlineInline       []byte `json:"inlineInline"`       // origin: serialized, empath: inline.inline
+	ShapeVariantStencilId string `json:"shapeVariantStencilId"` // origin: type_alias, empath: shape_variant.stencil_id
+	ShapeVariantInline    []byte `json:"shapeVariantInline"`    // origin: serialized, empath: shape_variant.inline
 	// ShapeVariantCase indicates which variant of shape_variant oneof is set
 	ShapeVariantCase string `json:"shape_variant_case,omitempty"`
 }
@@ -1228,17 +1228,17 @@ func (pb *ShapeOrStencil) IntoPlain() *ShapeOrStencilScanner {
 		p.ShapeVariantCase = "inline"
 	}
 
-	// StencilIdStencilId type alias from stencil_id.stencil_id
+	// ShapeVariantStencilId type alias from shape_variant.stencil_id
 	if pb.GetStencilId() != nil {
-		p.StencilIdStencilId = pb.GetStencilId().GetValue()
+		p.ShapeVariantStencilId = pb.GetStencilId().GetValue()
 	}
-	// InlineInline serialized from inline.inline
+	// ShapeVariantInline serialized from shape_variant.inline
 	if pb.GetInline() != nil {
 		if data, err := protojson.Marshal(pb.GetInline()); err == nil {
-			p.InlineInline = data
+			p.ShapeVariantInline = data
 		}
 	} else {
-		p.InlineInline = []byte{}
+		p.ShapeVariantInline = []byte{}
 	}
 	return p
 }
@@ -1250,14 +1250,14 @@ func (p *ShapeOrStencilScanner) IntoPb() *ShapeOrStencil {
 	}
 	pb := &ShapeOrStencil{}
 
-	// StencilIdStencilId type alias -> stencil_id.stencil_id
+	// ShapeVariantStencilId type alias -> shape_variant.stencil_id
 	if p.ShapeVariantCase == "stencil_id" {
-		pb.ShapeVariant = &ShapeOrStencil_StencilId{StencilId: &StencilId{Value: p.StencilIdStencilId}}
+		pb.ShapeVariant = &ShapeOrStencil_StencilId{StencilId: &StencilId{Value: p.ShapeVariantStencilId}}
 	}
-	// InlineInline deserialize -> inline.inline
-	if len(p.InlineInline) > 0 {
+	// ShapeVariantInline deserialize -> shape_variant.inline
+	if len(p.ShapeVariantInline) > 0 {
 		var msg InlineShape
-		if err := protojson.Unmarshal(p.InlineInline, &msg); err == nil {
+		if err := protojson.Unmarshal(p.ShapeVariantInline, &msg); err == nil {
 			pb.ShapeVariant = &ShapeOrStencil_Inline{Inline: &msg}
 		}
 	}
@@ -1265,10 +1265,10 @@ func (p *ShapeOrStencilScanner) IntoPb() *ShapeOrStencil {
 }
 
 type DrawingScanner struct {
-	Id                 int64  `json:"id"`
-	Label              string `json:"label"`
-	StencilIdStencilId string `json:"stencilIdStencilId"` // origin: oneof_embed, empath: stencil_id.stencil_id
-	InlineInline       []byte `json:"inlineInline"`       // origin: serialized, empath: inline.inline
+	Id                    int64  `json:"id"`
+	Label                 string `json:"label"`
+	ShapeVariantStencilId string `json:"shapeVariantStencilId"` // origin: oneof_embed, empath: shape_variant.stencil_id
+	ShapeVariantInline    []byte `json:"shapeVariantInline"`    // origin: serialized, empath: shape_variant.inline
 	// ShapeVariantCase indicates which variant of shape_variant oneof is set
 	ShapeVariantCase string `json:"shape_variant_case,omitempty"`
 }
@@ -1290,17 +1290,17 @@ func (pb *Drawing) IntoPlain() *DrawingScanner {
 
 	p.Id = pb.Id
 	p.Label = pb.Label
-	// StencilIdStencilId from stencil_id.stencil_id
+	// ShapeVariantStencilId from shape_variant.stencil_id
 	if pb.GetShape() != nil && pb.GetShape().GetStencilId() != nil {
-		p.StencilIdStencilId = pb.GetShape().GetStencilId().GetValue()
+		p.ShapeVariantStencilId = pb.GetShape().GetStencilId().GetValue()
 	}
-	// InlineInline serialized from inline.inline
+	// ShapeVariantInline serialized from shape_variant.inline
 	if pb.GetShape() != nil && pb.GetShape().GetInline() != nil {
 		if data, err := protojson.Marshal(pb.GetShape().GetInline()); err == nil {
-			p.InlineInline = data
+			p.ShapeVariantInline = data
 		}
 	} else {
-		p.InlineInline = []byte{}
+		p.ShapeVariantInline = []byte{}
 	}
 	return p
 }
@@ -1314,7 +1314,7 @@ func (p *DrawingScanner) IntoPb() *Drawing {
 
 	pb.Id = p.Id
 	pb.Label = p.Label
-	// StencilIdStencilId -> stencil_id.stencil_id
+	// ShapeVariantStencilId -> shape_variant.stencil_id
 	if p.ShapeVariantCase == "stencil_id" {
 		if pb.Shape == nil {
 			pb.Shape = &ShapeOrStencil{}
@@ -1322,12 +1322,12 @@ func (p *DrawingScanner) IntoPb() *Drawing {
 		if _, ok := pb.Shape.ShapeVariant.(*ShapeOrStencil_StencilId); !ok || pb.Shape.ShapeVariant == nil {
 			pb.Shape.ShapeVariant = &ShapeOrStencil_StencilId{StencilId: &StencilId{}}
 		}
-		pb.Shape.ShapeVariant.(*ShapeOrStencil_StencilId).StencilId.Value = p.StencilIdStencilId
+		pb.Shape.ShapeVariant.(*ShapeOrStencil_StencilId).StencilId.Value = p.ShapeVariantStencilId
 	}
-	// InlineInline deserialize -> inline.inline
-	if len(p.InlineInline) > 0 {
+	// ShapeVariantInline deserialize -> shape_variant.inline
+	if len(p.ShapeVariantInline) > 0 {
 		var msg InlineShape
-		if err := protojson.Unmarshal(p.InlineInline, &msg); err == nil {
+		if err := protojson.Unmarshal(p.ShapeVariantInline, &msg); err == nil {
 			if pb.Shape == nil {
 				pb.Shape = &ShapeOrStencil{}
 			}
